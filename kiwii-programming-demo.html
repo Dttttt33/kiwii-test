@@ -46,6 +46,7 @@
     .keyv{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:15px}.key{padding:12px;border-radius:13px;background:rgba(255,255,255,.08)}
     .key b{display:block;color:var(--lime);font:900 27px "DM Sans";letter-spacing:-.08em}.key small{color:rgba(255,255,255,.56);font-size:10px}
     .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.chip{padding:8px 10px;border:1px solid var(--line);border-radius:999px;color:var(--ink);background:rgba(255,255,255,.42);font-size:11px;font-weight:700;transition:.2s}
+    #goalChips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#goalChips .chip{padding:11px 12px;border-radius:13px;text-align:left}#goalChips .chip b{display:block;font-size:11px}#goalChips .chip small{display:block;margin-top:4px;color:var(--muted);font-size:9px;line-height:1.5}#goalChips .chip.selected small{color:rgba(255,255,255,.62)}
     .chip.selected{color:#fff;border-color:var(--ink);background:var(--ink)}.chip.reco:after{content:"建议";margin-left:6px;padding:2px 5px;border-radius:10px;color:var(--ink);background:var(--lime);font-size:9px}
     .btn{min-height:44px;padding:0 16px;border:1px solid transparent;border-radius:999px;color:#fff;background:var(--ink);font-weight:800;font-size:12px}.btn.lime{color:var(--ink);background:var(--lime)}.btn.secondary{color:var(--ink);border-color:var(--line);background:transparent}
     .button-row{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
@@ -173,15 +174,23 @@ const routeTypes=[
 {id:"mobility",name:"活动度唤醒",color:"#c4b1e5",focus:"动作幅度",desc:"在可控阻力下改善活动范围",roles:["mobility","control","mobility"]},
 {id:"recovery",name:"恢复控制",color:"#d4d0b6",focus:"保护性训练",desc:"低阻力重建动作信心",roles:["control","mobility","stability"]}
 ];
-const goals=["体态与舒适度","提升力量","增肌塑形","减脂瘦身","运动表现","恢复日常体能"];
+const goals=[
+{id:"增肌塑形",label:"想更有线条，但不想练太壮",sub:"身形更紧实，穿衣服更有型"},
+{id:"减脂瘦身",label:"正在减重，想保住肌肉",sub:"减脂期 / GLP-1 期间，避免肌肉流失"},
+{id:"提升力量",label:"想练出更有力量感的身体",sub:"举起更重的东西，搬抬或推拉更轻松有力"},
+{id:"运动表现",label:"想保持运动能力",sub:"跑步、打球时更轻松，不容易喘、不易累"},
+{id:"恢复日常体能",label:"体能下降，想重新找回状态",sub:"一整天精神充沛，精力足够应付工作和生活"},
+{id:"体态与舒适度",label:"腰酸背疼，想久坐不累",sub:"身体不再总是绷着，坐着站着都更舒服"}
+];
 const focusAreas=["肩部","腰背","髋部","膝部","踝部","没有特殊保护"];
 let selectedGoals=["体态与舒适度"]; let selectedFocus=["没有特殊保护"]; let sessions=[];let currentSession=0;
 const $=id=>document.getElementById(id);
 function value(id){return Number($(id).value)||0}
 function renderChips(){
- $("goalChips").innerHTML=goals.map(x=>`<button class="chip ${selectedGoals.includes(x)?"selected":""}" data-goal="${x}">${x}</button>`).join("");
+ $("goalChips").innerHTML=goals.map(x=>`<button class="chip ${selectedGoals.includes(x.id)?"selected":""}" data-goal="${x.id}"><b>${x.label}</b><small>${x.sub}</small></button>`).join("");
  $("focusChips").innerHTML=focusAreas.map(x=>`<button class="chip ${selectedFocus.includes(x)?"selected":""}" data-focus="${x}">${x}</button>`).join("");
 }
+function goalLabels(){return selectedGoals.map(id=>goals.find(goal=>goal.id===id)?.label||id)}
 function weights(){
  const w={lowerStrength:4,lowerStability:4,upperPull:4,upperPush:4,coreControl:4,coreRotation:3,fullStrength:5,metabolic:4,mobility:3,recovery:3};
  selectedGoals.forEach(g=>{if(g==="体态与舒适度"){w.coreControl+=4;w.mobility+=4;w.upperPull+=2}if(g==="提升力量"){w.lowerStrength+=5;w.upperPush+=3;w.upperPull+=3;w.fullStrength+=2}if(g==="增肌塑形"){w.lowerStrength+=3;w.upperPush+=4;w.upperPull+=4}if(g==="减脂瘦身"){w.metabolic+=7;w.fullStrength+=4;w.lowerStrength+=2}if(g==="运动表现"){w.lowerStability+=4;w.fullStrength+=5;w.coreRotation+=3;w.metabolic+=2}if(g==="恢复日常体能"){w.recovery+=6;w.mobility+=3;w.coreControl+=3}});
@@ -250,11 +259,11 @@ function renderAllocation(alloc){$("allocation").innerHTML=sortedAllocation(allo
 function renderTypes(alloc){$("mixFocus").innerHTML=routeTypes.map(x=>`<div class="focus-row"><b>${x.name}</b><span>${x.desc}</span></div>`).join("")}
 function renderImpact(){
  const excluded=exercises.filter(isProtected),allLoads=sessions.flatMap(s=>s.moves.map(m=>m.load)),minLoad=Math.min(...allLoads),maxLoad=Math.max(...allLoads),protectedText=selectedFocus.includes("没有特殊保护")?"无特殊保护，使用完整动作库":`${selectedFocus.join("、")}：已排除 ${excluded.length} 个高风险候选动作，整条路线阻力下调 12%`;
- const html=`<div class="impact-card"><small>01 · VBT → 阻力</small><b>${value("squatLoad")} kg 深蹲基准</b><p>已换算为逐动作阻力，本路线范围 ${minLoad}–${maxLoad} kg。</p></div><div class="impact-card"><small>02 · Goals → Mix</small><b>${selectedGoals.length?selectedGoals.join(" / "):"尚未选择目标"}</b><p>已改变 10 类 Sequence 的分配次数${selectedGoals.includes("减脂瘦身")?"，并提高节奏型串子的 reps 与时长":""}。</p></div><div class="impact-card"><small>03 · Protection → Filter</small><b>${selectedFocus.join(" / ")}</b><p>${protectedText}。</p></div>`;
+ const html=`<div class="impact-card"><small>01 · VBT → 阻力</small><b>${value("squatLoad")} kg 深蹲基准</b><p>已换算为逐动作阻力，本路线范围 ${minLoad}–${maxLoad} kg。</p></div><div class="impact-card"><small>02 · Goals → Mix</small><b>${selectedGoals.length?goalLabels().join(" / "):"尚未选择目标"}</b><p>已改变 10 类 Sequence 的分配次数${selectedGoals.includes("减脂瘦身")?"，并提高节奏型串子的 reps 与时长":""}。</p></div><div class="impact-card"><small>03 · Protection → Filter</small><b>${selectedFocus.join(" / ")}</b><p>${protectedText}。</p></div>`;
  $("mixImpact").innerHTML=html;
 }
 function renderTimeline(){$("timeline").innerHTML=sessions.map((s,i)=>`<button class="session ${i===currentSession?"selected":""}" data-session="${i}" style="border-top:4px solid ${s.type.color}"><b>SESSION ${String(s.id).padStart(2,"0")}</b><small>${s.type.name}</small><small>${s.hardware}</small></button>`).join("");$("legend").innerHTML=routeTypes.map(x=>`<span><i style="background:${x.color}"></i>${x.name}</span>`).join("")}
-function renderDetail(i){currentSession=(i+sessions.length)%sessions.length;const s=sessions[currentSession];if(!s)return;$("detailIndex").textContent=`SESSION ${String(s.id).padStart(2,"0")} / 40`;$("detailTitle").textContent=`${s.type.name} · ${s.hardware==="T-Bar"?"双手器械串":"单手器械串"}`;$("detailHardware").textContent=s.hardware;$("auditHardware").textContent=s.hardware;$("exerciseList").innerHTML=s.moves.map((m,n)=>`<div class="exercise"><i>${n+1}</i><span><b>${m.cn}${m.downgraded?" · 降级使用":""}</b><small>${m.en}${m.downgraded?" · 需复核："+m.reasons.join("、"):""}</small></span><span class="audit-cell"><b>${m.unilateral?"左侧 → 右侧":"双侧同步"}</b><br>${m.unilateral?"需要换侧":"无需换侧"}</span><span class="audit-cell"><b>${m.unilateral?"各 "+m.reps:m.reps} reps</b><br>每轮</span><span class="audit-cell"><b>${m.load} kg</b><br>${s.hardware}${m.downgraded?" · 已降阻":""}</span></div>`).join("");$("detailTime").textContent=`约 ${s.minutes} 分钟`;$("detailCount").textContent=`${s.moves.length} 个`;$("detailRounds").textContent=`${s.rounds} 轮`;$("detailFocus").textContent=s.focus;$("detailWhy").textContent=`用户目标：${selectedGoals.join("、")}。本条只使用 ${s.hardware}，完成一轮后${s.rounds===2?"再重复一次相同顺序":"结束"}。${selectedFocus.includes("没有特殊保护")?"当前无特殊保护部位。":"已根据保护部位优先避开高风险动作："+selectedFocus.join("、")+"；如安全动作不足，保留的候选项会明确标注为降级使用。"}`}
+function renderDetail(i){currentSession=(i+sessions.length)%sessions.length;const s=sessions[currentSession];if(!s)return;$("detailIndex").textContent=`SESSION ${String(s.id).padStart(2,"0")} / 40`;$("detailTitle").textContent=`${s.type.name} · ${s.hardware==="T-Bar"?"双手器械串":"单手器械串"}`;$("detailHardware").textContent=s.hardware;$("auditHardware").textContent=s.hardware;$("exerciseList").innerHTML=s.moves.map((m,n)=>`<div class="exercise"><i>${n+1}</i><span><b>${m.cn}${m.downgraded?" · 降级使用":""}</b><small>${m.en}${m.downgraded?" · 需复核："+m.reasons.join("、"):""}</small></span><span class="audit-cell"><b>${m.unilateral?"左侧 → 右侧":"双侧同步"}</b><br>${m.unilateral?"需要换侧":"无需换侧"}</span><span class="audit-cell"><b>${m.unilateral?"各 "+m.reps:m.reps} reps</b><br>每轮</span><span class="audit-cell"><b>${m.load} kg</b><br>${s.hardware}${m.downgraded?" · 已降阻":""}</span></div>`).join("");$("detailTime").textContent=`约 ${s.minutes} 分钟`;$("detailCount").textContent=`${s.moves.length} 个`;$("detailRounds").textContent=`${s.rounds} 轮`;$("detailFocus").textContent=s.focus;$("detailWhy").textContent=`用户目标：${goalLabels().join("、")}。本条只使用 ${s.hardware}，完成一轮后${s.rounds===2?"再重复一次相同顺序":"结束"}。${selectedFocus.includes("没有特殊保护")?"当前无特殊保护部位。":"已根据保护部位优先避开高风险动作："+selectedFocus.join("、")+"；如安全动作不足，保留的候选项会明确标注为降级使用。"}`}
 function renderLibrary(filter="All"){$("library").innerHTML=exercises.filter(x=>filter==="All"||x.hardware===filter).map(x=>`<div class="move"><b>${x.cn}</b><small>${x.en}</small><em>${x.hardware}</em></div>`).join("")}
 function showPage(page){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.dataset.page===page));document.querySelectorAll(".rail-nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));$("topTitle").textContent={home:"路线编排首页",input:"体测相关输入",mix:"串子类型审阅",sessions:"40 次路线顺序",detail:"单个串子审阅",library:"动作库附录"}[page];if(page==="detail")renderDetail(currentSession)}
 document.addEventListener("click",e=>{const nav=e.target.closest("[data-page], [data-go]");if(nav)showPage(nav.dataset.page||nav.dataset.go);
