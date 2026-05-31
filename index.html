@@ -88,7 +88,9 @@
       border-radius: 14px;
       color: rgba(255,255,255,.42);
       transition: .3s ease;
+      cursor: pointer;
     }
+    .stage:hover, .stage:focus-visible { color: #fff; background: rgba(255,255,255,.07); outline: none; }
     .stage.active { color: #fff; background: rgba(255,255,255,.09); }
     .stage.done { color: var(--mint); }
     .stage-dot {
@@ -245,9 +247,10 @@
     .guide-card ol { margin: 0; padding-left: 19px; }
     .guide-card li { margin: 6px 0; color: #48615c; font-size: 12px; line-height: 1.55; }
     .test-nav { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 17px; }
-    .test-nav i { height: 5px; border-radius: 5px; background: rgba(255,255,255,.12); }
-    .test-nav i.done { background: var(--mint); }
-    .test-nav i.active { background: var(--lime); }
+    .test-nav button { height: 7px; padding: 0; border: 0; border-radius: 5px; background: rgba(255,255,255,.12); transition: .2s ease; }
+    .test-nav button:hover, .test-nav button:focus-visible { transform: scaleY(1.7); outline: none; }
+    .test-nav button.done { background: var(--mint); }
+    .test-nav button.active { background: var(--lime); }
     .test-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
     .test-actions .btn { min-height: 43px; padding: 0 14px; justify-content: center; font-size: 12px; }
     .test-actions .secondary { color: #fff; border-color: rgba(255,255,255,.18); }
@@ -347,10 +350,10 @@
         <div class="brand"><span class="brand-mark"></span>kiwii</div>
         <div class="rail-label">Strength profile / 01</div>
         <div class="stage-list">
-          <div class="stage active" data-stage="calibrate"><span class="stage-dot">01</span><span><b>训练校准</b><small>档案与保护设置</small></span></div>
-          <div class="stage" data-stage="assess"><span class="stage-dot">02</span><span><b>能力体测</b><small>跟随提示完成</small></span></div>
-          <div class="stage" data-stage="profile"><span class="stage-dot">03</span><span><b>力量画像</b><small>看到优势与短板</small></span></div>
-          <div class="stage" data-stage="route"><span class="stage-dot">04</span><span><b>训练路线</b><small>生成第一阶段计划</small></span></div>
+          <div class="stage active" data-stage="calibrate" role="button" tabindex="0"><span class="stage-dot">01</span><span><b>训练校准</b><small>档案与保护设置</small></span></div>
+          <div class="stage" data-stage="assess" role="button" tabindex="0"><span class="stage-dot">02</span><span><b>能力体测</b><small>跟随提示完成</small></span></div>
+          <div class="stage" data-stage="profile" role="button" tabindex="0"><span class="stage-dot">03</span><span><b>力量画像</b><small>看到优势与短板</small></span></div>
+          <div class="stage" data-stage="route" role="button" tabindex="0"><span class="stage-dot">04</span><span><b>训练路线</b><small>生成第一阶段计划</small></span></div>
         </div>
         <div class="rail-foot"><strong>DEMO MODE</strong><br>Kiwii 体测体验<br>全流程交互原型</div>
       </aside>
@@ -502,7 +505,7 @@
                 <div class="eyebrow">Strength profile ready</div>
                 <h2>完成得不错。<br>你的身体比你想象中更有底子。</h2>
                 <p class="lead">你的力量基础很扎实，动作也有不错的控制感。接下来不用追求一下子改变很多，先补齐稳定性，身体会越来越轻松。</p>
-                <div class="button-row"><button class="btn lime primary" data-next>设置训练主线</button></div>
+                <div class="button-row"><button class="btn secondary" id="resultsBack">返回体测</button><button class="btn lime primary" data-next>设置训练主线</button></div>
               </div>
               <div class="score-card">
                 <div class="eyebrow" style="color:var(--mint)">综合能力评分</div>
@@ -600,7 +603,7 @@
                 <p class="commit-copy">接下来 2 周，完成 <strong>每周 3 次、每次 20 分钟</strong> 的训练。Kiwii 会根据你的表现调整动作组合。只要稳定完成，我们保证你会感觉到：<strong>动作更稳，身体更轻松，也更愿意继续练下去。</strong></p>
                 <div class="signature">签署方式：和 Kiwii 击掌<br><b id="signature">等待你的 high-five</b></div>
               </div>
-              <div class="button-row"><button class="btn lime highfive" id="highfive">👋 High-five，签署承诺</button><button class="btn secondary" id="restart">重新体验 Demo</button></div>
+              <div class="button-row"><button class="btn secondary" data-back>返回调整</button><button class="btn lime highfive" id="highfive">👋 High-five，签署承诺</button><button class="btn secondary" id="restart">重新体验 Demo</button></div>
             </div>
           </section>
         </div>
@@ -623,6 +626,7 @@
     let current = 0;
     let testAction = 0;
     let vbtRound = 0;
+    const stageTargets = { calibrate: "intro", assess: "test", profile: "results", route: "risk" };
     const painZones = {
       "颈部": { left: 63, top: 42, label: "颈部" },
       "肩": { left: 27, top: 68, label: "肩部" },
@@ -778,9 +782,9 @@
       document.getElementById("guideList").innerHTML = action.guide.map(item => `<li>${item}</li>`).join("");
       document.getElementById("testNav").innerHTML = Array.from({ length: 7 }, (_, index) => {
         const assessment = index + 1;
-        return `<i class="${assessment < action.assessment ? "done" : assessment === action.assessment ? "active" : ""}"></i>`;
+        return `<button type="button" data-test-assessment="${assessment}" aria-label="跳转到动作 ${assessment}" class="${assessment < action.assessment ? "done" : assessment === action.assessment ? "active" : ""}"></button>`;
       }).join("");
-      document.getElementById("testBack").disabled = testAction === 0;
+      document.getElementById("testBack").textContent = testAction === 0 ? "返回准备页" : "上一个";
       document.getElementById("vbtBox").classList.toggle("active", Boolean(action.vbt));
       if (action.vbt) renderVbt();
       else document.getElementById("testNext").textContent = testAction === testActions.length - 1 ? "完成体测，查看画像" : "本项完成，下一项";
@@ -810,6 +814,14 @@
       }
       if (event.target.closest("[data-next]")) render(current + 1);
       if (event.target.closest("[data-back]")) render(current - 1);
+      const stage = event.target.closest(".stage");
+      if (stage) render(screens.findIndex(screen => screen.dataset.screen === stageTargets[stage.dataset.stage]));
+      const assessmentJump = event.target.closest("[data-test-assessment]");
+      if (assessmentJump) {
+        const assessment = Number(assessmentJump.dataset.testAssessment);
+        testAction = testActions.findIndex(action => action.assessment === assessment);
+        renderTestAction();
+      }
       if (event.target.closest("#testNext")) {
         if (testActions[testAction].vbt && vbtRound < getVbtRounds().length) {
           vbtRound += 1;
@@ -821,9 +833,15 @@
           renderTestAction();
         } else render(current + 1);
       }
-      if (event.target.closest("#testBack") && testAction > 0) {
-        testAction -= 1;
-        renderTestAction();
+      if (event.target.closest("#testBack")) {
+        if (testAction > 0) {
+          testAction -= 1;
+          renderTestAction();
+        } else render(current - 1);
+      }
+      if (event.target.closest("#resultsBack")) {
+        testAction = testActions.length - 1;
+        render(current - 1);
       }
       if (event.target.closest("#restart")) {
         testAction = 0;
@@ -837,6 +855,12 @@
         document.getElementById("signature").textContent = "已签署 · 第一阶段正式开始";
       }
     });
+    stages.forEach(stage => stage.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        render(screens.findIndex(screen => screen.dataset.screen === stageTargets[stage.dataset.stage]));
+      }
+    }));
     render(0);
   </script>
 </body>
