@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiwii | 40 次训练路线编排器</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap');
+    :root {
+      --ink:#102b27; --deep:#071e1b; --paper:#f5f2e8; --cream:#ebe6d8;
+      --lime:#d7ff65; --mint:#9cd9c7; --coral:#ff7c66; --sky:#a8d8e7;
+      --gold:#e6c36a; --muted:#70817c; --line:rgba(16,43,39,.14);
+      --shadow:0 24px 70px rgba(0,0,0,.22);
+    }
+    *{box-sizing:border-box} html,body{margin:0;min-height:100%;background:var(--deep)}
+    body{font-family:"Noto Sans SC","DM Sans",sans-serif;color:var(--ink)}
+    button,input{font:inherit} button{cursor:pointer}
+    .shell{min-height:100vh;padding:18px;background:radial-gradient(circle at 8% 8%,rgba(156,217,199,.16),transparent 24rem),radial-gradient(circle at 95% 95%,rgba(215,255,101,.1),transparent 28rem),var(--deep)}
+    .app{width:min(1480px,100%);min-height:calc(100vh - 36px);margin:auto;display:grid;grid-template-columns:245px 1fr;border-radius:28px;overflow:hidden;background:var(--paper);box-shadow:var(--shadow)}
+    .rail{padding:25px 21px;color:#fff;background:var(--ink);display:flex;flex-direction:column}
+    .brand{display:flex;gap:10px;align-items:center;color:var(--lime);font-family:"Archivo Black";font-size:27px;letter-spacing:-.08em}
+    .brand-mark{width:27px;height:27px;border:2px solid var(--lime);border-radius:50% 50% 50% 14%;transform:rotate(-45deg);position:relative}
+    .brand-mark:after{content:"";position:absolute;width:7px;height:7px;right:4px;top:4px;border-radius:50%;background:var(--lime)}
+    .rail-label{margin-top:42px;color:rgba(255,255,255,.42);font:700 10px "DM Sans";letter-spacing:.16em;text-transform:uppercase}
+    .rail-nav{display:grid;gap:8px;margin-top:15px}
+    .rail-nav button{padding:13px 12px;border:0;border-radius:12px;text-align:left;color:rgba(255,255,255,.52);background:transparent;font-size:12px;transition:.2s}
+    .rail-nav button.active{color:#fff;background:rgba(255,255,255,.1)}
+    .rail-nav b{display:block;margin-bottom:3px;color:var(--lime);font:700 10px "DM Sans";letter-spacing:.12em}
+    .rail-foot{margin-top:auto;color:rgba(255,255,255,.5);font-size:11px;line-height:1.8}.rail-foot strong{color:var(--lime)}
+    main{min-width:0}.topbar{min-height:68px;padding:17px 27px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+    .top-title{font:700 11px "DM Sans";letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+    .top-right{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:12px}.live{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 5px rgba(215,255,101,.18)}
+    .page{display:none;padding:34px clamp(23px,4vw,54px) 42px;animation:reveal .35s ease both}.page.active{display:block}
+    @keyframes reveal{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+    .eyebrow{margin-bottom:12px;color:var(--muted);font:700 10px "DM Sans";letter-spacing:.16em;text-transform:uppercase}
+    h1,h2,h3,p{margin-top:0} h1{max-width:940px;margin-bottom:13px;font-size:clamp(40px,5.7vw,68px);line-height:1.04;letter-spacing:-.075em}
+    h2{margin-bottom:10px;font-size:clamp(25px,3vw,38px);line-height:1.12;letter-spacing:-.06em}
+    h3{margin-bottom:8px;font-size:17px;letter-spacing:-.025em}
+    .lead{max-width:850px;color:var(--muted);font-size:15px;line-height:1.8}.hilite{background:linear-gradient(transparent 62%,var(--lime) 62%)}
+    .hero-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:18px;margin-top:28px}
+    .card{padding:18px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.48)}
+    .dark{color:#fff;background:var(--ink);border-color:var(--ink)}
+    .profile-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.profile-card{padding:15px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.55)}
+    .profile-card label,.micro{display:block;margin-bottom:6px;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.06em}
+    .profile-card input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);font-size:25px;font-weight:900}.profile-card span{float:right;margin-top:-27px;color:var(--muted);font-size:11px}
+    .keyv{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:15px}.key{padding:12px;border-radius:13px;background:rgba(255,255,255,.08)}
+    .key b{display:block;color:var(--lime);font:900 27px "DM Sans";letter-spacing:-.08em}.key small{color:rgba(255,255,255,.56);font-size:10px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.chip{padding:8px 10px;border:1px solid var(--line);border-radius:999px;color:var(--ink);background:rgba(255,255,255,.42);font-size:11px;font-weight:700;transition:.2s}
+    .chip.selected{color:#fff;border-color:var(--ink);background:var(--ink)}.chip.reco:after{content:"建议";margin-left:6px;padding:2px 5px;border-radius:10px;color:var(--ink);background:var(--lime);font-size:9px}
+    .btn{min-height:44px;padding:0 16px;border:1px solid transparent;border-radius:999px;color:#fff;background:var(--ink);font-weight:800;font-size:12px}.btn.lime{color:var(--ink);background:var(--lime)}.btn.secondary{color:var(--ink);border-color:var(--line);background:transparent}
+    .button-row{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
+    .logic-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:16px;margin-top:22px}
+    .allocation{display:grid;gap:9px;margin-top:15px}.alloc{display:grid;grid-template-columns:120px 1fr 86px;gap:9px;align-items:center;color:rgba(255,255,255,.66);font-size:11px}.alloc b{text-align:right;color:#fff}.bar{height:8px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.1)}.bar i{display:block;height:100%;border-radius:inherit}
+    .logic-list{display:grid;gap:9px;margin-top:14px}.logic-row{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:11px;border-radius:12px;background:rgba(255,255,255,.55);font-size:12px;line-height:1.6}.logic-row i{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;color:var(--ink);background:var(--lime);font-style:normal;font-weight:900}
+    .timeline{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-top:20px}.session{min-height:82px;padding:10px 8px;border:1px solid var(--line);border-radius:12px;text-align:left;background:rgba(255,255,255,.48);transition:.18s}.session:hover,.session.selected{transform:translateY(-2px);border-color:var(--ink);box-shadow:0 7px 16px rgba(16,43,39,.12)}.session.selected{color:#fff;background:var(--ink)}.session b{display:block;margin-bottom:6px;font:800 11px "DM Sans"}.session small{display:block;color:var(--muted);font-size:9px;line-height:1.5}.session.selected small{color:rgba(255,255,255,.62)}.session em{display:block;margin-top:7px;color:var(--coral);font-size:9px;font-style:normal;font-weight:800}.session.selected em{color:var(--lime)}
+    .legend{display:flex;flex-wrap:wrap;gap:11px;margin-top:12px;color:var(--muted);font-size:10px}.legend i{display:inline-block;width:8px;height:8px;margin-right:4px;border-radius:50%}
+    .detail-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;margin-top:20px}.session-head{display:flex;justify-content:space-between;gap:10px}.session-head small{color:var(--muted);font-size:10px}.hardware{padding:7px 9px;border-radius:99px;color:var(--ink);background:var(--lime);font-size:10px;font-weight:900}
+    .exercise-list{display:grid;gap:8px;margin-top:16px}.exercise{display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.5)}.exercise i{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;color:#fff;background:var(--ink);font-style:normal;font:800 11px "DM Sans"}.exercise b{display:block;font-size:13px}.exercise small{display:block;margin-top:2px;color:var(--muted);font-size:10px}.exercise strong{color:var(--ink);font-size:12px}
+    .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.meta{padding:12px;border-radius:12px;background:rgba(255,255,255,.08)}.meta small{display:block;color:rgba(255,255,255,.52);font-size:10px}.meta b{display:block;margin-top:5px;color:#fff;font-size:16px}
+    .why{margin-top:13px;padding:13px;border-radius:12px;color:var(--ink);background:var(--lime);font-size:11px;line-height:1.7}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}.step-card{min-height:215px;padding:20px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.5)}.step-card i{width:35px;height:35px;display:grid;place-items:center;border-radius:50%;color:var(--ink);background:var(--lime);font:900 14px "DM Sans";font-style:normal}.step-card h3{margin-top:24px;font-size:20px}.step-card p{color:var(--muted);font-size:12px;line-height:1.8}
+    .input-strip{display:grid;grid-template-columns:190px 1fr;gap:18px;margin-top:18px}.input-stack{display:grid;gap:13px}.input-label{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .type-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:15px}.type-card{padding:13px;border:1px solid var(--line);border-top:5px solid var(--type-color);border-radius:13px;background:rgba(255,255,255,.52)}.type-card b{display:block;font-size:13px}.type-card strong{display:block;margin-top:12px;font:900 24px "DM Sans";letter-spacing:-.08em}.type-card small{display:block;margin-top:5px;color:var(--muted);font-size:10px;line-height:1.55}
+    .audit-note{margin-top:17px;padding:13px 15px;border:1px solid var(--line);border-radius:13px;color:var(--muted);background:rgba(255,255,255,.35);font-size:11px;line-height:1.75}.audit-note b{color:var(--ink)}
+    .expert-review{margin-bottom:17px;padding:14px 16px;border:1px solid rgba(16,43,39,.2);border-left:5px solid var(--coral);border-radius:13px;background:rgba(255,255,255,.56)}.expert-review b{display:block;font-size:12px}.expert-review p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.75}
+    .impact{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:15px 0}.impact-card{padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.52)}.impact-card small{display:block;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.impact-card b{display:block;margin-top:7px;font-size:14px}.impact-card p{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.65}
+    .mix-focus{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:15px}.focus-card{display:grid;grid-template-columns:11px 1fr;gap:10px;padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.52)}.focus-card i{width:11px;height:11px;margin-top:4px;border-radius:50%;background:var(--type-color)}.focus-card b{display:block;font-size:13px}.focus-card p{margin:4px 0 0;color:var(--muted);font-size:10px;line-height:1.65}
+    .focus-table{display:grid;margin-top:12px;border:1px solid var(--line);border-radius:13px;overflow:hidden}.focus-row{display:grid;grid-template-columns:180px 1fr;gap:12px;padding:11px 13px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.5)}.focus-row:last-child{border-bottom:0}.focus-row b{font-size:12px}.focus-row span{color:var(--muted);font-size:11px}
+    .route-rules{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:15px}.rule-card{padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.52)}.rule-card b{display:block;font-size:12px}.rule-card p{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.65}
+    .audit-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:15px}.audit-stat{padding:11px;border-radius:11px;background:rgba(255,255,255,.08)}.audit-stat small{display:block;color:rgba(255,255,255,.52);font-size:9px}.audit-stat b{display:block;margin-top:5px;color:#fff;font-size:14px}
+    .exercise{grid-template-columns:32px 1fr 100px 78px 80px}.exercise .audit-cell{color:var(--muted);font-size:10px;line-height:1.45}.exercise .audit-cell b{color:var(--ink);font-size:11px}.exercise-head{display:grid;grid-template-columns:32px 1fr 100px 78px 80px;gap:10px;padding:0 11px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .detail-page .hardware{color:#fff;background:rgba(255,255,255,.12)}
+    .library-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.library{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.move{padding:11px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.5)}.move b{display:block;font-size:12px}.move small{display:block;margin-top:3px;color:var(--muted);font-size:9px}.move em{display:inline-block;margin-top:7px;padding:3px 6px;border-radius:8px;color:var(--ink);background:var(--cream);font-size:9px;font-style:normal;font-weight:800}
+    @media(max-width:980px){.app{grid-template-columns:1fr}.rail{display:none}.hero-grid,.logic-grid,.detail-grid{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(3,1fr)}.timeline{grid-template-columns:repeat(5,1fr)}.library{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:720px){.input-strip,.impact,.mix-focus,.route-rules{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:560px){.page{padding:25px 17px}.profile-grid,.keyv{grid-template-columns:1fr 1fr}.timeline{grid-template-columns:repeat(4,1fr)}.library{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="shell"><div class="app">
+  <aside class="rail">
+    <div class="brand"><span class="brand-mark"></span>kiwii</div>
+    <div class="rail-label">Programming studio / demo</div>
+    <nav class="rail-nav">
+      <button class="active" data-page="home"><b>00 / OVERVIEW</b>路线编排首页</button>
+      <button data-page="input"><b>01 / INPUT</b>体测相关输入</button>
+      <button data-page="mix"><b>02 / REVIEW</b>串子类型审阅</button>
+      <button data-page="sessions"><b>03 / ROUTE</b>40 次路线顺序</button>
+      <button data-page="detail"><b>04 / AUDIT</b>打开单个串子</button>
+    </nav>
+    <div class="rail-foot"><strong>DEMO MODE</strong><br>48 个动作 · 2 类硬件<br>40 次动态训练路线</div>
+  </aside>
+  <main>
+    <header class="topbar"><span class="top-title" id="topTitle">路线编排首页</span><div class="top-right">40-session route engine <span class="live"></span></div></header>
+
+    <section class="page active" data-page="home">
+      <div class="eyebrow">Kiwii programming studio</div>
+      <h1>从体测结果，生成<span class="hilite">可持续生长的训练路线。</span></h1>
+      <p class="lead">这套系统做三件事：先读取用户输入，再决定不同串子的 Mix，最后打开每一个具体串子。目标不是一次性排完课表，而是生成一条会跟随用户进步的训练流。</p>
+      <div class="steps">
+        <div class="step-card"><i>1</i><h3>输入体测相关信息</h3><p>读取深蹲 VBT best 重量、训练目标和特殊保护部位。它们决定路线的起点与安全边界。</p></div>
+        <div class="step-card"><i>2</i><h3>确认应该有哪些串子</h3><p>查看这位用户未来 40 次训练中，每一类串子会出现多少次。运动专家可以一起讨论比例是否合理。</p></div>
+        <div class="step-card"><i>3</i><h3>审阅路线和每条串子</h3><p>先看 40 次训练的顺序，再打开任意 Session，核对动作、左右侧、阻力、reps、循环次数和预计时长。</p></div>
+      </div>
+      <div class="button-row"><button class="btn lime" data-go="input">开始审阅这条路线</button></div>
+    </section>
+
+    <section class="page" data-page="input">
+      <div class="eyebrow">Step 01 · assessment input</div><div class="expert-review"><b>运动专家核心 Review</b><p>确认这三个输入是否足以决定初始路线：深蹲 VBT 是否能作为阻力锚点；目标选项是否能拉开训练差异；特殊保护部位是否足以触发动作过滤和降阻。</p></div><h2>输入这条路线需要的<span class="hilite">体测相关信息。</span></h2>
+      <p class="lead">先输入这位用户的体测起点、训练目标和特殊保护部位。下一页的串子配比会随输入即时更新。</p>
+      <div class="card" style="margin-top:16px">
+        <h3>体测相关输入</h3>
+        <div class="input-strip">
+          <div class="profile-card"><label>深蹲 VBT best 重量</label><input id="squatLoad" type="number" value="28"><span>kg</span></div>
+          <div class="input-stack"><div><span class="input-label">训练目标 · 6 选最多 3 个</span><div class="chips" id="goalChips"></div></div><div><span class="input-label">特殊保护部位 · 可多选</span><div class="chips" id="focusChips"></div></div></div>
+        </div>
+      </div>
+      <div class="impact" id="mixImpact"></div>
+      <div class="button-row"><button class="btn secondary" data-go="home">上一页：首页</button><button class="btn lime" data-go="mix">下一页：审阅串子类型</button></div>
+    </section>
+
+    <section class="page" data-page="mix">
+      <div class="eyebrow">Step 02 · sequence review</div><div class="expert-review"><b>运动专家核心 Review</b><p>确认 10 类 Sequence 是否覆盖首阶段训练需求；每类边界是否清楚；基于用户目标和保护部位生成的次数与百分比是否合理。</p></div><h2>先确认这 40 次里，<span class="hilite">应该有哪些串子。</span></h2>
+      <p class="lead">这是第一版 Sequence 类型底稿。请一起审阅：类型是否够用、是否需要拆分或合并、当前用户的分配比例是否合理。</p>
+      <div class="audit-note"><b>共创问题：</b>这 10 类是否能覆盖第一阶段路线？哪些类型应该继续细分，例如“上肢推力”是否要拆为胸推与肩推，“恢复控制”是否要按保护部位建立子库？</div>
+      <div class="card dark"><h3>适配他的 Sequence Mix</h3><div class="allocation" id="allocation"></div></div>
+      <h3 style="margin-top:22px">每类 Sequence 会 focus on 什么动作</h3><div class="focus-table" id="mixFocus"></div>
+      <div class="button-row"><button class="btn secondary" data-go="input">上一页：体测相关输入</button><button class="btn lime" data-go="sessions">下一页：查看 40 次路线顺序</button></div>
+    </section>
+
+    <section class="page" data-page="sessions">
+      <div class="eyebrow">Step 03 · 40-session route</div><div class="expert-review"><b>运动专家核心 Review</b><p>确认 40 次训练的先后顺序是否形成合理波形：同类和同部位不过度连续，高密度训练不过度扎堆，恢复节点出现得足够及时。</p></div><h2>未来 40 次训练的<span class="hilite">实际排列顺序。</span></h2>
+      <p class="lead">点击任意 Session，逐条核对实际编排结果。这里不是最终课表，而是供运动专家与用户一起审阅的路线草案。</p>
+      <h3>40 次路线的排列逻辑</h3>
+      <div class="route-rules"><div class="rule-card"><b>01 · 交替局部刺激</b><p>避免连续安排同类串子，也避免同一部位连续承受高强度刺激。</p></div><div class="rule-card"><b>02 · 穿插训练波形</b><p>力量、控制、节奏和恢复串交替出现，不让高密度训练扎堆。</p></div><div class="rule-card"><b>03 · 分散恢复节点</b><p>活动度与恢复串平均分布，给肩腕、腰背和单侧稳定能力恢复窗口。</p></div><div class="rule-card"><b>04 · 串内安全门</b><p>腰背负荷、过顶肩腕、单腿稳定等高刺激动作不会连续出现。</p></div></div>
+      <h3 style="margin-top:24px">这位用户未来 40 次的实际排列顺序</h3>
+      <div class="timeline" id="timeline"></div><div class="legend" id="legend"></div>
+      <div class="button-row"><button class="btn secondary" data-go="mix">上一页：Sequence Mix</button><button class="btn lime" data-go="detail">打开当前 Session</button></div>
+    </section>
+
+    <section class="page detail-page" data-page="detail">
+      <div class="eyebrow">Step 04 · sequence audit</div><div class="expert-review"><b>运动专家核心 Review</b><p>确认这一条串子能否直接执行：硬件全程一致；动作顺序符合安全门；左右侧、逐项阻力、reps、循环次数和预计时长都合理。</p></div><h2>打开一条串子，逐项确认是否可以直接训练。</h2>
+      <p class="lead">总训练量 = 动作选择 × 动作顺序 × 匹配阻力 × Reps × 循环次数。左右侧动作会分别标注，不再隐藏在一个笼统数字里。</p>
+      <div class="detail-grid">
+        <div class="card"><div class="session-head"><div><small id="detailIndex">SESSION 01 / 40</small><h3 id="detailTitle">稳定下肢基础串</h3></div><span class="hardware" id="detailHardware">T-Bar</span></div><div class="exercise-list"><div class="exercise-head"><span></span><span>动作与顺序</span><span>左右侧</span><span>每轮 Reps</span><span>匹配阻力</span></div><div id="exerciseList"></div></div></div>
+        <div class="card dark"><h3>本条 Sequence 审阅卡</h3><div class="audit-bar"><div class="audit-stat"><small>预计用时</small><b id="detailTime">6 分钟</b></div><div class="audit-stat"><small>动作数量</small><b id="detailCount">4 个</b></div><div class="audit-stat"><small>循环次数</small><b id="detailRounds">2 轮</b></div><div class="audit-stat"><small>使用硬件</small><b id="auditHardware">T-Bar</b></div><div class="audit-stat"><small>主要目标</small><b id="detailFocus">下肢稳定</b></div></div><p id="detailWhy" style="margin-top:15px;color:rgba(255,255,255,.62);font-size:12px;line-height:1.75"></p></div>
+      </div>
+      <div class="button-row"><button class="btn secondary" data-go="sessions">返回 40 次地图</button><button class="btn secondary" id="detailPrev">上一条</button><button class="btn lime" id="detailNext">查看下一条</button><button class="btn secondary" data-go="library">动作库附录</button></div>
+    </section>
+
+    <section class="page" data-page="library">
+      <div class="eyebrow">Step 05 · exercise library</div><h2>动作库不是清单，<span class="hilite">而是编排素材。</span></h2>
+      <p class="lead">每个动作带有硬件、区域和角色标签。串子生成器只会在同一种硬件中选动作。</p>
+      <div class="library-toolbar"><button class="chip selected" data-filter="All">全部</button><button class="chip" data-filter="T-Bar">T-Bar</button><button class="chip" data-filter="Single Handle">Single Handle</button></div>
+      <div class="library" id="library"></div>
+      <div class="button-row"><button class="btn secondary" data-go="detail">上一页：Session 明细</button></div>
+    </section>
+  </main>
+</div></div>
+<script>
+const exercises=[
+["Single Handle","B站姿单腿硬拉","B-Stance Single-Leg Deadlift","lower","anchor"],["T-Bar","俯身划船","Bent-over Row","upper","pull"],["Single Handle","俯身单臂臂屈伸","Bent-over Single-Arm Kickback","upper","accessory"],["Single Handle","俯身直臂下压","Bent-over Straight-Arm Pulldown","upper","pull"],["T-Bar","二头弯举","Biceps Curl","upper","accessory"],["Single Handle","鸟狗式单臂划船","Bird-Dog Single-Arm Row","core","stability"],["Single Handle","招财猫推举","Cuban Press","upper","mobility"],["T-Bar","芭蕾交叉蹲","Curtsy Squat","lower","stability"],["T-Bar","硬拉","Deadlift","lower","anchor"],["T-Bar","硬拉接高拉","Deadlift to High Pull","full","power"],["T-Bar","硬拉接划船","Deadlift to Row","full","pull"],["Single Handle","双臂过顶臂屈伸","Double-Arm Overhead Extension","upper","accessory"],["T-Bar","早安式挺身","Good Morning","lower","mobility"],["T-Bar","从地推举","Ground-to-Overhead","full","power"],["T-Bar","坐姿半卷动","Half Roll Back","core","control"],["Single Handle","半跪姿拔剑","Half-Kneeling Sword Draw","core","mobility"],["T-Bar","跪起托盘推举","Kneeling Tray Press","core","control"],["Single Handle","割草机","Lawnmower Pull","upper","pull"],["Single Handle","低位伐木","Low Woodchop","core","rotation"],["Single Handle","弓步蹲","Lunge","lower","anchor"],["Single Handle","弓步蹲推举","Lunge Press","full","control"],["Single Handle","弓步单臂划船","Lunge Single-Arm Row","full","pull"],["Single Handle","弓步躯干旋转","Lunge Torso Twist","core","rotation"],["T-Bar","过顶推举","Overhead Press","upper","push"],["T-Bar","过顶深蹲","Overhead Squat","full","mobility"],["T-Bar","俯卧推举","Prone Press","upper","push"],["T-Bar","俯卧下拉","Prone Pulldown","upper","pull"],["Single Handle","平板支撑单臂划船","Renegade Row","core","stability"],["Single Handle","坐姿卷腹","Seated Crunch","core","control"],["T-Bar","坐姿划船","Seated Row","upper","pull"],["Single Handle","坐姿单臂旋转划船","Seated Single-Arm Rotational Row","core","rotation"],["Single Handle","侧弓步蹲","Side Lunge","lower","mobility"],["Single Handle","单臂二头弯举","Single-Arm Biceps Curl","upper","accessory"],["Single Handle","单臂硬拉接高拉","Single-Arm Deadlift to High Pull","full","power"],["Single Handle","单臂硬拉接推举","Single-Arm Deadlift to Press","full","power"],["Single Handle","单臂上斜推胸","Single-Arm Incline Chest Press","upper","push"],["Single Handle","单臂侧平举","Single-Arm Lateral Raise","upper","accessory"],["Single Handle","单臂侧置深蹲","Single-Arm Offset Squat","lower","stability"],["Single Handle","单臂反向飞鸟","Single-Arm Reverse Fly","upper","pull"],["Single Handle","单臂肩推","Single-Arm Shoulder Press","upper","push"],["Single Handle","单腿划船接提膝","Single-Leg Row to Knee Drive","full","stability"],["T-Bar","深蹲","Squat","lower","anchor"],["Single Handle","深蹲摆举","Squat Swing","full","power"],["T-Bar","深蹲连肩推","Squat to Press","full","power"],["Single Handle","提箱硬拉","Suitcase Deadlift","lower","anchor"],["T-Bar","相扑深蹲","Sumo Squat","lower","anchor"],["Single Handle","上勾拳推举","Uppercut Press","upper","power"],["T-Bar","直立划船","Upright Pull","upper","pull"]
+].map(([hardware,cn,en,region,role])=>({hardware,cn,en,region,role}));
+const routeTypes=[
+{id:"lowerStrength",name:"下肢基础力量",color:"#d7ff65",focus:"臀腿力量",desc:"深蹲、硬拉等大肌群动作",roles:["anchor","mobility","anchor","stability"]},
+{id:"lowerStability",name:"下肢单侧稳定",color:"#b9e86a",focus:"单侧稳定",desc:"弓步、侧向与单腿控制",roles:["stability","anchor","mobility","control"]},
+{id:"upperPull",name:"上肢拉力",color:"#a8d8e7",focus:"背部拉力",desc:"划船、下拉与肩胛控制",roles:["pull","pull","accessory","control"]},
+{id:"upperPush",name:"上肢推力",color:"#8cbfd7",focus:"胸肩推力",desc:"推胸、肩推与辅助动作",roles:["push","push","accessory","mobility"]},
+{id:"coreControl",name:"核心控制",color:"#ff7c66",focus:"躯干稳定",desc:"抗伸展、卷腹与稳定动作",roles:["control","stability","control","mobility"]},
+{id:"coreRotation",name:"核心旋转",color:"#ef9b78",focus:"旋转控制",desc:"伐木、躯干旋转与传导",roles:["rotation","control","stability","rotation"]},
+{id:"fullStrength",name:"全身力量循环",color:"#9cd9c7",focus:"全身协同",desc:"下肢发力连接上肢推拉",roles:["anchor","power","pull","control"]},
+{id:"metabolic",name:"心肺节奏连击",color:"#e6c36a",focus:"节奏与消耗",desc:"连续复合动作提高训练密度",roles:["power","anchor","power","control"]},
+{id:"mobility",name:"活动度唤醒",color:"#c4b1e5",focus:"动作幅度",desc:"在可控阻力下改善活动范围",roles:["mobility","control","mobility"]},
+{id:"recovery",name:"恢复控制",color:"#d4d0b6",focus:"保护性训练",desc:"低阻力重建动作信心",roles:["control","mobility","stability"]}
+];
+const goals=["体态与舒适度","提升力量","增肌塑形","减脂瘦身","运动表现","恢复日常体能"];
+const focusAreas=["肩部","腰背","髋部","膝部","踝部","没有特殊保护"];
+let selectedGoals=["体态与舒适度"]; let selectedFocus=["没有特殊保护"]; let sessions=[];let currentSession=0;
+const $=id=>document.getElementById(id);
+function value(id){return Number($(id).value)||0}
+function renderChips(){
+ $("goalChips").innerHTML=goals.map(x=>`<button class="chip ${selectedGoals.includes(x)?"selected":""}" data-goal="${x}">${x}</button>`).join("");
+ $("focusChips").innerHTML=focusAreas.map(x=>`<button class="chip ${selectedFocus.includes(x)?"selected":""}" data-focus="${x}">${x}</button>`).join("");
+}
+function weights(){
+ const w={lowerStrength:4,lowerStability:4,upperPull:4,upperPush:4,coreControl:4,coreRotation:3,fullStrength:5,metabolic:4,mobility:3,recovery:3};
+ selectedGoals.forEach(g=>{if(g==="体态与舒适度"){w.coreControl+=4;w.mobility+=4;w.upperPull+=2}if(g==="提升力量"){w.lowerStrength+=5;w.upperPush+=3;w.upperPull+=3;w.fullStrength+=2}if(g==="增肌塑形"){w.lowerStrength+=3;w.upperPush+=4;w.upperPull+=4}if(g==="减脂瘦身"){w.metabolic+=7;w.fullStrength+=4;w.lowerStrength+=2}if(g==="运动表现"){w.lowerStability+=4;w.fullStrength+=5;w.coreRotation+=3;w.metabolic+=2}if(g==="恢复日常体能"){w.recovery+=6;w.mobility+=3;w.coreControl+=3}});
+ selectedFocus.forEach(f=>{if(f==="肩部"){w.upperPush=Math.max(1,w.upperPush-3);w.recovery+=3;w.mobility+=2}if(f==="腰背"){w.lowerStrength=Math.max(1,w.lowerStrength-2);w.fullStrength=Math.max(1,w.fullStrength-2);w.recovery+=4;w.coreControl+=2}if(f==="髋部"){w.lowerStability=Math.max(1,w.lowerStability-2);w.mobility+=3;w.recovery+=3}if(f==="膝部"){w.lowerStrength=Math.max(1,w.lowerStrength-2);w.lowerStability=Math.max(1,w.lowerStability-2);w.recovery+=4}if(f==="踝部"){w.lowerStability=Math.max(1,w.lowerStability-2);w.mobility+=3;w.recovery+=2}});
+ return w;
+}
+function allocate(){
+ const w=weights(),total=Object.values(w).reduce((a,b)=>a+b,0);const rows=routeTypes.map(t=>({...t,count:Math.floor(w[t.id]/total*40),fraction:w[t.id]/total*40%1}));let left=40-rows.reduce((sum,x)=>sum+x.count,0);
+ rows.sort((a,b)=>b.fraction-a.fraction).slice(0,left).forEach(x=>x.count++);rows.filter(x=>x.count>20).forEach(x=>{let excess=x.count-20;x.count=20;[...rows].filter(y=>y.id!==x.id).sort((a,b)=>w[b.id]-w[a.id]).forEach(y=>{if(excess){y.count++;excess--}})});return routeTypes.map(t=>rows.find(x=>x.id===t.id));
+}
+function pick(arr,i){return arr[i%arr.length]}
+function protectionReasons(e){
+ const reasons=[];
+ if(selectedFocus.includes("膝部")&&/蹲|弓步|跪起/.test(e.cn))reasons.push("膝部");
+ if(selectedFocus.includes("肩部")&&(e.role==="push"||/过顶|肩推|推举|侧平举|飞鸟/.test(e.cn)))reasons.push("肩部");
+ if(selectedFocus.includes("腰背")&&/硬拉|挺身|俯身|卷腹|卷动/.test(e.cn))reasons.push("腰背");
+ if(selectedFocus.includes("髋部")&&/蹲|弓步|硬拉|挺身|提膝/.test(e.cn))reasons.push("髋部");
+ if(selectedFocus.includes("踝部")&&/蹲|弓步|提膝|单腿/.test(e.cn))reasons.push("踝部");
+ return reasons;
+}
+function isProtected(e){return protectionReasons(e).length>0}
+function isUnilateral(move){return move.hardware==="Single Handle"&&/单臂|单腿|单侧|提箱|割草机|拔剑|伐木|弓步|侧弓步|上勾拳/.test(move.cn)}
+function stressTags(move){
+ const tags=[];if(/硬拉|俯身|挺身/.test(move.cn))tags.push("lumbar");if(/过顶|肩推|推举|直立划船|侧平举/.test(move.cn))tags.push("shoulder");if(/单腿|弓步|侧弓步|B站姿/.test(move.cn))tags.push("balance");if(/伐木|旋转|割草机|拔剑|上勾拳/.test(move.cn))tags.push("rotation");if(/俯卧/.test(move.cn))tags.push("floor");if(move.role==="power")tags.push("power");return tags;
+}
+function clashes(prev,next){
+ if(!prev)return false;const a=stressTags(prev),b=stressTags(next);
+ return ["lumbar","shoulder","balance"].some(tag=>a.includes(tag)&&b.includes(tag))||(a.includes("lumbar")&&b.includes("rotation"))||(a.includes("floor")&&b.includes("power"));
+}
+function estimateMinutes(moves,rounds){
+ const workSeconds=moves.reduce((sum,m)=>sum+m.reps*(m.unilateral?2:1)*5,0),switchSeconds=Math.max(0,moves.length-1)*18,roundBreak=rounds>1?35:0;
+ return Math.ceil((workSeconds*rounds+switchSeconds*rounds+roundBreak)/30)/2;
+}
+function fitSequence(moves){
+ let rounds=2,minutes=estimateMinutes(moves,rounds);
+ while(minutes>8&&moves.some(m=>m.reps>6)){const target=[...moves].sort((a,b)=>b.reps*(b.unilateral?2:1)-a.reps*(a.unilateral?2:1))[0];target.reps-=2;minutes=estimateMinutes(moves,rounds)}
+ while(minutes>8&&moves.length>3){moves.pop();minutes=estimateMinutes(moves,rounds)}
+ if(minutes>8){rounds=1;minutes=estimateMinutes(moves,rounds)}
+ while(minutes<5&&moves.some(m=>m.reps<12)){const target=moves.find(m=>m.reps<12);target.reps+=2;minutes=estimateMinutes(moves,rounds)}
+ return{moves,rounds,minutes};
+}
+function movementLoad(move,slot=0){
+ const best=value("squatLoad"),ratio={anchor:.5,power:.38,pull:.32,push:.28,stability:.24,control:.2,mobility:.16,rotation:.18,accessory:.16}[move.role]||.22;
+ const protectedRoute=!selectedFocus.includes("没有特殊保护"),goalBoost=selectedGoals.includes("提升力量")?1.08:1,protectFactor=protectedRoute?.88:1,downgradeFactor=move.downgraded?.72:1,orderFactor=[1,1,.9,.85,.85][slot]||.85,raw=best*ratio*(move.hardware==="Single Handle"?.58:1)*goalBoost*protectFactor*downgradeFactor*orderFactor;return Math.max(move.hardware==="T-Bar"?4:2,Math.round(raw/(move.hardware==="T-Bar"?2:1))*(move.hardware==="T-Bar"?2:1));
+}
+function buildSession(i,type){
+ const hardware=i%2===0?"T-Bar":"Single Handle",hardwareMoves=exercises.filter(e=>e.hardware===hardware),safe=hardwareMoves.filter(e=>!isProtected(e));const available=safe.length>=5?safe:[...hardwareMoves].sort((a,b)=>protectionReasons(a).length-protectionReasons(b).length);
+ const desired=type.roles;
+ const count=3+(i%3),goalReps=selectedGoals.includes("减脂瘦身")?2:0;const used=[];const moves=[];
+ for(let n=0;n<count;n++){let pool=available.filter(e=>e.role===desired[n%desired.length]&&!used.includes(e.cn));if(!pool.length)pool=available.filter(e=>!used.includes(e.cn));const safePool=pool.filter(e=>!clashes(moves.at(-1),e)),safeFallback=available.filter(e=>!used.includes(e.cn)&&!clashes(moves.at(-1),e));if(!safePool.length&&!safeFallback.length&&moves.length>=3)break;pool=safePool.length?safePool:safeFallback.length?safeFallback:pool;const move=pick(pool,i+n*3),reasons=protectionReasons(move),draft={...move,downgraded:reasons.length>0,reasons};used.push(move.cn);moves.push({...draft,reps:Math.min(12,6+((i+n*2)%4)*2+goalReps),unilateral:isUnilateral(move),load:movementLoad(draft,n)})}
+ const fitted=fitSequence(moves);return{id:i+1,type,hardware,moves:fitted.moves,rounds:fitted.rounds,minutes:fitted.minutes,focus:type.focus};
+}
+function zone(type){return type.id.startsWith("lower")?"lower":type.id.startsWith("upper")?"upper":type.id.startsWith("core")?"core":type.id}
+function orderRoute(queue){
+ const remaining=[...queue],ordered=[];
+ while(remaining.length){const prev=ordered.at(-1),prev2=ordered.at(-2),pool=remaining.some(x=>!prev||x.id!==prev.id)?remaining.map((candidate,index)=>({candidate,index})).filter(x=>!prev||x.candidate.id!==prev.id):remaining.map((candidate,index)=>({candidate,index}));let bestIndex=pool[0].index,bestScore=-999;
+  pool.forEach(({candidate,index})=>{let score=remaining.filter(x=>x.id===candidate.id).length*2;if(!prev2||candidate.id!==prev2.id)score+=3;if(prev&&zone(candidate)===zone(prev))score-=5;if(["mobility","recovery"].includes(candidate.id))score+=ordered.length%6===5?5:0;if(prev&&["metabolic","fullStrength"].includes(prev.id)&&["mobility","recovery","coreControl"].includes(candidate.id))score+=4;if(prev&&["metabolic","fullStrength"].includes(prev.id)&&["metabolic","fullStrength"].includes(candidate.id))score-=5;if(score>bestScore){bestScore=score;bestIndex=index}});
+  ordered.push(remaining.splice(bestIndex,1)[0]);
+ }return ordered;
+}
+function generate(){
+ const alloc=allocate(),queue=[];alloc.forEach(a=>{for(let i=0;i<a.count;i++)queue.push(a)});const ordered=orderRoute(queue);sessions=Array.from({length:40},(_,i)=>buildSession(i,ordered[i]));renderImpact();renderAllocation(alloc);renderTypes(alloc);renderTimeline();renderDetail(currentSession);renderChips()
+}
+function sortedAllocation(alloc){return [...alloc].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name))}
+function renderAllocation(alloc){$("allocation").innerHTML=sortedAllocation(alloc).map(x=>`<div class="alloc"><span>${x.name}</span><span class="bar"><i style="width:${x.count/40*100}%;background:${x.color}"></i></span><b>${x.count} 次 · ${Math.round(x.count/40*100)}%</b></div>`).join("")}
+function renderTypes(alloc){$("mixFocus").innerHTML=routeTypes.map(x=>`<div class="focus-row"><b>${x.name}</b><span>${x.desc}</span></div>`).join("")}
+function renderImpact(){
+ const excluded=exercises.filter(isProtected),allLoads=sessions.flatMap(s=>s.moves.map(m=>m.load)),minLoad=Math.min(...allLoads),maxLoad=Math.max(...allLoads),protectedText=selectedFocus.includes("没有特殊保护")?"无特殊保护，使用完整动作库":`${selectedFocus.join("、")}：已排除 ${excluded.length} 个高风险候选动作，整条路线阻力下调 12%`;
+ const html=`<div class="impact-card"><small>01 · VBT → 阻力</small><b>${value("squatLoad")} kg 深蹲基准</b><p>已换算为逐动作阻力，本路线范围 ${minLoad}–${maxLoad} kg。</p></div><div class="impact-card"><small>02 · Goals → Mix</small><b>${selectedGoals.length?selectedGoals.join(" / "):"尚未选择目标"}</b><p>已改变 10 类 Sequence 的分配次数${selectedGoals.includes("减脂瘦身")?"，并提高节奏型串子的 reps 与时长":""}。</p></div><div class="impact-card"><small>03 · Protection → Filter</small><b>${selectedFocus.join(" / ")}</b><p>${protectedText}。</p></div>`;
+ $("mixImpact").innerHTML=html;
+}
+function renderTimeline(){$("timeline").innerHTML=sessions.map((s,i)=>`<button class="session ${i===currentSession?"selected":""}" data-session="${i}" style="border-top:4px solid ${s.type.color}"><b>SESSION ${String(s.id).padStart(2,"0")}</b><small>${s.type.name}</small><small>${s.hardware}</small></button>`).join("");$("legend").innerHTML=routeTypes.map(x=>`<span><i style="background:${x.color}"></i>${x.name}</span>`).join("")}
+function renderDetail(i){currentSession=(i+sessions.length)%sessions.length;const s=sessions[currentSession];if(!s)return;$("detailIndex").textContent=`SESSION ${String(s.id).padStart(2,"0")} / 40`;$("detailTitle").textContent=`${s.type.name} · ${s.hardware==="T-Bar"?"双手器械串":"单手器械串"}`;$("detailHardware").textContent=s.hardware;$("auditHardware").textContent=s.hardware;$("exerciseList").innerHTML=s.moves.map((m,n)=>`<div class="exercise"><i>${n+1}</i><span><b>${m.cn}${m.downgraded?" · 降级使用":""}</b><small>${m.en}${m.downgraded?" · 需复核："+m.reasons.join("、"):""}</small></span><span class="audit-cell"><b>${m.unilateral?"左侧 → 右侧":"双侧同步"}</b><br>${m.unilateral?"需要换侧":"无需换侧"}</span><span class="audit-cell"><b>${m.unilateral?"各 "+m.reps:m.reps} reps</b><br>每轮</span><span class="audit-cell"><b>${m.load} kg</b><br>${s.hardware}${m.downgraded?" · 已降阻":""}</span></div>`).join("");$("detailTime").textContent=`约 ${s.minutes} 分钟`;$("detailCount").textContent=`${s.moves.length} 个`;$("detailRounds").textContent=`${s.rounds} 轮`;$("detailFocus").textContent=s.focus;$("detailWhy").textContent=`用户目标：${selectedGoals.join("、")}。本条只使用 ${s.hardware}，完成一轮后${s.rounds===2?"再重复一次相同顺序":"结束"}。${selectedFocus.includes("没有特殊保护")?"当前无特殊保护部位。":"已根据保护部位优先避开高风险动作："+selectedFocus.join("、")+"；如安全动作不足，保留的候选项会明确标注为降级使用。"}`}
+function renderLibrary(filter="All"){$("library").innerHTML=exercises.filter(x=>filter==="All"||x.hardware===filter).map(x=>`<div class="move"><b>${x.cn}</b><small>${x.en}</small><em>${x.hardware}</em></div>`).join("")}
+function showPage(page){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.dataset.page===page));document.querySelectorAll(".rail-nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));$("topTitle").textContent={home:"路线编排首页",input:"体测相关输入",mix:"串子类型审阅",sessions:"40 次路线顺序",detail:"单个串子审阅",library:"动作库附录"}[page];if(page==="detail")renderDetail(currentSession)}
+document.addEventListener("click",e=>{const nav=e.target.closest("[data-page], [data-go]");if(nav)showPage(nav.dataset.page||nav.dataset.go);
+ const session=e.target.closest("[data-session]");if(session){renderDetail(Number(session.dataset.session));renderTimeline();showPage("detail")}
+ const goal=e.target.closest("[data-goal]");if(goal){const g=goal.dataset.goal;if(selectedGoals.includes(g))selectedGoals=selectedGoals.filter(x=>x!==g);else if(selectedGoals.length<3)selectedGoals.push(g);generate()}
+ const focus=e.target.closest("[data-focus]");if(focus){const f=focus.dataset.focus;if(f==="没有特殊保护")selectedFocus=["没有特殊保护"];else{selectedFocus=selectedFocus.filter(x=>x!=="没有特殊保护");if(selectedFocus.includes(f))selectedFocus=selectedFocus.filter(x=>x!==f);else selectedFocus.push(f)}generate()}
+ const filter=e.target.closest("[data-filter]");if(filter){document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("selected",x===filter));renderLibrary(filter.dataset.filter)}
+});
+renderChips();renderLibrary();generate();
+$("squatLoad").addEventListener("change",generate);
+$("detailPrev").addEventListener("click",()=>{renderDetail(currentSession-1);renderTimeline()});
+$("detailNext").addEventListener("click",()=>{renderDetail(currentSession+1);renderTimeline()});
+</script>
+</body></html>
