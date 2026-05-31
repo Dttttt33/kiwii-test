@@ -1,1 +1,843 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiwii | 训练校准体验</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap');
+
+    :root {
+      --ink: #102b27;
+      --ink-deep: #08201d;
+      --paper: #f6f3ea;
+      --paper-2: #ece8dc;
+      --lime: #d7ff65;
+      --coral: #ff7c66;
+      --mint: #9cd9c7;
+      --sky: #a9d7e8;
+      --gold: #e6c36a;
+      --muted: #6f817b;
+      --line: rgba(16, 43, 39, .14);
+      --shadow: 0 26px 70px rgba(0, 0, 0, .22);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--ink-deep); }
+    body {
+      color: var(--ink);
+      font-family: "Noto Sans SC", "DM Sans", sans-serif;
+      overflow-x: hidden;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .shell {
+      min-height: 100vh;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 7% 8%, rgba(156, 217, 199, .18), transparent 18rem),
+        radial-gradient(circle at 92% 90%, rgba(215, 255, 101, .12), transparent 25rem),
+        var(--ink-deep);
+    }
+    .shell::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .16;
+      background-image: linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 68%);
+    }
+    .app {
+      width: min(1380px, 100%);
+      min-height: calc(100vh - 36px);
+      margin: 0 auto;
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .rail {
+      padding: 26px 22px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      background: var(--ink);
+      border-right: 1px solid rgba(255,255,255,.12);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--lime); font-family: "Archivo Black", sans-serif; letter-spacing: -.08em; font-size: 27px; }
+    .brand-mark { width: 27px; height: 27px; border: 2px solid var(--lime); border-radius: 50% 50% 50% 14%; transform: rotate(-45deg); position: relative; }
+    .brand-mark::after { content: ""; position: absolute; width: 7px; height: 7px; right: 4px; top: 4px; border-radius: 50%; background: var(--lime); }
+    .rail-label { margin-top: 42px; color: rgba(255,255,255,.44); font: 700 10px/1 "DM Sans"; letter-spacing: .16em; text-transform: uppercase; }
+    .stage-list { margin-top: 14px; display: grid; gap: 10px; }
+    .stage {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      align-items: center;
+      gap: 10px;
+      min-height: 52px;
+      padding: 7px 8px;
+      border-radius: 14px;
+      color: rgba(255,255,255,.42);
+      transition: .3s ease;
+    }
+    .stage.active { color: #fff; background: rgba(255,255,255,.09); }
+    .stage.done { color: var(--mint); }
+    .stage-dot {
+      width: 27px; height: 27px; display: grid; place-items: center;
+      border: 1px solid rgba(255,255,255,.2); border-radius: 50%;
+      font: 700 11px "DM Sans";
+    }
+    .stage.active .stage-dot { color: var(--ink); border-color: var(--lime); background: var(--lime); }
+    .stage.done .stage-dot { border-color: var(--mint); }
+    .stage b { display: block; margin-bottom: 3px; font-size: 13px; }
+    .stage small { font-size: 10px; opacity: .64; }
+    .rail-foot { margin-top: auto; padding-top: 22px; color: rgba(255,255,255,.5); font-size: 11px; line-height: 1.7; }
+    .rail-foot strong { color: var(--lime); font-weight: 700; }
+
+    main { min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      min-height: 70px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .topbar-title { font: 700 11px "DM Sans"; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+    .topbar-right { display: flex; align-items: center; gap: 13px; color: var(--muted); font-size: 12px; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 5px rgba(215,255,101,.18); }
+    .progress { width: 150px; height: 5px; overflow: hidden; border-radius: 10px; background: rgba(16,43,39,.1); }
+    .progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--ink); transition: width .4s ease; }
+
+    .content { flex: 1; min-height: 0; display: flex; }
+    .screen {
+      width: 100%;
+      padding: 48px clamp(28px, 5vw, 78px) 32px;
+      display: none;
+      animation: reveal .52s cubic-bezier(.2,.8,.2,1) both;
+    }
+    .screen.active { display: block; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    @keyframes pulse { 50% { transform: scale(1.035); opacity: .76; } }
+    @keyframes breathe { 50% { box-shadow: 0 0 0 22px rgba(215,255,101,.045); } }
+
+    .eyebrow { margin-bottom: 14px; color: var(--muted); font: 700 11px "DM Sans"; letter-spacing: .18em; text-transform: uppercase; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 810px; margin-bottom: 17px; color: var(--ink); font-size: clamp(43px, 6vw, 76px); line-height: 1.04; letter-spacing: -.075em; }
+    h2 { max-width: 850px; margin-bottom: 12px; font-size: clamp(27px, 3.5vw, 43px); line-height: 1.14; letter-spacing: -.06em; }
+    h3 { margin-bottom: 7px; font-size: 17px; }
+    .lead { max-width: 720px; color: var(--muted); font-size: 16px; line-height: 1.8; }
+    .note { color: var(--muted); font-size: 12px; line-height: 1.75; }
+    .hilite { padding: 0 .08em; background: linear-gradient(transparent 62%, var(--lime) 62%); }
+
+    .hero { display: grid; min-height: 600px; align-items: center; }
+    .hero-card {
+      min-height: 520px; padding: 34px; position: relative; overflow: hidden;
+      display: flex; flex-direction: column; justify-content: space-between;
+      border-radius: 25px; color: #fff; background: var(--ink);
+    }
+    .hero-card::before, .hero-card::after { content: ""; position: absolute; border: 1px solid rgba(215,255,101,.36); border-radius: 50%; }
+    .hero-card::before { width: 330px; height: 330px; right: -95px; top: -75px; }
+    .hero-card::after { width: 450px; height: 450px; right: -125px; top: -136px; }
+    .orbit-core { width: 155px; height: 155px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); background: var(--lime); font: 900 30px "DM Sans"; animation: breathe 2.6s infinite ease-in-out; }
+    .sensor-tags { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; z-index: 1; }
+    .sensor-tags span { padding: 12px 13px; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; color: rgba(255,255,255,.72); font-size: 11px; letter-spacing: .08em; }
+    .sensor-tags b { display: block; margin-bottom: 3px; color: var(--lime); font-size: 15px; letter-spacing: -.02em; }
+
+    .button-row { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 28px; }
+    .btn {
+      min-height: 49px; padding: 0 21px; border: 1px solid transparent; border-radius: 999px;
+      display: inline-flex; align-items: center; gap: 9px;
+      color: #fff; background: var(--ink); font-weight: 700; font-size: 14px;
+      transition: .2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,43,39,.16); }
+    .btn.primary::after { content: "→"; color: var(--lime); font-size: 18px; }
+    .btn.secondary { color: var(--ink); border-color: var(--line); background: transparent; }
+    .btn.lime { color: var(--ink); background: var(--lime); }
+    .btn.lime::after { color: var(--ink); }
+    .btn[disabled] { cursor: not-allowed; opacity: .42; transform: none; box-shadow: none; }
+
+    .question-wrap { max-width: 970px; }
+    .counter { margin-bottom: 16px; color: var(--muted); font: 700 11px "DM Sans"; letter-spacing: .15em; text-transform: uppercase; }
+    .counter span { color: var(--ink); }
+    .choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-top: 26px; }
+    .choice-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .choice {
+      min-height: 76px; padding: 15px 17px; text-align: left;
+      border: 1px solid var(--line); border-radius: 15px; color: var(--ink); background: rgba(255,255,255,.48);
+      transition: .2s ease;
+    }
+    .choice:hover { transform: translateY(-2px); border-color: rgba(16,43,39,.4); background: #fff; }
+    .choice.selected { border-color: var(--ink); background: var(--ink); color: #fff; box-shadow: 0 8px 20px rgba(16,43,39,.14); }
+    .choice b { display: block; margin-bottom: 4px; font-size: 14px; }
+    .choice small { display: block; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .choice.selected small { color: rgba(255,255,255,.62); }
+    .choice.recommended { position: relative; }
+    .choice.recommended::after { content: "系统建议"; position: absolute; top: 9px; right: 9px; padding: 3px 7px; border-radius: 10px; color: var(--ink); background: var(--lime); font-size: 9px; font-weight: 700; }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 660px; margin-top: 28px; }
+    .field { padding: 15px 17px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.44); }
+    .field label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 11px; }
+    .field input { width: 100%; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 24px; font-weight: 800; }
+    .field span { float: right; margin-top: -30px; color: var(--muted); font-size: 13px; }
+    .auto-tag { display: inline-block; margin-top: 12px; padding: 5px 9px; border-radius: 10px; color: var(--ink); background: var(--mint); font-size: 10px; font-weight: 700; }
+
+    .ready-layout, .result-layout { display: grid; grid-template-columns: 1fr .92fr; align-items: center; gap: 35px; }
+    .mini-list { display: grid; gap: 11px; margin-top: 25px; }
+    .mini { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.46); font-size: 13px; }
+    .mini i { width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); background: var(--lime); font-style: normal; font-weight: 900; }
+    .body-map { min-height: 465px; padding: 28px; border-radius: 24px; position: relative; overflow: hidden; color: #fff; background: var(--ink); }
+    .body-map-head { color: var(--lime); font: 700 11px "DM Sans"; letter-spacing: .16em; text-transform: uppercase; }
+    .silhouette { width: 160px; height: 330px; margin: 38px auto 0; position: relative; }
+    .silhouette span { position: absolute; display: block; background: rgba(246,243,234,.22); border: 1px solid rgba(215,255,101,.32); }
+    .silhouette .head { width: 48px; height: 48px; left: 56px; border-radius: 50%; }
+    .silhouette .body { width: 82px; height: 127px; left: 39px; top: 58px; border-radius: 40px 40px 18px 18px; }
+    .silhouette .arm-l, .silhouette .arm-r { width: 25px; height: 134px; top: 65px; border-radius: 20px; transform-origin: top center; }
+    .silhouette .arm-l { left: 18px; transform: rotate(10deg); }
+    .silhouette .arm-r { right: 18px; transform: rotate(-10deg); }
+    .silhouette .leg-l, .silhouette .leg-r { width: 33px; height: 150px; top: 176px; border-radius: 20px; }
+    .silhouette .leg-l { left: 41px; transform: rotate(3deg); }
+    .silhouette .leg-r { right: 41px; transform: rotate(-3deg); }
+    .pain-zone { position: absolute; z-index: 3; width: 35px; height: 35px; border: 1px solid rgba(255,124,102,.9); border-radius: 50%; background: rgba(255,124,102,.38); box-shadow: 0 0 0 8px rgba(255,124,102,.1), 0 0 25px rgba(255,124,102,.5); animation: pulse 2s ease-in-out infinite; }
+    .pain-zone::after { content: attr(data-label); position: absolute; left: 28px; top: 29px; padding: 5px 8px; border: 1px solid rgba(255,124,102,.55); border-radius: 99px; color: #ffd8d1; background: rgba(255,124,102,.16); font-size: 9px; white-space: nowrap; }
+    .map-callout { position: absolute; left: 22px; bottom: 22px; right: 22px; padding: 13px; border-radius: 13px; color: rgba(255,255,255,.7); background: rgba(255,255,255,.08); font-size: 12px; line-height: 1.55; }
+
+    .test-screen { padding: 0; min-height: 690px; color: #fff; background: var(--ink); }
+    .test-screen.active { display: grid; grid-template-columns: 1fr 390px; }
+    .camera { min-height: 690px; position: relative; overflow: hidden; display: grid; place-items: center; background: linear-gradient(145deg, #0b2522, #153d37); }
+    .camera::before { content: ""; position: absolute; inset: 0; opacity: .28; background-image: linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px); background-size: 55px 55px; }
+    .camera-frame { width: 360px; height: 530px; position: relative; border: 1px solid rgba(215,255,101,.42); border-radius: 180px 180px 40px 40px; animation: pulse 2.4s ease-in-out infinite; }
+    .camera-frame::before, .camera-frame::after { content: ""; position: absolute; width: 22px; height: 22px; border-color: var(--lime); }
+    .camera-frame::before { left: -1px; top: 205px; border-left: 3px solid var(--lime); border-top: 3px solid var(--lime); }
+    .camera-frame::after { right: -1px; bottom: 205px; border-right: 3px solid var(--lime); border-bottom: 3px solid var(--lime); }
+    .camera .silhouette { transform: scale(1.2); margin-top: 110px; }
+    .camera .silhouette span { background: rgba(215,255,101,.16); border-color: var(--lime); }
+    .camera-info { position: absolute; top: 24px; left: 28px; right: 28px; display: flex; justify-content: space-between; gap: 20px; color: var(--lime); font: 700 11px "DM Sans"; letter-spacing: .12em; text-transform: uppercase; }
+    .camera-title { position: absolute; top: 55px; left: 28px; right: 28px; z-index: 2; max-width: 680px; color: #fff; font-size: clamp(27px, 3.5vw, 43px); font-weight: 900; line-height: 1.12; letter-spacing: -.07em; }
+    .camera-title small { display: block; margin-bottom: 7px; color: var(--lime); font: 700 11px "DM Sans"; letter-spacing: .15em; text-transform: uppercase; }
+    .camera-tip { position: absolute; left: 28px; bottom: 27px; right: 28px; display: flex; justify-content: space-between; align-items: end; gap: 20px; }
+    .camera-tip h2 { max-width: 650px; margin: 0; color: #fff; }
+    .camera-tip p { margin-bottom: 0; color: rgba(255,255,255,.55); font-size: 13px; }
+    .test-panel { padding: 27px 23px; background: #0b2421; border-left: 1px solid rgba(255,255,255,.12); }
+    .timer { color: var(--lime); font: 900 66px/1 "DM Sans"; letter-spacing: -.09em; }
+    .test-panel .note { margin-top: 8px; color: rgba(255,255,255,.5); }
+    .metric-stack { display: grid; gap: 10px; margin-top: 30px; }
+    .metric { padding: 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; }
+    .metric-top { display: flex; justify-content: space-between; margin-bottom: 9px; font-size: 12px; }
+    .metric-top b { color: var(--lime); }
+    .metric-bar { height: 4px; overflow: hidden; border-radius: 4px; background: rgba(255,255,255,.1); }
+    .metric-bar span { display: block; height: 100%; border-radius: inherit; background: var(--mint); transition: width 1s ease; }
+    .skip-test { width: 100%; margin-top: 27px; justify-content: center; border-color: rgba(255,255,255,.18); color: #fff; }
+    .test-type { color: var(--lime); font: 700 11px "DM Sans"; letter-spacing: .14em; text-transform: uppercase; }
+    .test-title { margin: 5px 0 6px; color: #fff; font-size: 27px; line-height: 1.12; letter-spacing: -.06em; }
+    .guide-card { margin-top: 18px; padding: 15px; border-radius: 14px; color: var(--ink); background: var(--paper); }
+    .guide-card b { display: block; margin-bottom: 9px; color: var(--ink); font-size: 12px; }
+    .guide-card ol { margin: 0; padding-left: 19px; }
+    .guide-card li { margin: 6px 0; color: #48615c; font-size: 12px; line-height: 1.55; }
+    .test-nav { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 17px; }
+    .test-nav i { height: 5px; border-radius: 5px; background: rgba(255,255,255,.12); }
+    .test-nav i.done { background: var(--mint); }
+    .test-nav i.active { background: var(--lime); }
+    .test-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .test-actions .btn { min-height: 43px; padding: 0 14px; justify-content: center; font-size: 12px; }
+    .test-actions .secondary { color: #fff; border-color: rgba(255,255,255,.18); }
+    .pose-label { position: absolute; top: 50%; left: 50%; z-index: 2; width: 188px; padding: 13px; transform: translate(-50%, -50%); border: 1px solid rgba(215,255,101,.36); border-radius: 18px; color: var(--lime); background: rgba(8,32,29,.8); text-align: center; font-size: 12px; line-height: 1.55; backdrop-filter: blur(8px); }
+    .pose-label b { display: block; margin-bottom: 4px; color: #fff; font-size: 18px; }
+    .camera-position { position: absolute; top: 150px; left: 28px; z-index: 2; padding: 7px 11px; border: 1px solid rgba(255,255,255,.16); border-radius: 99px; color: #fff; background: rgba(8,32,29,.46); font-size: 11px; }
+    .camera-frame[data-pose="side"] { width: 250px; }
+    .camera-frame[data-pose="back"] .body { border-color: var(--coral); }
+    .camera-frame[data-pose="floor"] { height: 300px; width: 530px; border-radius: 150px 40px 40px 150px; }
+    .camera-frame[data-pose="floor"] .silhouette { margin-top: 0; transform: translate(148px, -8px) rotate(90deg) scale(.82); }
+    .camera-frame[data-pose^="balance"] .arm-l { transform: rotate(158deg); }
+    .camera-frame[data-pose^="balance"] .arm-r { transform: rotate(-158deg); }
+    .camera-frame[data-pose^="balance"] .silhouette::before, .camera-frame[data-pose="resisted-squat"] .silhouette::before { content: ""; position: absolute; left: 4px; top: 8px; width: 152px; height: 5px; border-radius: 5px; background: var(--lime); box-shadow: 0 0 13px rgba(215,255,101,.55); }
+    .camera-frame[data-pose^="balance"] .silhouette::after { content: ""; position: absolute; top: 222px; width: 22px; height: 74px; border: 1px solid var(--lime); border-radius: 20px; background: rgba(215,255,101,.16); transform: rotate(3deg); }
+    .camera-frame[data-pose="balance-left"] .leg-l { height: 74px; transform: rotate(88deg); transform-origin: top center; }
+    .camera-frame[data-pose="balance-left"] .silhouette::after { left: 45px; }
+    .camera-frame[data-pose="balance-right"] .leg-r { height: 74px; transform: rotate(-88deg); transform-origin: top center; }
+    .camera-frame[data-pose="balance-right"] .silhouette::after { left: 92px; }
+    .camera-frame[data-pose="resisted-squat"] .arm-l { transform: rotate(158deg); }
+    .camera-frame[data-pose="resisted-squat"] .arm-r { transform: rotate(-158deg); }
+    .camera-frame[data-pose="resisted-squat"] .leg-l { height: 116px; transform: rotate(22deg); transform-origin: top center; }
+    .camera-frame[data-pose="resisted-squat"] .leg-r { height: 116px; transform: rotate(-22deg); transform-origin: top center; }
+    .camera-frame[data-pose="plank"] { height: 280px; width: 550px; border-radius: 45px; }
+    .camera-frame[data-pose="plank"] .silhouette { margin-top: 0; transform: translate(168px, -24px) rotate(90deg) scale(.84); }
+    .camera-frame[data-pose="jump"] .arm-l { transform: rotate(142deg); }
+    .camera-frame[data-pose="jump"] .arm-r { transform: rotate(-142deg); }
+    .camera-frame[data-pose="jump"] .leg-l { transform: rotate(18deg); transform-origin: top center; }
+    .camera-frame[data-pose="jump"] .leg-r { transform: rotate(-18deg); transform-origin: top center; }
+    .vbt-box { display: none; margin-top: 14px; padding: 14px; border: 1px solid rgba(215,255,101,.24); border-radius: 14px; background: rgba(215,255,101,.06); }
+    .vbt-box.active { display: block; }
+    .vbt-head { display: flex; justify-content: space-between; align-items: baseline; color: rgba(255,255,255,.62); font-size: 11px; }
+    .vbt-head b { color: var(--lime); font-size: 21px; }
+    .vbt-rounds { display: grid; gap: 7px; margin-top: 11px; }
+    .vbt-round { display: grid; grid-template-columns: 42px 1fr auto; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.55); font-size: 11px; }
+    .vbt-round b { color: #fff; }
+    .vbt-round em { color: var(--lime); font-style: normal; }
+    .personality { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+    .personality-card { padding: 14px; border: 1px solid rgba(255,255,255,.13); border-radius: 13px; background: rgba(255,255,255,.06); }
+    .personality-card small { display: block; color: var(--mint); font-size: 10px; }
+    .personality-card b { display: block; margin-top: 6px; color: #fff; font-size: 16px; }
+
+    .score-card { padding: 30px; border-radius: 24px; color: #fff; background: var(--ink); }
+    .score { color: var(--lime); font: 900 106px/1 "DM Sans"; letter-spacing: -.12em; }
+    .score small { margin-left: 7px; color: rgba(255,255,255,.48); font-size: 22px; letter-spacing: -.04em; }
+    .bar-stack { display: grid; gap: 16px; margin-top: 24px; }
+    .ability { display: grid; grid-template-columns: 80px 1fr 38px; align-items: center; gap: 10px; color: rgba(255,255,255,.66); font-size: 12px; }
+    .ability-line { height: 6px; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,.12); }
+    .ability-line i { display: block; height: 100%; border-radius: inherit; background: var(--lime); }
+    .ability b { color: #fff; text-align: right; }
+    .insight { margin-top: 22px; padding: 15px; border-radius: 14px; color: var(--ink); background: var(--lime); font-size: 12px; line-height: 1.65; }
+
+    .final-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 28px; max-width: 860px; }
+    .final-card { min-height: 130px; padding: 18px; border: 1px solid var(--line); border-radius: 17px; background: rgba(255,255,255,.45); }
+    .final-card small { color: var(--muted); font-weight: 700; }
+    .final-card b { display: block; margin-top: 13px; font-size: 24px; letter-spacing: -.05em; }
+    .final-card.accent { color: #fff; border-color: var(--ink); background: var(--ink); }
+    .final-card.accent small { color: var(--lime); }
+    .commit-card { max-width: 850px; margin-top: 26px; padding: 25px; border: 1px solid rgba(16,43,39,.18); border-radius: 22px; background: rgba(255,255,255,.52); }
+    .commit-card h3 { font-size: 22px; letter-spacing: -.05em; }
+    .commit-copy { max-width: 700px; color: var(--muted); font-size: 14px; line-height: 1.85; }
+    .commit-copy strong { color: var(--ink); }
+    .signature { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 12px; }
+    .signature b { color: var(--ink); font-size: 15px; }
+    .highfive { min-width: 185px; justify-content: center; }
+    .highfive.done { background: var(--ink); color: var(--lime); }
+
+    @media (max-width: 900px) {
+      .shell { padding: 0; }
+      .app { min-height: 100vh; border-radius: 0; grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .screen { padding: 34px 22px 24px; }
+      .hero, .ready-layout, .result-layout { grid-template-columns: 1fr; min-height: 0; }
+      .hero-card, .body-map { min-height: 390px; }
+      .choice-grid, .choice-grid.two { grid-template-columns: 1fr 1fr; }
+      .test-screen.active { grid-template-columns: 1fr; }
+      .test-panel { padding: 20px; }
+      .camera { min-height: calc(100vh - 70px); }
+      .camera-frame { transform: scale(.77); }
+      .camera-tip h2 { font-size: 27px; }
+      .topbar { padding: 15px 18px; }
+      .progress { width: 90px; }
+    }
+    @media (max-width: 520px) {
+      .choice-grid, .choice-grid.two, .fields, .final-grid { grid-template-columns: 1fr; }
+      .hero-card { min-height: 340px; }
+      .sensor-tags { grid-template-columns: 1fr 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="app">
+      <aside class="rail">
+        <div class="brand"><span class="brand-mark"></span>kiwii</div>
+        <div class="rail-label">Strength profile / 01</div>
+        <div class="stage-list">
+          <div class="stage active" data-stage="calibrate"><span class="stage-dot">01</span><span><b>训练校准</b><small>档案与保护设置</small></span></div>
+          <div class="stage" data-stage="assess"><span class="stage-dot">02</span><span><b>能力体测</b><small>跟随提示完成</small></span></div>
+          <div class="stage" data-stage="profile"><span class="stage-dot">03</span><span><b>力量画像</b><small>看到优势与短板</small></span></div>
+          <div class="stage" data-stage="route"><span class="stage-dot">04</span><span><b>训练路线</b><small>生成第一阶段计划</small></span></div>
+        </div>
+        <div class="rail-foot"><strong>DEMO MODE</strong><br>Kiwii 体测体验<br>全流程交互原型</div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <span class="topbar-title" id="topTitle">开始前的身体校准</span>
+          <div class="topbar-right"><span id="stepCopy">预计 1 分钟</span><div class="progress"><span id="progressBar"></span></div><span class="live-dot"></span></div>
+        </header>
+
+        <div class="content">
+          <section class="screen active" data-screen="intro" data-stage="calibrate" data-progress="4">
+            <div class="hero">
+              <div>
+                <div class="eyebrow">Kiwii strength profile</div>
+                <h1>先校准，<br><span class="hilite">再更懂你地训练。</span></h1>
+                <p class="lead">开始前，我们先确认几个安全和校准信息，让测试更准确，也更适合你。</p>
+                <div class="button-row"><button class="btn primary" data-next>开始训练校准</button></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="profile" data-stage="calibrate" data-progress="14">
+            <div class="question-wrap">
+              <div class="counter"><span>01</span> / 04 · 初始档案</div>
+              <h2>先建立你的初始档案。</h2>
+              <p class="lead">这些信息会帮助 Kiwii 判断合适的测试强度和参考区间。</p>
+              <div class="fields">
+                <div class="field"><label>你的年龄</label><input type="number" placeholder="请输入" inputmode="numeric"><span>岁</span></div>
+                <div class="field"><label>身高 · 自动测量，可修改</label><input type="number" value="172" inputmode="numeric"><span>cm</span><i class="auto-tag">已自动读取</i></div>
+                <div class="field"><label>体重 · 自动测量，可修改</label><input type="number" value="66" inputmode="numeric"><span>kg</span><i class="auto-tag">已自动读取</i></div>
+              </div>
+              <p class="note">身高和体重用于动作范围、阻力建议和训练参考，不用于评价身材。</p>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>继续</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="sex" data-stage="calibrate" data-progress="22">
+            <div class="question-wrap">
+              <div class="counter"><span>02</span> / 04 · 初始档案</div>
+              <h2>用于建立更准确的力量参考区间，你的生理性别是？</h2>
+              <p class="lead">仅用于体测参考和训练建议。</p>
+              <div class="choice-grid" data-single>
+                <button class="choice"><b>女性</b></button><button class="choice selected"><b>男性</b></button><button class="choice"><b>不想回答</b></button>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>继续</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="experience" data-stage="calibrate" data-progress="30">
+            <div class="question-wrap">
+              <div class="counter"><span>03</span> / 04 · 初始档案</div>
+              <h2>你现在更接近哪种训练状态？</h2>
+              <p class="lead">同一个体测动作，我们会根据经验调整提示方式和初始阻力。</p>
+              <div class="choice-grid" data-single>
+                <button class="choice"><b>刚开始 / 很久没练</b><small>先从动作熟悉开始</small></button>
+                <button class="choice selected"><b>偶尔练</b><small>有一些训练基础</small></button>
+                <button class="choice"><b>每周规律训练</b><small>保持稳定训练节奏</small></button>
+                <button class="choice"><b>有系统训练经验</b><small>熟悉动作与强度控制</small></button>
+                <button class="choice"><b>运动员 / 专项训练中</b><small>更强调表现与细节</small></button>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>进入保护设置</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="pain" data-stage="calibrate" data-progress="38">
+            <div class="question-wrap">
+              <div class="counter"><span>04</span> / 05 · 身体保护</div>
+              <h2>开始前，身体有没有哪个区域需要我们特别照顾？</h2>
+              <p class="lead">可以多选。Kiwii 会自动调整动作和阻力，不会硬推。</p>
+              <div class="choice-grid" data-multi>
+                <button class="choice"><b>颈部</b></button><button class="choice selected"><b>肩</b></button><button class="choice"><b>肘 / 手腕</b></button>
+                <button class="choice"><b>腰背</b></button><button class="choice"><b>髋</b></button><button class="choice"><b>膝</b></button>
+                <button class="choice"><b>踝</b></button><button class="choice"><b>其他</b></button><button class="choice"><b>没有，都可以正常测试</b></button>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>继续</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="pain-level" data-stage="calibrate" data-progress="45">
+            <div class="question-wrap">
+              <div class="counter"><span>05</span> / 05 · 身体保护</div>
+              <h2 id="painLevelTitle">肩部的不适大概有多明显？</h2>
+              <p class="lead">我们只需要快速判断今天的安全边界。</p>
+              <div class="choice-grid two" data-single>
+                <button class="choice selected"><b>轻微</b><small>能动，但有感觉</small></button>
+                <button class="choice"><b>中等</b><small>会影响动作</small></button>
+                <button class="choice"><b>明显</b><small>需要避免某些动作</small></button>
+                <button class="choice"><b>严重</b><small>今天不适合测试</small></button>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>继续</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="ready" data-stage="calibrate" data-progress="59">
+            <div class="ready-layout">
+              <div>
+                <div class="eyebrow">Everything is ready</div>
+                <h2>准备好了。<br>接下来，跟着 Kiwii 一起完成体测。</h2>
+                <p class="lead">每一步都会有清晰提示，不需要记住动作。如果过程中感到不舒服，可以随时停下来。</p>
+                <div class="mini-list">
+                  <div class="mini" id="protectionSummary"><i>✓</i> 已为肩部启用保护设置</div>
+                  <div class="mini"><i>✓</i> 测试动作将根据反馈动态调整</div>
+                  <div class="mini"><i>✓</i> 每一步都会有清晰提示</div>
+                </div>
+                <div class="button-row"><button class="btn secondary" data-back>返回调整</button><button class="btn lime primary" data-next>开始体测</button></div>
+              </div>
+              <div class="body-map">
+                <div class="body-map-head">Body protection · active</div>
+                <div class="silhouette" id="bodySilhouette"><span class="head"></span><span class="body"></span><span class="arm-l"></span><span class="arm-r"></span><span class="leg-l"></span><span class="leg-r"></span></div>
+                <div class="map-callout" id="protectionCallout">已识别 1 个需要照顾的区域。测试过程会根据动作反馈动态调整。</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="screen test-screen" data-screen="test" data-stage="assess" data-progress="74">
+            <div class="camera">
+              <div class="camera-info"><span>KIWII / LIVE</span><span>实时识别中</span></div>
+              <div class="camera-title" id="cameraTitle"><small>灵活性</small>动作 1 · 举 T-bar 深蹲</div>
+              <div class="camera-position" id="cameraPosition">正面面对屏幕</div>
+              <div class="camera-frame" id="cameraFrame" data-pose="front"><div class="silhouette"><span class="head"></span><span class="body"></span><span class="arm-l"></span><span class="arm-r"></span><span class="leg-l"></span><span class="leg-r"></span></div></div>
+              <div class="pose-label" id="poseLabel"><b>举 T-bar 深蹲</b>双手握住 T-bar<br>举过头顶</div>
+            </div>
+            <aside class="test-panel">
+              <div class="guide-card">
+                <b>请按顺序完成</b>
+                <ol id="guideList">
+                  <li>双手握住 T-bar 两端，举到头顶上方。</li>
+                  <li>先正面面对屏幕，双脚与肩同宽站立。</li>
+                  <li>缓慢下蹲到你能做到的位置，再站起。</li>
+                  <li>听到提示后，侧面对屏幕再完成一次。</li>
+                </ol>
+              </div>
+              <div class="vbt-box" id="vbtBox">
+                <div class="vbt-head"><span>本轮阻力</span><b id="vbtLoad">12 kg</b></div>
+                <div class="vbt-rounds" id="vbtRounds"></div>
+              </div>
+              <div class="test-nav" id="testNav"></div>
+              <div class="test-actions">
+                <button class="btn secondary" id="testBack">上一个</button>
+                <button class="btn lime primary" id="testNext">准备好了，开始</button>
+              </div>
+            </aside>
+          </section>
+
+          <section class="screen" data-screen="results" data-stage="profile" data-progress="82">
+            <div class="result-layout">
+              <div>
+                <div class="eyebrow">Strength profile ready</div>
+                <h2>完成得不错。<br>你的身体比你想象中更有底子。</h2>
+                <p class="lead">你的力量基础很扎实，动作也有不错的控制感。接下来不用追求一下子改变很多，先补齐稳定性，身体会越来越轻松。</p>
+                <div class="button-row"><button class="btn lime primary" data-next>设置训练主线</button></div>
+              </div>
+              <div class="score-card">
+                <div class="eyebrow" style="color:var(--mint)">综合能力评分</div>
+                <div class="score">75<small>/ 100</small></div>
+                <div class="bar-stack">
+                  <div class="ability"><span>灵活性</span><span class="ability-line"><i style="width:74%"></i></span><b>74</b></div>
+                  <div class="ability"><span>稳定性</span><span class="ability-line"><i style="width:68%"></i></span><b>68</b></div>
+                  <div class="ability"><span>力量</span><span class="ability-line"><i style="width:81%"></i></span><b>81</b></div>
+                  <div class="ability"><span>心肺</span><span class="ability-line"><i style="width:76%"></i></span><b>76</b></div>
+                </div>
+                <div class="insight">Kiwii 建议：力量表现不错。第一阶段优先补齐单腿稳定性，同时改善髋部和大腿后侧灵活性。</div>
+                <div class="personality">
+                  <div class="personality-card"><small>你的运动人格</small><b>稳中求进型</b></div>
+                  <div class="personality-card"><small>今天值得肯定</small><b>下肢发力很好</b></div>
+                  <div class="personality-card"><small>最值得先做</small><b>找回单腿稳定</b></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="risk" data-stage="route" data-progress="85">
+            <div class="question-wrap">
+              <div class="counter"><span>01</span> / 04 · 训练路线</div>
+              <h2>过去 6 个月，有没有需要我们照顾的情况？</h2>
+              <p class="lead">这些信息会帮助 Kiwii 调整第一阶段训练路线和强度。</p>
+              <div class="choice-grid" data-multi>
+                <button class="choice"><b>手术恢复中</b></button><button class="choice"><b>骨折 / 韧带损伤</b></button><button class="choice"><b>医生建议避免运动</b></button>
+                <button class="choice"><b>怀孕 / 产后恢复</b></button><button class="choice"><b>心血管问题</b></button><button class="choice selected"><b>以上都没有</b></button>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>继续</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="avoid" data-stage="route" data-progress="87">
+            <div class="question-wrap">
+              <div class="counter"><span>02</span> / 04 · 训练路线</div>
+              <h2>哪些动作你现在不太适合做？</h2>
+              <p class="lead">我们会在后续训练中自动调整动作内容。选“不确定”时，系统会采用更保守的路线。</p>
+              <div class="choice-grid" data-multi>
+                <button class="choice"><b>跳跃</b></button><button class="choice"><b>深蹲</b></button><button class="choice"><b>俯卧撑 / 支撑类</b></button>
+                <button class="choice selected"><b>过头推举</b></button><button class="choice"><b>弯腰 / 硬拉类</b></button><button class="choice"><b>单腿动作</b></button>
+                <button class="choice"><b>不确定</b></button><button class="choice"><b>没有需要避免的动作</b></button>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>继续</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="goal" data-stage="route" data-progress="89">
+            <div class="question-wrap">
+              <div class="counter"><span>03</span> / 04 · 训练路线</div>
+              <h2>接下来，你更想看到哪些变化？</h2>
+              <p class="lead">选 1–3 项就好。你的选择会决定第一阶段的动作组合。</p>
+              <div class="choice-grid" data-multi data-max="3">
+                <button class="choice"><b>增肌塑形</b><small>增加肌肉感，让身体线条更明显</small></button>
+                <button class="choice"><b>减脂瘦身</b><small>提高消耗，逐步减轻身体负担</small></button>
+                <button class="choice"><b>提升力量</b><small>深蹲、推拉和日常搬抬更有劲</small></button>
+                <button class="choice"><b>运动表现</b><small>跑跳、爆发、协调和专项表现更好</small></button>
+                <button class="choice selected"><b>体态与舒适度</b><small>站得更挺，肩颈腰背动起来更舒服</small></button>
+                <button class="choice"><b>恢复日常体能</b><small>从久坐、停练或恢复期重新开始</small></button>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>继续</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="focus" data-stage="route" data-progress="94">
+            <div class="question-wrap">
+              <div class="counter"><span>04</span> / 04 · 训练路线</div>
+              <h2>第一阶段，你想优先照顾哪里？</h2>
+              <p class="lead">根据刚才的体测，我们已经标出建议。可以接受推荐，也可以自己调整，最多选 3 项。</p>
+              <div class="choice-grid" data-multi data-max="3">
+                <button class="choice"><b>上肢推力</b><small>胸、肩、手臂后侧</small></button>
+                <button class="choice"><b>上肢拉力</b><small>背部、手臂前侧</small></button>
+                <button class="choice selected recommended"><b>下肢稳定</b><small>臀腿力量与单腿控制</small></button>
+                <button class="choice selected recommended"><b>核心控制</b><small>躯干稳定与动作质量</small></button>
+                <button class="choice"><b>全身均衡</b><small>由 Kiwii 组合安排</small></button>
+                <button class="choice"><b>听系统推荐</b><small>根据每次训练动态调整</small></button>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn lime primary" data-next>生成我的第一阶段路线</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="final" data-stage="route" data-progress="100">
+            <div class="question-wrap">
+              <div class="eyebrow">Your first route is ready</div>
+              <h2>路线已经准备好了。<br><span class="hilite">来，和 Kiwii 击个掌。</span></h2>
+              <p class="lead">不用一下子改变很多。先把一件事做稳，你会明显感觉身体更轻松。</p>
+              <div class="final-grid">
+                <div class="final-card accent"><small>你的目标</small><b>站得更挺，动得更舒服</b></div>
+                <div class="final-card"><small>第一阶段动作组合</small><b>稳定性优先 · 全身力量</b></div>
+                <div class="final-card"><small>Kiwii 建议</small><b>每周 3 次 · 每次 20 分钟</b></div>
+                <div class="final-card"><small>保护设置</small><b id="finalProtection">肩部轻度保护已开启</b></div>
+              </div>
+              <div class="commit-card">
+                <h3>你的第一阶段承诺</h3>
+                <p class="commit-copy">接下来 2 周，完成 <strong>每周 3 次、每次 20 分钟</strong> 的训练。Kiwii 会根据你的表现调整动作组合。只要稳定完成，我们保证你会感觉到：<strong>动作更稳，身体更轻松，也更愿意继续练下去。</strong></p>
+                <div class="signature">签署方式：和 Kiwii 击掌<br><b id="signature">等待你的 high-five</b></div>
+              </div>
+              <div class="button-row"><button class="btn lime highfive" id="highfive">👋 High-five，签署承诺</button><button class="btn secondary" id="restart">重新体验 Demo</button></div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const screens = [...document.querySelectorAll(".screen")];
+    const stages = [...document.querySelectorAll(".stage")];
+    const bar = document.getElementById("progressBar");
+    const topTitle = document.getElementById("topTitle");
+    const stepCopy = document.getElementById("stepCopy");
+    const titles = {
+      calibrate: ["开始前的身体校准", "预计 1 分钟"],
+      assess: ["能力体测", "跟随引导完成动作"],
+      profile: ["你的力量画像", "测试完成"],
+      route: ["训练路线设置", "最后 2 分钟"]
+    };
+    let current = 0;
+    let testAction = 0;
+    let vbtRound = 0;
+    const painZones = {
+      "颈部": { left: 63, top: 42, label: "颈部" },
+      "肩": { left: 27, top: 68, label: "肩部" },
+      "肘 / 手腕": { left: 5, top: 126, label: "肘 / 手腕" },
+      "腰背": { left: 63, top: 142, label: "腰背" },
+      "髋": { left: 63, top: 176, label: "髋部" },
+      "膝": { left: 42, top: 238, label: "膝部" },
+      "踝": { left: 42, top: 296, label: "踝部" },
+      "其他": { left: 100, top: 116, label: "其他部位" }
+    };
+    const testActions = [
+      {
+        assessment: 1, category: "灵活性", title: "举 T-bar 深蹲", position: "正面面对屏幕", poseStyle: "front",
+        pose: "正面深蹲", poseNote: "T-bar 举过头顶",
+        guide: ["双手握住 T-bar 两端，举到头顶上方。", "正面面对屏幕，双脚与肩同宽站立。", "缓慢下蹲到你能做到的位置，再站起。"]
+      },
+      {
+        assessment: 1, category: "灵活性", title: "举 T-bar 深蹲", position: "侧面面对屏幕", poseStyle: "side",
+        pose: "侧面深蹲", poseNote: "T-bar 举过头顶",
+        guide: ["保持双手举起 T-bar。", "转身，让身体侧面对屏幕。", "缓慢下蹲到你能做到的位置，再站起。"]
+      },
+      {
+        assessment: 2, category: "灵活性", title: "双手背后交扣", position: "背面对屏幕", poseStyle: "back",
+        pose: "右手在上", poseNote: "一上一下<br>慢慢靠近",
+        guide: ["背面对屏幕，自然站立。", "右手举过头顶，弯曲手肘，让右手沿背部向下伸。", "左手放到腰后，沿背部向上伸。", "两只手尽量靠近，不必真的扣住。保持 2 秒。"]
+      },
+      {
+        assessment: 2, category: "灵活性", title: "双手背后交扣", position: "背面对屏幕", poseStyle: "back",
+        pose: "左手在上", poseNote: "一上一下<br>慢慢靠近",
+        guide: ["保持背面对屏幕，自然站立。", "左手举过头顶，弯曲手肘，让左手沿背部向下伸。", "右手放到腰后，沿背部向上伸。", "两只手尽量靠近，不必真的扣住。保持 2 秒。"]
+      },
+      {
+        assessment: 3, category: "灵活性", title: "直腿抬高", position: "身体侧面对屏幕", poseStyle: "floor",
+        pose: "左腿抬高", poseNote: "膝盖伸直<br>腰背贴稳",
+        guide: ["在垫面上仰卧，身体侧面对屏幕。", "右腿保持贴稳垫面。", "左腿膝盖不要弯，缓慢向上抬到最高位置。"]
+      },
+      {
+        assessment: 3, category: "灵活性", title: "直腿抬高", position: "身体侧面对屏幕", poseStyle: "floor",
+        pose: "右腿抬高", poseNote: "膝盖伸直<br>腰背贴稳",
+        guide: ["保持仰卧姿势。", "左腿保持贴稳垫面。", "右腿膝盖不要弯，缓慢向上抬到最高位置。"]
+      },
+      {
+        assessment: 4, category: "稳定性", title: "T-bar 高抬腿", position: "正面面对屏幕", poseStyle: "balance-left",
+        pose: "左腿高抬", poseNote: "T-bar 过顶<br>髋、膝约 90°",
+        guide: ["正面面对屏幕，双手握住 T-bar 举过头顶。", "弯曲左膝，像高抬腿一样把左侧大腿抬高。", "大腿接近与地面平行，髋和膝盖都保持约 90°。", "支撑腿站稳，保持 2 秒。"]
+      },
+      {
+        assessment: 4, category: "稳定性", title: "T-bar 高抬腿", position: "正面面对屏幕", poseStyle: "balance-right",
+        pose: "右腿高抬", poseNote: "T-bar 过顶<br>髋、膝约 90°",
+        guide: ["保持双手举起 T-bar，正面面对屏幕。", "弯曲右膝，像高抬腿一样把右侧大腿抬高。", "大腿接近与地面平行，髋和膝盖都保持约 90°。", "支撑腿站稳，保持 2 秒。"]
+      },
+      {
+        assessment: 5, category: "稳定性", title: "平板支撑摸肩", position: "侧面对屏幕", poseStyle: "plank",
+        pose: "左手摸肩", poseNote: "保持 15 秒<br>骨盆稳定",
+        guide: ["进入平板支撑位置，侧面对屏幕。", "从头到脚保持一条直线，不要塌腰。", "抬起左手轻触右肩，保持 15 秒。"]
+      },
+      {
+        assessment: 5, category: "稳定性", title: "平板支撑摸肩", position: "侧面对屏幕", poseStyle: "plank",
+        pose: "右手摸肩", poseNote: "保持 15 秒<br>骨盆稳定",
+        guide: ["保持平板支撑位置。", "从头到脚保持一条直线，不要塌腰。", "抬起右手轻触左肩，保持 15 秒。"]
+      },
+      {
+        assessment: 6, category: "力量", title: "T-bar 阻力深蹲", position: "正面面对屏幕", poseStyle: "resisted-squat", vbt: true,
+        pose: "T-bar 阻力深蹲", poseNote: "双手握紧 T-bar<br>向上尽量快",
+        guide: ["正面面对屏幕，双脚与肩同宽站立。", "双手握住 T-bar，保持身体稳定。", "缓慢下蹲，再用你能做到的最快速度站起。", "完成后稍等一下，Kiwii 会识别速度并调整阻力。"]
+      },
+      {
+        assessment: 7, category: "心肺", title: "1 分钟开合跳", position: "正面面对屏幕", poseStyle: "jump",
+        pose: "开合跳", poseNote: "1 分钟<br>保持节奏",
+        guide: ["双脚并拢，双手放在身体两侧。", "跳开时，双脚打开，双手从两侧举过头顶。", "跳回时，手脚同时收回。", "跟随倒计时完成 1 分钟。"]
+      }
+    ];
+    const experienceLoads = {
+      "刚开始 / 很久没练": 8,
+      "偶尔练": 12,
+      "每周规律训练": 16,
+      "有系统训练经验": 20,
+      "运动员 / 专项训练中": 24
+    };
+
+    function render(index) {
+      current = Math.max(0, Math.min(index, screens.length - 1));
+      screens.forEach((screen, i) => screen.classList.toggle("active", i === current));
+      const screen = screens[current];
+      const stage = screen.dataset.stage;
+      const stageIndex = ["calibrate", "assess", "profile", "route"].indexOf(stage);
+      stages.forEach((item, i) => {
+        item.classList.toggle("active", i === stageIndex);
+        item.classList.toggle("done", i < stageIndex);
+      });
+      topTitle.textContent = titles[stage][0];
+      stepCopy.textContent = titles[stage][1];
+      bar.style.width = `${screen.dataset.progress}%`;
+      if (screen.dataset.screen === "test") renderTestAction();
+      if (screen.dataset.screen === "ready") renderProtection();
+      if (screen.dataset.screen === "pain-level") renderPainLevelPrompt();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function selectedPainZones() {
+      const painScreen = document.querySelector('[data-screen="pain"]');
+      return [...painScreen.querySelectorAll(".choice.selected b")].map(item => item.textContent).filter(item => !item.includes("没有"));
+    }
+
+    function renderProtection() {
+      const selected = selectedPainZones();
+      const level = document.querySelector('[data-screen="pain-level"] .choice.selected b')?.textContent || "轻微";
+      const silhouette = document.getElementById("bodySilhouette");
+      silhouette.querySelectorAll(".pain-zone").forEach(zone => zone.remove());
+      selected.forEach(name => {
+        const zone = painZones[name];
+        if (!zone) return;
+        const marker = document.createElement("i");
+        marker.className = "pain-zone";
+        marker.dataset.label = `${zone.label} · ${level}`;
+        marker.style.left = `${zone.left}px`;
+        marker.style.top = `${zone.top}px`;
+        silhouette.appendChild(marker);
+      });
+      const summary = selected.length ? `已为 ${selected.join("、")} 启用保护设置` : "当前没有需要额外保护的区域";
+      document.getElementById("protectionSummary").innerHTML = `<i>✓</i> ${summary}`;
+      document.getElementById("protectionCallout").textContent = selected.length ? `已识别 ${selected.length} 个需要照顾的区域。测试过程会根据动作反馈动态调整。` : "状态已确认。体测过程中如果感到不舒服，可以随时停下来。";
+      document.getElementById("finalProtection").textContent = selected.length ? `${selected.join("、")} ${level}保护已开启` : "常规保护模式";
+    }
+
+    function renderPainLevelPrompt() {
+      const selected = selectedPainZones();
+      const label = selected.length ? selected.join("、") : "身体";
+      document.getElementById("painLevelTitle").textContent = `${label}的不适大概有多明显？`;
+    }
+
+    function initialVbtLoad() {
+      const experience = document.querySelector('[data-screen="experience"] .choice.selected b')?.textContent || "偶尔练";
+      return experienceLoads[experience] || 12;
+    }
+
+    function getVbtRounds() {
+      const load = initialVbtLoad();
+      return [
+        { load: `${load} kg`, speed: "0.82 m/s", result: "速度合适，继续加阻" },
+        { load: `${load + 4} kg`, speed: "0.71 m/s", result: "保持不错，再试一次" },
+        { load: `${load + 8} kg`, speed: "0.58 m/s", result: "找到合适阻力" }
+      ];
+    }
+
+    function renderTestAction() {
+      const action = testActions[testAction];
+      const number = String(testAction + 1).padStart(2, "0");
+      document.getElementById("cameraPosition").textContent = action.position;
+      document.getElementById("cameraTitle").innerHTML = `<small>${action.category}</small>动作 ${action.assessment} · ${action.title}`;
+      document.getElementById("cameraFrame").dataset.pose = action.poseStyle;
+      document.getElementById("poseLabel").innerHTML = `<b>${action.pose}</b>${action.poseNote}`;
+      document.getElementById("guideList").innerHTML = action.guide.map(item => `<li>${item}</li>`).join("");
+      document.getElementById("testNav").innerHTML = Array.from({ length: 7 }, (_, index) => {
+        const assessment = index + 1;
+        return `<i class="${assessment < action.assessment ? "done" : assessment === action.assessment ? "active" : ""}"></i>`;
+      }).join("");
+      document.getElementById("testBack").disabled = testAction === 0;
+      document.getElementById("vbtBox").classList.toggle("active", Boolean(action.vbt));
+      if (action.vbt) renderVbt();
+      else document.getElementById("testNext").textContent = testAction === testActions.length - 1 ? "完成体测，查看画像" : "本项完成，下一项";
+    }
+
+    function renderVbt() {
+      const vbtRounds = getVbtRounds();
+      const round = vbtRounds[Math.min(vbtRound, vbtRounds.length - 1)];
+      document.getElementById("vbtLoad").textContent = round.load;
+      document.getElementById("vbtRounds").innerHTML = vbtRounds.slice(0, vbtRound).map((item, index) => `<div class="vbt-round"><b>第 ${index + 1} 次</b><span>${item.load} · ${item.speed}</span><em>${item.result}</em></div>`).join("");
+      document.getElementById("testNext").textContent = vbtRound < vbtRounds.length ? `完成第 ${vbtRound + 1} 次深蹲` : "阻力已确认，下一项";
+    }
+
+    document.addEventListener("click", (event) => {
+      const choice = event.target.closest(".choice");
+      if (choice) {
+        const group = choice.parentElement;
+        if (group.hasAttribute("data-single")) [...group.children].forEach(item => item.classList.remove("selected"));
+        if (group.dataset.max && !choice.classList.contains("selected") && group.querySelectorAll(".selected").length >= Number(group.dataset.max)) return;
+        const choiceText = choice.querySelector("b")?.textContent || "";
+        if (group.hasAttribute("data-multi") && choiceText.includes("没有")) [...group.children].forEach(item => item.classList.remove("selected"));
+        if (group.hasAttribute("data-multi") && !choiceText.includes("没有")) [...group.children].forEach(item => {
+          if (item.querySelector("b")?.textContent.includes("没有")) item.classList.remove("selected");
+        });
+        choice.classList.toggle("selected");
+        if (choice.closest('[data-screen="experience"]')) vbtRound = 0;
+      }
+      if (event.target.closest("[data-next]")) render(current + 1);
+      if (event.target.closest("[data-back]")) render(current - 1);
+      if (event.target.closest("#testNext")) {
+        if (testActions[testAction].vbt && vbtRound < getVbtRounds().length) {
+          vbtRound += 1;
+          renderVbt();
+          return;
+        }
+        if (testAction < testActions.length - 1) {
+          testAction += 1;
+          renderTestAction();
+        } else render(current + 1);
+      }
+      if (event.target.closest("#testBack") && testAction > 0) {
+        testAction -= 1;
+        renderTestAction();
+      }
+      if (event.target.closest("#restart")) {
+        testAction = 0;
+        vbtRound = 0;
+        render(0);
+      }
+      if (event.target.closest("#highfive")) {
+        const button = document.getElementById("highfive");
+        button.textContent = "✓ 已击掌，承诺已签署";
+        button.classList.add("done");
+        document.getElementById("signature").textContent = "已签署 · 第一阶段正式开始";
+      }
+    });
+    render(0);
+  </script>
+</body>
+</html>
