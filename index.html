@@ -174,9 +174,9 @@
     .counter { margin-bottom: 16px; color: var(--muted); font: 700 11px "DM Sans"; letter-spacing: .15em; text-transform: uppercase; }
     .counter span { color: var(--ink); }
     .choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-top: 26px; }
-    .segmented { display: inline-grid; grid-template-columns: repeat(3, minmax(105px, 1fr)); gap: 4px; margin-top: 10px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.45); }
-    .segmented .choice { min-height: 40px; padding: 0 17px; border: 0; border-radius: 999px; text-align: center; background: transparent; }
-    .segmented .choice b { margin: 0; font-size: 12px; }
+    .segmented { display: inline-grid; grid-template-columns: repeat(3, minmax(126px, 1fr)); gap: 4px; margin-top: 12px; padding: 5px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.45); }
+    .segmented .choice { min-height: 50px; padding: 0 20px; border: 0; border-radius: 999px; text-align: center; background: transparent; }
+    .segmented .choice b { margin: 0; font-size: 16px; }
     .segmented .choice.selected { color: #fff; background: var(--ink); box-shadow: none; }
     .choice {
       min-height: 76px; padding: 15px 17px; text-align: left;
@@ -381,7 +381,7 @@
 
           <section class="screen" data-screen="profile" data-stage="calibrate" data-progress="14">
             <div class="question-wrap">
-              <div class="counter"><span>01</span> / 05 · 初始档案</div>
+              <div class="counter"><span>01</span> / 04 · 初始档案</div>
               <h2>先建立你的初始档案。</h2>
               <p class="lead">这些信息会帮助 Kiwii 判断合适的测试强度和参考区间。</p>
               <div class="fields">
@@ -400,7 +400,7 @@
 
           <section class="screen" data-screen="experience" data-stage="calibrate" data-progress="30">
             <div class="question-wrap">
-              <div class="counter"><span>02</span> / 05 · 初始档案</div>
+              <div class="counter"><span>02</span> / 04 · 初始档案</div>
               <h2>做力量训练时，你更习惯从什么阻力开始？</h2>
               <p class="lead">凭感觉选就可以。Kiwii 会用它设置第一次阻力深蹲的起始重量，测试过程中还会根据你的实际速度继续调整。</p>
               <div class="choice-grid" data-single>
@@ -415,7 +415,7 @@
 
           <section class="screen" data-screen="risk" data-stage="calibrate" data-progress="38">
             <div class="question-wrap">
-              <div class="counter"><span>03</span> / 05 · 身体保护</div>
+              <div class="counter"><span>03</span> / 04 · 身体保护</div>
               <h2>过去 6 个月，有没有需要我们特别照顾的情况？</h2>
               <p class="lead">这些信息会帮助 Kiwii 降低体测强度，并调整后续训练路线。</p>
               <div class="choice-grid" data-multi>
@@ -426,25 +426,11 @@
             </div>
           </section>
 
-          <section class="screen" data-screen="avoid" data-stage="calibrate" data-progress="44">
-            <div class="question-wrap">
-              <div class="counter"><span>04</span> / 05 · 身体保护</div>
-              <h2>哪些动作你现在不太适合做？</h2>
-              <p class="lead">凭感觉选就可以。Kiwii 会先推断可能需要照顾的区域，下一步你还可以自己调整。</p>
-              <div class="choice-grid" data-multi data-avoid-actions>
-                <button class="choice"><b>跳跃</b></button><button class="choice"><b>深蹲</b></button><button class="choice"><b>俯卧撑 / 支撑类</b></button>
-                <button class="choice selected"><b>过头推举</b></button><button class="choice"><b>弯腰 / 硬拉类</b></button><button class="choice"><b>单腿动作</b></button>
-                <button class="choice"><b>不确定</b></button><button class="choice"><b>没有需要避免的动作</b></button>
-              </div>
-              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn primary" data-next>继续</button></div>
-            </div>
-          </section>
-
           <section class="screen" data-screen="pain" data-stage="calibrate" data-progress="50">
             <div class="question-wrap">
-              <div class="counter"><span>05</span> / 05 · 身体保护</div>
-              <h2>这些区域需要我们特别照顾吗？</h2>
-              <p class="lead">Kiwii 已根据你刚才的选择先标出可能需要保护的区域。你可以取消，也可以补充。</p>
+              <div class="counter"><span>04</span> / 04 · 身体保护</div>
+              <h2>身体有没有哪个区域需要我们特别照顾？</h2>
+              <p class="lead">可以多选。Kiwii 会自动调整体测动作和阻力，不会硬推。</p>
               <div class="choice-grid" data-multi data-pain-zones>
                 <button class="choice"><b>颈部</b></button><button class="choice"><b>肩</b></button><button class="choice"><b>肘 / 手腕</b></button>
                 <button class="choice"><b>腰背</b></button><button class="choice"><b>髋</b></button><button class="choice"><b>膝</b></button>
@@ -605,7 +591,6 @@
     let current = 0;
     let testAction = 0;
     let vbtRound = 0;
-    let painZonesConfirmed = false;
     const stageTargets = { calibrate: "intro", assess: "test", profile: "results", route: "goal" };
     const painZones = {
       "颈部": { left: 63, top: 42, label: "颈部" },
@@ -700,7 +685,6 @@
       stepCopy.textContent = titles[stage][1];
       bar.style.width = `${screen.dataset.progress}%`;
       if (screen.dataset.screen === "test") renderTestAction();
-      if (screen.dataset.screen === "pain") renderSuggestedPainZones();
       if (screen.dataset.screen === "ready") renderProtection();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -708,29 +692,6 @@
     function selectedPainZones() {
       const painScreen = document.querySelector('[data-screen="pain"]');
       return [...painScreen.querySelectorAll("[data-pain-zones] .choice.selected b")].map(item => item.textContent).filter(item => !item.includes("没有"));
-    }
-
-    function selectedAvoidActions() {
-      return [...document.querySelectorAll('[data-avoid-actions] .choice.selected b')].map(item => item.textContent).filter(item => !item.includes("没有"));
-    }
-
-    function renderSuggestedPainZones() {
-      if (painZonesConfirmed) return;
-      const inferred = new Set();
-      selectedAvoidActions().forEach(action => {
-        if (action === "跳跃") ["膝", "踝"].forEach(zone => inferred.add(zone));
-        if (action === "深蹲") ["髋", "膝", "踝"].forEach(zone => inferred.add(zone));
-        if (action === "俯卧撑 / 支撑类") ["肩", "肘 / 手腕"].forEach(zone => inferred.add(zone));
-        if (action === "过头推举") ["肩", "肘 / 手腕"].forEach(zone => inferred.add(zone));
-        if (action === "弯腰 / 硬拉类") ["腰背", "髋"].forEach(zone => inferred.add(zone));
-        if (action === "单腿动作") ["髋", "膝", "踝"].forEach(zone => inferred.add(zone));
-        if (action === "不确定") ["肩", "腰背", "膝"].forEach(zone => inferred.add(zone));
-      });
-      document.querySelectorAll("[data-pain-zones] .choice").forEach(choice => {
-        const label = choice.querySelector("b")?.textContent || "";
-        choice.classList.toggle("selected", inferred.has(label));
-        choice.classList.toggle("recommended", inferred.has(label));
-      });
     }
 
     function renderProtection() {
@@ -806,11 +767,6 @@
         });
         choice.classList.toggle("selected");
         if (choice.closest('[data-screen="experience"]')) vbtRound = 0;
-        if (choice.closest("[data-avoid-actions]")) painZonesConfirmed = false;
-        if (choice.closest("[data-pain-zones]")) {
-          painZonesConfirmed = true;
-          choice.classList.remove("recommended");
-        }
       }
       if (event.target.closest("[data-next]")) render(current + 1);
       if (event.target.closest("[data-back]")) render(current - 1);
@@ -846,7 +802,6 @@
       if (event.target.closest("#restart")) {
         testAction = 0;
         vbtRound = 0;
-        painZonesConfirmed = false;
         render(0);
       }
       if (event.target.closest("#highfive")) {
