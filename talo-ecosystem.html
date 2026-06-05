@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talo — 通用原料 × 地形染色</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  background: #0a0a0f;
+  color: #e8e8e8;
+  min-height: 100vh;
+  padding: 40px 24px;
+}
+.container { max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 28px; font-weight: 300; margin-bottom: 8px; letter-spacing: -0.5px; }
+.subtitle { color: #888; font-size: 14px; margin-bottom: 48px; }
+
+/* Universal Materials */
+.section-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px; }
+.materials {
+  display: flex; gap: 12px; margin-bottom: 48px; flex-wrap: wrap;
+}
+.mat-card {
+  background: #1a1a24;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex; align-items: center; gap: 12px;
+  min-width: 160px;
+}
+.mat-icon { font-size: 28px; }
+.mat-info .mat-name { font-size: 14px; font-weight: 500; }
+.mat-info .mat-source { font-size: 11px; color: #888; }
+
+/* Transform Section */
+.transform-section { margin-bottom: 56px; }
+.transform-title {
+  font-size: 16px; font-weight: 400; margin-bottom: 6px;
+}
+.transform-subtitle { font-size: 12px; color: #888; margin-bottom: 24px; }
+.recipe-label {
+  display: inline-block;
+  background: #222230;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.recipe-label span { color: #aaa; }
+
+.terrain-results {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.result-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 14px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+.result-card:hover { transform: translateY(-3px); }
+.result-terrain { font-size: 10px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.result-icon { font-size: 32px; margin-bottom: 8px; }
+.result-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; color: var(--accent); }
+.result-desc { font-size: 10px; color: #777; line-height: 1.4; }
+
+/* Lifecycle */
+.lifecycle-demo { margin-top: 56px; margin-bottom: 56px; }
+.lifecycle-demo h2 { font-size: 18px; font-weight: 400; margin-bottom: 8px; }
+.lifecycle-demo .subtitle { margin-bottom: 24px; }
+
+.lc-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  padding: 20px 0;
+}
+.lc-step {
+  background: #14141e;
+  border: 1px solid #2a2a36;
+  border-radius: 14px;
+  padding: 20px 18px;
+  min-width: 160px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.lc-step .step-phase { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.lc-step .step-icon { font-size: 28px; margin-bottom: 8px; }
+.lc-step .step-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.lc-step .step-desc { font-size: 10px; color: #888; line-height: 1.4; }
+.lc-arrow { display: flex; align-items: center; padding: 0 10px; color: #444; font-size: 20px; }
+
+.lc-branch-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 12px;
+}
+.lc-branch-item {
+  background: #1a1e14;
+  border: 1px solid #2a3a20;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lc-branch-item.social { background: #1e1a14; border-color: #3a3020; }
+.lc-branch-item.cycle { background: #141a1e; border-color: #203a3a; }
+.lc-branch-item .branch-icon { font-size: 18px; }
+.lc-branch-item .branch-label { color: #aaa; }
+.lc-branch-item .branch-type { font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+.type-sink { background: #3d2020; color: #ff9b9b; }
+.type-cycle { background: #1e3d20; color: #9bffb0; }
+.type-social { background: #3d3520; color: #ffd89b; }
+.type-upgrade { background: #20203d; color: #9bb0ff; }
+
+/* Key Insight */
+.insight-box {
+  background: linear-gradient(135deg, #1a1a2e, #16162a);
+  border: 1px solid #2a2a44;
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin: 48px 0;
+}
+.insight-box h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: #c8c0ff; }
+.insight-box p { font-size: 13px; color: #aaa; line-height: 1.7; }
+.insight-box strong { color: #e8e8e8; }
+
+/* Comparison */
+.comparison { margin-top: 48px; }
+.comparison h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
+.comp-grid { display: grid; grid-template-columns: 200px repeat(5, 1fr); gap: 1px; background: #2a2a36; border-radius: 12px; overflow: hidden; }
+.comp-cell { background: #12121a; padding: 14px 12px; font-size: 12px; }
+.comp-cell.header { background: #1a1a24; color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
+.comp-cell.row-header { color: #aaa; display: flex; align-items: center; gap: 8px; }
+.comp-cell.content { text-align: center; font-size: 18px; }
+.comp-cell .cell-name { font-size: 10px; color: #888; margin-top: 4px; }
+
+@media (max-width: 768px) {
+  .terrain-results { grid-template-columns: repeat(2, 1fr); }
+  .comp-grid { grid-template-columns: 120px repeat(5, 1fr); }
+  .materials { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Talo — 通用原料，地形染色</h1>
+  <p class="subtitle">所有人赚的是同一套材料。你的地决定它变成什么。</p>
+
+  <!-- Universal Materials -->
+  <div class="section-label">所有人获得的通用原料</div>
+  <div class="materials">
+    <div class="mat-card">
+      <div class="mat-icon">🌱</div>
+      <div class="mat-info"><div class="mat-name">种子</div><div class="mat-source">Move · 有氧运动</div></div>
+    </div>
+    <div class="mat-card">
+      <div class="mat-icon">💧</div>
+      <div class="mat-info"><div class="mat-name">水</div><div class="mat-source">Move · 日常活动</div></div>
+    </div>
+    <div class="mat-card">
+      <div class="mat-icon">☀️</div>
+      <div class="mat-info"><div class="mat-name">光</div><div class="mat-source">被动 · 步数/活动时间</div></div>
+    </div>
+    <div class="mat-card">
+      <div class="mat-icon">🪨</div>
+      <div class="mat-info"><div class="mat-name">石料</div><div class="mat-source">Build · 力量训练</div></div>
+    </div>
+    <div class="mat-card">
+      <div class="mat-icon">🪵</div>
+      <div class="mat-info"><div class="mat-name">木材</div><div class="mat-source">Build · 无氧运动</div></div>
+    </div>
+  </div>
+
+  <!-- Insight -->
+  <div class="insight-box">
+    <h3>核心规则</h3>
+    <p>
+      原料是<strong>通用的</strong>——所有人运动后获得的都是种子、水、光、石料、木材。<br>
+      地形是<strong>染色器</strong>——同样的"种子+水"投入不同地形，长出完全不同的东西。<br>
+      Recover 是<strong>品质乘数</strong>——不产出物品，但决定长出来的东西是普通还是稀有变种。
+    </p>
+  </div>
+
+  <!-- Transform: Seed + Water -->
+  <div class="transform-section">
+    <div class="transform-title">🌱 + 💧 → ?</div>
+    <div class="transform-subtitle">种子 + 水，投入不同地形的栏位</div>
+    <div class="terrain-results">
+      <div class="result-card" style="--bg:#141e18;--border:#2a3a2e;--accent:#7ec89b">
+        <div class="result-terrain">🌿 草原</div>
+        <div class="result-icon">🌸</div>
+        <div class="result-name">野花</div>
+        <div class="result-desc">矮生蔓延，色彩丰富<br>稀有：双色花 / 夜光花</div>
+      </div>
+      <div class="result-card" style="--bg:#1a2024;--border:#2a3a40;--accent:#7eb8c8">
+        <div class="result-terrain">🏖️ 海岸</div>
+        <div class="result-icon">🪸</div>
+        <div class="result-name">珊瑚草</div>
+        <div class="result-desc">浅水生长，随潮汐摆动<br>稀有：荧光珊瑚</div>
+      </div>
+      <div class="result-card" style="--bg:#141e16;--border:#2a3a2a;--accent:#5a9a6a">
+        <div class="result-terrain">🌲 密林</div>
+        <div class="result-icon">🍄</div>
+        <div class="result-name">菌菇丛</div>
+        <div class="result-desc">阴面生长，簇生层叠<br>稀有：夜光菌 / 伞盖菇</div>
+      </div>
+      <div class="result-card" style="--bg:#1e1c14;--border:#3a3428;--accent:#c8a050">
+        <div class="result-terrain">🏜️ 沙漠</div>
+        <div class="result-icon">🌵</div>
+        <div class="result-name">仙人掌花</div>
+        <div class="result-desc">耐旱小株，偶尔绽放<br>稀有：金刺仙人掌</div>
+      </div>
+      <div class="result-card" style="--bg:#1e1c1a;--border:#3a3430;--accent:#b0a090">
+        <div class="result-terrain">🪨 岩壁</div>
+        <div class="result-icon">🌿</div>
+        <div class="result-name">岩苔</div>
+        <div class="result-desc">附着岩面，缓慢铺展<br>稀有：蓝苔 / 发光苔</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transform: Stone + Wood -->
+  <div class="transform-section">
+    <div class="transform-title">🪨 + 🪵 → ?</div>
+    <div class="transform-subtitle">石料 + 木材，投入不同地形的栏位</div>
+    <div class="terrain-results">
+      <div class="result-card" style="--bg:#141e18;--border:#2a3a2e;--accent:#7ec89b">
+        <div class="result-terrain">🌿 草原</div>
+        <div class="result-icon">🏡</div>
+        <div class="result-name">矮篱笆</div>
+        <div class="result-desc">圈出花田区域<br>功能：保护花不被踩</div>
+      </div>
+      <div class="result-card" style="--bg:#1a2024;--border:#2a3a40;--accent:#7eb8c8">
+        <div class="result-terrain">🏖️ 海岸</div>
+        <div class="result-icon">🌉</div>
+        <div class="result-name">木栈桥</div>
+        <div class="result-desc">延伸入海<br>功能：解锁深水栏位</div>
+      </div>
+      <div class="result-card" style="--bg:#141e16;--border:#2a3a2a;--accent:#5a9a6a">
+        <div class="result-terrain">🌲 密林</div>
+        <div class="result-icon">🛖</div>
+        <div class="result-name">树屋框架</div>
+        <div class="result-desc">架在大树上<br>功能：高处栏位</div>
+      </div>
+      <div class="result-card" style="--bg:#1e1c14;--border:#3a3428;--accent:#c8a050">
+        <div class="result-terrain">🏜️ 沙漠</div>
+        <div class="result-icon">🕌</div>
+        <div class="result-name">砂岩拱门</div>
+        <div class="result-desc">标志性结构<br>功能：入口/地标</div>
+      </div>
+      <div class="result-card" style="--bg:#1e1c1a;--border:#3a3430;--accent:#b0a090">
+        <div class="result-terrain">🪨 岩壁</div>
+        <div class="result-icon">🪜</div>
+        <div class="result-name">石阶</div>
+        <div class="result-desc">向上攀升<br>功能：解锁高层栏位</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transform: Seed + Light (longer cycle) -->
+  <div class="transform-section">
+    <div class="transform-title">🌱 + ☀️ + 时间 → ?</div>
+    <div class="transform-subtitle">种子 + 光 + 持续积累（长线生长物）</div>
+    <div class="terrain-results">
+      <div class="result-card" style="--bg:#141e18;--border:#2a3a2e;--accent:#7ec89b">
+        <div class="result-terrain">🌿 草原</div>
+        <div class="result-icon">🌳</div>
+        <div class="result-name">果树</div>
+        <div class="result-desc">5天成熟，持续产果<br>果实可送人 / 果核可再种</div>
+      </div>
+      <div class="result-card" style="--bg:#1a2024;--border:#2a3a40;--accent:#7eb8c8">
+        <div class="result-terrain">🏖️ 海岸</div>
+        <div class="result-icon">🐚</div>
+        <div class="result-name">珍珠蚌</div>
+        <div class="result-desc">7天孕育，产珍珠<br>珍珠是高价值社交物</div>
+      </div>
+      <div class="result-card" style="--bg:#141e16;--border:#2a3a2a;--accent:#5a9a6a">
+        <div class="result-terrain">🌲 密林</div>
+        <div class="result-icon">🌲</div>
+        <div class="result-name">古树</div>
+        <div class="result-desc">7天成熟，永久地标<br>持续被动产落叶</div>
+      </div>
+      <div class="result-card" style="--bg:#1e1c14;--border:#3a3428;--accent:#c8a050">
+        <div class="result-terrain">🏜️ 沙漠</div>
+        <div class="result-icon">💎</div>
+        <div class="result-name">结晶体</div>
+        <div class="result-desc">缓慢结晶，极稀有<br>视觉独特的展示物</div>
+      </div>
+      <div class="result-card" style="--bg:#1e1c1a;--border:#3a3430;--accent:#b0a090">
+        <div class="result-terrain">🪨 岩壁</div>
+        <div class="result-icon">🦅</div>
+        <div class="result-name">鹰巢</div>
+        <div class="result-desc">吸引动物来访<br>动物会带来随机小礼物</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lifecycle Demo -->
+  <div class="lifecycle-demo">
+    <h2>一颗种子的完整生命</h2>
+    <p class="subtitle">以草原地形为例：种子+水 → 花苞 → 开花 → 收获分叉</p>
+    <div class="lc-flow">
+      <div class="lc-step">
+        <div class="step-phase">运动后</div>
+        <div class="step-icon">🌱💧</div>
+        <div class="step-title">获得种子+水</div>
+        <div class="step-desc">30min 跑步<br>→ 种子×2, 水×1</div>
+      </div>
+      <div class="lc-arrow">→</div>
+      <div class="lc-step">
+        <div class="step-phase">打开app</div>
+        <div class="step-icon">👆</div>
+        <div class="step-title">投入栏位</div>
+        <div class="step-desc">选一个空栏位<br>放入种子+水</div>
+      </div>
+      <div class="lc-arrow">→</div>
+      <div class="lc-step">
+        <div class="step-phase">即时反馈</div>
+        <div class="step-icon">🌸</div>
+        <div class="step-title">花苞出现</div>
+        <div class="step-desc">地上冒出一个<br>小花苞在呼吸</div>
+      </div>
+      <div class="lc-arrow">→</div>
+      <div class="lc-step">
+        <div class="step-phase">隔天回来</div>
+        <div class="step-icon">💐</div>
+        <div class="step-title">花开了</div>
+        <div class="step-desc">可采摘<br>Recover高→稀有色</div>
+      </div>
+      <div class="lc-arrow">→</div>
+      <div class="lc-branch-container">
+        <div class="lc-branch-item">
+          <div class="branch-icon">🏡</div>
+          <div class="branch-label">留在地上装饰</div>
+          <div class="branch-type type-sink">展示沉没</div>
+        </div>
+        <div class="lc-branch-item social">
+          <div class="branch-icon">🎁</div>
+          <div class="branch-label">送给朋友</div>
+          <div class="branch-type type-social">社交</div>
+        </div>
+        <div class="lc-branch-item cycle">
+          <div class="branch-icon">🌱</div>
+          <div class="branch-label">掉落新种子</div>
+          <div class="branch-type type-cycle">循环</div>
+        </div>
+        <div class="lc-branch-item" style="background:#1a1a2e;border-color:#2a2a4a">
+          <div class="branch-icon">🧪</div>
+          <div class="branch-label">加工成花粉精华</div>
+          <div class="branch-type type-upgrade">升级</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Comparison Grid -->
+  <div class="comparison">
+    <h2>完整对照：同一个配方，五种结果</h2>
+    <div class="comp-grid">
+      <div class="comp-cell header">配方</div>
+      <div class="comp-cell header">🌿 草原</div>
+      <div class="comp-cell header">🏖️ 海岸</div>
+      <div class="comp-cell header">🌲 密林</div>
+      <div class="comp-cell header">🏜️ 沙漠</div>
+      <div class="comp-cell header">🪨 岩壁</div>
+
+      <div class="comp-cell row-header">🌱+💧<br><span style="font-size:10px;color:#666">种子+水</span></div>
+      <div class="comp-cell content">🌸<div class="cell-name">野花</div></div>
+      <div class="comp-cell content">🪸<div class="cell-name">珊瑚草</div></div>
+      <div class="comp-cell content">🍄<div class="cell-name">菌菇</div></div>
+      <div class="comp-cell content">🌵<div class="cell-name">仙人掌花</div></div>
+      <div class="comp-cell content">🌿<div class="cell-name">岩苔</div></div>
+
+      <div class="comp-cell row-header">🪨+🪵<br><span style="font-size:10px;color:#666">石料+木材</span></div>
+      <div class="comp-cell content">🏡<div class="cell-name">篱笆</div></div>
+      <div class="comp-cell content">🌉<div class="cell-name">栈桥</div></div>
+      <div class="comp-cell content">🛖<div class="cell-name">树屋</div></div>
+      <div class="comp-cell content">🕌<div class="cell-name">拱门</div></div>
+      <div class="comp-cell content">🪜<div class="cell-name">石阶</div></div>
+
+      <div class="comp-cell row-header">🌱+☀️+⏳<br><span style="font-size:10px;color:#666">种子+光+时间</span></div>
+      <div class="comp-cell content">🌳<div class="cell-name">果树</div></div>
+      <div class="comp-cell content">🐚<div class="cell-name">珍珠蚌</div></div>
+      <div class="comp-cell content">🌲<div class="cell-name">古树</div></div>
+      <div class="comp-cell content">💎<div class="cell-name">结晶体</div></div>
+      <div class="comp-cell content">🦅<div class="cell-name">鹰巢</div></div>
+
+      <div class="comp-cell row-header">🪨+🪨+🪨<br><span style="font-size:10px;color:#666">大量石料</span></div>
+      <div class="comp-cell content">🪨<div class="cell-name">石桌</div></div>
+      <div class="comp-cell content">🗿<div class="cell-name">灯塔基</div></div>
+      <div class="comp-cell content">⛩️<div class="cell-name">石门</div></div>
+      <div class="comp-cell content">🏛️<div class="cell-name">砂岩柱</div></div>
+      <div class="comp-cell content">🏔️<div class="cell-name">望台</div></div>
+
+      <div class="comp-cell row-header">💧+💧+☀️<br><span style="font-size:10px;color:#666">大量水+光</span></div>
+      <div class="comp-cell content">🦋<div class="cell-name">蝴蝶群</div></div>
+      <div class="comp-cell content">🐢<div class="cell-name">海龟来访</div></div>
+      <div class="comp-cell content">🦌<div class="cell-name">鹿出没</div></div>
+      <div class="comp-cell content">🦊<div class="cell-name">沙狐来访</div></div>
+      <div class="comp-cell content">🦅<div class="cell-name">隼栖息</div></div>
+
+      <div class="comp-cell row-header">✨ Recover高<br><span style="font-size:10px;color:#666">品质乘数</span></div>
+      <div class="comp-cell content">🌈<div class="cell-name">双色花变种</div></div>
+      <div class="comp-cell content">💫<div class="cell-name">荧光珊瑚</div></div>
+      <div class="comp-cell content">✨<div class="cell-name">夜光菌</div></div>
+      <div class="comp-cell content">⭐<div class="cell-name">星砂花</div></div>
+      <div class="comp-cell content">💎<div class="cell-name">蓝晶苔</div></div>
+    </div>
+  </div>
+
+  <!-- Design Notes -->
+  <div class="insight-box" style="margin-top:48px">
+    <h3>为什么这样更好</h3>
+    <p>
+      <strong>认知成本低</strong>——用户只需要学一套材料系统（5种），不需要记住每种地形的专属原料名。<br><br>
+      <strong>偏科安全</strong>——只跑步的人和只撸铁的人获得的原料名字一样，只是比例不同。没有"你少了一种材料所以玩不了"的感觉。<br><br>
+      <strong>差异化来自地形</strong>——社交时看到朋友的地长了珊瑚草，我的地长了野花，虽然我们都只是投了种子+水。地形就是人格表达。<br><br>
+      <strong>Unity资产可复用</strong>——同一个"投入栏位"的动画/交互只做一次，产出的视觉按地形换皮。<br><br>
+      <strong>扩展性好</strong>——未来加新配方（比如种子+石料+水=？）就自动获得5种新产出，不需要重新设计原料。
+    </p>
+  </div>
+</div>
+</body>
+</html>
