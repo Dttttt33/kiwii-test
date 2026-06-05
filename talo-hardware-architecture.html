@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii — 硬件 × Land 架构</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  background: #08080c;
+  color: #e8e8e8;
+  min-height: 100vh;
+  padding: 40px 24px;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+h1 { font-size: 28px; font-weight: 300; margin-bottom: 8px; }
+.subtitle { color: #888; font-size: 14px; margin-bottom: 56px; }
+
+/* Architecture Diagram */
+.arch-section { margin-bottom: 64px; }
+.arch-section h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
+
+.arch-diagram {
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr 80px 1fr;
+  grid-template-rows: auto;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 48px;
+}
+
+.product-box {
+  border-radius: 20px;
+  padding: 28px 24px;
+  position: relative;
+}
+.product-box.power {
+  background: linear-gradient(135deg, #1a1e14, #14180e);
+  border: 1px solid #2a3a20;
+}
+.product-box.land {
+  background: linear-gradient(135deg, #0e141e, #0a1018);
+  border: 1px solid #1a2a3a;
+}
+.product-box.balance {
+  background: linear-gradient(135deg, #1a1418, #140e14);
+  border: 1px solid #3a2030;
+}
+.product-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #888;
+  margin-bottom: 12px;
+}
+.product-name { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+.product-device { font-size: 12px; color: #666; margin-bottom: 16px; }
+.product-features { list-style: none; }
+.product-features li {
+  font-size: 12px;
+  color: #aaa;
+  padding: 4px 0;
+  padding-left: 16px;
+  position: relative;
+}
+.product-features li::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: #555;
+}
+
+.pipe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.pipe-line {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--from), var(--to));
+  position: relative;
+}
+.pipe-line::after {
+  content: '→';
+  position: absolute;
+  right: -4px;
+  top: -9px;
+  color: var(--to);
+  font-size: 14px;
+}
+.pipe-label {
+  font-size: 9px;
+  color: #666;
+  text-align: center;
+  max-width: 70px;
+}
+
+/* Principle Cards */
+.principles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 64px;
+}
+.principle-card {
+  background: #12121a;
+  border: 1px solid #2a2a36;
+  border-radius: 14px;
+  padding: 24px 20px;
+}
+.principle-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+.principle-card p { font-size: 12px; color: #999; line-height: 1.6; }
+
+/* Flow Section */
+.flow-section { margin-bottom: 64px; }
+.flow-section h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
+
+.session-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  padding: 16px 0;
+}
+.session-step {
+  background: #12121a;
+  border: 1px solid #2a2a36;
+  border-radius: 14px;
+  padding: 20px 16px;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+.session-step .step-time { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.session-step .step-icon { font-size: 24px; margin-bottom: 8px; }
+.session-step .step-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.session-step .step-desc { font-size: 11px; color: #888; line-height: 1.5; }
+.session-step .step-device { font-size: 10px; color: #555; margin-top: 8px; padding-top: 8px; border-top: 1px solid #222; }
+.flow-arrow { display: flex; align-items: center; padding: 0 8px; color: #333; font-size: 18px; flex-shrink: 0; }
+
+/* Data Contract */
+.contract-section { margin-bottom: 64px; }
+.contract-section h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
+.contract-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.contract-box {
+  background: #0e0e14;
+  border: 1px solid #2a2a36;
+  border-radius: 14px;
+  padding: 24px;
+}
+.contract-box h3 { font-size: 14px; font-weight: 500; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.contract-box .json-block {
+  background: #08080c;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'SF Mono', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #aaa;
+  overflow-x: auto;
+}
+.contract-box .json-block .key { color: #7eb8c8; }
+.contract-box .json-block .str { color: #c8a87e; }
+.contract-box .json-block .num { color: #9bba7e; }
+
+/* Experience Diff */
+.diff-section { margin-bottom: 64px; }
+.diff-section h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
+.diff-grid {
+  display: grid;
+  grid-template-columns: 160px repeat(4, 1fr);
+  gap: 1px;
+  background: #2a2a36;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.diff-cell {
+  background: #0e0e14;
+  padding: 14px 12px;
+  font-size: 12px;
+}
+.diff-cell.header { background: #14141e; color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; font-weight: 500; }
+.diff-cell.row-label { color: #aaa; display: flex; align-items: center; }
+.diff-cell.content { text-align: center; color: #ccc; font-size: 11px; line-height: 1.5; }
+.diff-cell .check { color: #7eba7e; }
+.diff-cell .cross { color: #555; }
+.diff-cell .special { color: #c8a87e; }
+
+/* Scope */
+.scope-section { margin-bottom: 64px; }
+.scope-section h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
+.scope-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.scope-box {
+  border-radius: 14px;
+  padding: 24px 20px;
+}
+.scope-box.unity-land { background: #0e141e; border: 1px solid #1a2a3a; }
+.scope-box.unity-power { background: #141e14; border: 1px solid #2a3a20; }
+.scope-box.native { background: #14121e; border: 1px solid #2a2040; }
+.scope-box h3 { font-size: 13px; font-weight: 500; margin-bottom: 12px; }
+.scope-box ul { list-style: none; }
+.scope-box ul li { font-size: 11px; color: #999; padding: 4px 0; padding-left: 14px; position: relative; }
+.scope-box ul li::before { content: '→'; position: absolute; left: 0; color: #555; font-size: 10px; }
+
+/* Scene Alignment */
+.scene-section { margin-bottom: 64px; }
+.scene-section h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
+.scene-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.scene-card {
+  border-radius: 14px;
+  padding: 20px 14px;
+  text-align: center;
+  background: #12121a;
+  border: 1px solid #2a2a36;
+}
+.scene-card .scene-icon { font-size: 28px; margin-bottom: 10px; }
+.scene-card .scene-terrain { font-size: 12px; font-weight: 500; margin-bottom: 12px; }
+.scene-card .scene-row { font-size: 10px; color: #888; padding: 6px 0; border-top: 1px solid #1e1e28; }
+.scene-card .scene-row:first-of-type { border-top: none; }
+.scene-card .scene-label { color: #666; display: block; font-size: 9px; margin-bottom: 2px; }
+
+/* Expandability */
+.expand-section { margin-bottom: 64px; }
+.expand-section h2 { font-size: 18px; font-weight: 400; margin-bottom: 8px; }
+.expand-section .subtitle { margin-bottom: 24px; }
+.expand-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.expand-card {
+  background: #12121a;
+  border: 1px solid #2a2a36;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.expand-card .exp-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.expand-card .exp-title { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+.expand-card .exp-desc { font-size: 11px; color: #888; }
+
+@media (max-width: 768px) {
+  .arch-diagram { grid-template-columns: 1fr; grid-template-rows: auto 40px auto 40px auto; }
+  .pipe { flex-direction: row; }
+  .pipe-line { width: 2px; height: 30px; }
+  .principles { grid-template-columns: 1fr; }
+  .contract-grid { grid-template-columns: 1fr; }
+  .diff-grid { grid-template-columns: 100px repeat(4, 1fr); font-size: 10px; }
+  .scope-grid { grid-template-columns: 1fr; }
+  .scene-grid { grid-template-columns: repeat(2, 1fr); }
+  .expand-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Kiwii Hardware × Land Architecture</h1>
+  <p class="subtitle">问题四：两个硬件和 app 的接口，和 Unity 的 scope</p>
+
+  <!-- Principles -->
+  <div class="principles">
+    <div class="principle-card">
+      <h3>🎯 公平性原则</h3>
+      <p>硬件不增加资源的「量」和养成进度。没硬件 → 量。有硬件 → same 量 + 更高质量 + 独占 asset。</p>
+    </div>
+    <div class="principle-card">
+      <h3>🔌 管子原则</h3>
+      <p>Power 和 Balance 是独立游戏产品。和 Land 之间只有一根数据管子。管子两端各自可以无限扩展复杂度。</p>
+    </div>
+    <div class="principle-card">
+      <h3>🌍 同一世界</h3>
+      <p>三个产品共享同一个世界观。Power 是你走进地里干活的近景。Land 是退后一步看全貌。场景风格对齐。</p>
+    </div>
+  </div>
+
+  <!-- Architecture Diagram -->
+  <div class="arch-section">
+    <h2>产品架构</h2>
+    <div class="arch-diagram">
+      <!-- Power -->
+      <div class="product-box power">
+        <div class="product-label">硬件 A</div>
+        <div class="product-name">Kiwii Power</div>
+        <div class="product-device">阻力踏板 · TV</div>
+        <div class="product-features">
+          <li>独立农活游戏</li>
+          <li>做动作 = 翻地/播种/浇水/收割</li>
+          <li>有自己的深度（作物/季节/工具/剧情）</li>
+          <li>session 8-10min，每天定制化</li>
+          <li>主要产出：Build 维度品质 + 独占 asset</li>
+          <li>有氧/拉伸动作 → Recover/Move</li>
+        </div>
+      </div>
+
+      <!-- Pipe 1 -->
+      <div class="pipe">
+        <div class="pipe-line" style="--from:#4a7a40;--to:#4070a0"></div>
+        <div class="pipe-label">session 数据 + 收获</div>
+      </div>
+
+      <!-- Land -->
+      <div class="product-box land">
+        <div class="product-label">主产品</div>
+        <div class="product-name">Kiwii Land</div>
+        <div class="product-device">手机 App</div>
+        <div class="product-features">
+          <li>5种地形，长期养成</li>
+          <li>通用原料 × 地形染色</li>
+          <li>轻操作：分配资源，看生长</li>
+          <li>社交核心：逛地/送礼/互助</li>
+          <li>接收所有数据源（Health + 硬件）</li>
+          <li>数据卡展示 + 分享</li>
+        </div>
+      </div>
+
+      <!-- Pipe 2 -->
+      <div class="pipe">
+        <div class="pipe-line" style="--from:#8040a0;--to:#4070a0"></div>
+        <div class="pipe-label">使用数据 + 收获</div>
+      </div>
+
+      <!-- Balance -->
+      <div class="product-box balance">
+        <div class="product-label">硬件 B</div>
+        <div class="product-name">Kiwii Balance</div>
+        <div class="product-device">振动板</div>
+        <div class="product-features">
+          <li>独立恢复体验</li>
+          <li>可以有自己的玩法（冥想/呼吸/引导）</li>
+          <li>使用 = 主动恢复行为</li>
+          <li>主要产出：Recover 维度精准度 + 独占 asset</li>
+          <li>让世界环境更好（光照/天气/动物）</li>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene Alignment -->
+  <div class="scene-section">
+    <h2>场景对齐：同一个世界，两种视角</h2>
+    <div class="scene-grid">
+      <div class="scene-card">
+        <div class="scene-icon">🌿</div>
+        <div class="scene-terrain">草原</div>
+        <div class="scene-row"><span class="scene-label">Land 远景</span>开阔草地、花海、溪流</div>
+        <div class="scene-row"><span class="scene-label">Power 近景</span>平整花田、农地</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-icon">🏖️</div>
+        <div class="scene-terrain">海岸</div>
+        <div class="scene-row"><span class="scene-label">Land 远景</span>沙滩、礁石、潮汐</div>
+        <div class="scene-row"><span class="scene-label">Power 近景</span>滩涂养殖、盐田</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-icon">🌲</div>
+        <div class="scene-terrain">密林</div>
+        <div class="scene-row"><span class="scene-label">Land 远景</span>树冠层、深谷、雾气</div>
+        <div class="scene-row"><span class="scene-label">Power 近景</span>林下药草园、蘑菇房</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-icon">🏜️</div>
+        <div class="scene-terrain">沙漠</div>
+        <div class="scene-row"><span class="scene-label">Land 远景</span>沙丘、绿洲、星空</div>
+        <div class="scene-row"><span class="scene-label">Power 近景</span>绿洲灌溉田、温室</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-icon">🪨</div>
+        <div class="scene-terrain">岩壁</div>
+        <div class="scene-row"><span class="scene-label">Land 远景</span>峭壁、梯田、瀑布</div>
+        <div class="scene-row"><span class="scene-label">Power 近景</span>岩缝种植、窑洞农场</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Power Session Flow -->
+  <div class="flow-section">
+    <h2>Power Session 完整流程</h2>
+    <div class="session-flow">
+      <div class="session-step">
+        <div class="step-time">开机</div>
+        <div class="step-icon">📋</div>
+        <div class="step-title">选今天的农活</div>
+        <div class="step-desc">系统推荐 3-5 个动作<br>每种动作 = 一种农活</div>
+        <div class="step-device">📺 TV</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="session-step">
+        <div class="step-time">做 session · 8-10min</div>
+        <div class="step-icon">🌾</div>
+        <div class="step-title">干活</div>
+        <div class="step-desc">每个 rep = 一次动作反馈<br>翻地/播种/浇水/收割<br>组间看进度</div>
+        <div class="step-device">📺 TV + Power 踏板</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="session-step">
+        <div class="step-time">结束</div>
+        <div class="step-icon">🎬</div>
+        <div class="step-title">收割 + 简版数据</div>
+        <div class="step-desc">收割动画（满足感）<br>简要数据 5 秒<br>趣味映射一句话</div>
+        <div class="step-device">📺 TV</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="session-step">
+        <div class="step-time">推送</div>
+        <div class="step-icon">📱</div>
+        <div class="step-title">完整数据卡</div>
+        <div class="step-desc">力/速度/质量图表<br>趋势对比 + 真实映射<br>可分享的精美卡片</div>
+        <div class="step-device">📱 手机 App</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="session-step">
+        <div class="step-time">钩回 Land</div>
+        <div class="step-icon">🌍</div>
+        <div class="step-title">资源到账</div>
+        <div class="step-desc">精炼品质原料入背包<br>独占 asset 掉落<br>"你的地变壮了 →"</div>
+        <div class="step-device">📱 Land App</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Contract -->
+  <div class="contract-section">
+    <h2>管子合约：数据接口</h2>
+    <div class="contract-grid">
+      <div class="contract-box">
+        <h3>⚡ Power → Land</h3>
+        <div class="json-block">
+{<br>
+&nbsp;&nbsp;<span class="key">"source"</span>: <span class="str">"kiwii_power"</span>,<br>
+&nbsp;&nbsp;<span class="key">"session_id"</span>: <span class="str">"ps_20260605_001"</span>,<br>
+&nbsp;&nbsp;<span class="key">"date"</span>: <span class="str">"2026-06-05"</span>,<br>
+&nbsp;&nbsp;<span class="key">"duration_min"</span>: <span class="num">9</span>,<br>
+&nbsp;&nbsp;<span class="key">"build_quality"</span>: <span class="str">"A-"</span>,<br>
+&nbsp;&nbsp;<span class="key">"harvest_items"</span>: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="key">"name"</span>: <span class="str">"金穗麦"</span>, <span class="key">"qty"</span>: <span class="num">12</span> },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="key">"name"</span>: <span class="str">"铁芯薯"</span>, <span class="key">"qty"</span>: <span class="num">5</span> }<br>
+&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;<span class="key">"exclusive_drop"</span>: <span class="str">"锻铁藤种"</span>,<br>
+&nbsp;&nbsp;<span class="key">"force_data"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"total_force"</span>: <span class="num">2400</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"peak_velocity"</span>: <span class="num">1.8</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"reps"</span>: <span class="num">38</span><br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+      </div>
+      <div class="contract-box">
+        <h3>🧘 Balance → Land</h3>
+        <div class="json-block">
+{<br>
+&nbsp;&nbsp;<span class="key">"source"</span>: <span class="str">"kiwii_balance"</span>,<br>
+&nbsp;&nbsp;<span class="key">"date"</span>: <span class="str">"2026-06-05"</span>,<br>
+&nbsp;&nbsp;<span class="key">"duration_min"</span>: <span class="num">15</span>,<br>
+&nbsp;&nbsp;<span class="key">"recover_boost"</span>: <span class="num">0.3</span>,<br>
+&nbsp;&nbsp;<span class="key">"exclusive_drop"</span>: <span class="str">"温泉石"</span>,<br>
+&nbsp;&nbsp;<span class="key">"relaxation_data"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"frequency"</span>: <span class="str">"low"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"depth"</span>: <span class="str">"deep"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"sustained_min"</span>: <span class="num">12</span><br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Experience Difference -->
+  <div class="diff-section">
+    <h2>用户体验差异</h2>
+    <div class="diff-grid">
+      <div class="diff-cell header">维度</div>
+      <div class="diff-cell header">没硬件</div>
+      <div class="diff-cell header">有 Power</div>
+      <div class="diff-cell header">有 Balance</div>
+      <div class="diff-cell header">都有</div>
+
+      <div class="diff-cell row-label">资源量</div>
+      <div class="diff-cell content">正常</div>
+      <div class="diff-cell content">一样</div>
+      <div class="diff-cell content">一样</div>
+      <div class="diff-cell content">一样</div>
+
+      <div class="diff-cell row-label">Build 品质</div>
+      <div class="diff-cell content"><span class="cross">普通</span></div>
+      <div class="diff-cell content"><span class="special">精炼</span></div>
+      <div class="diff-cell content"><span class="cross">普通</span></div>
+      <div class="diff-cell content"><span class="special">精炼</span></div>
+
+      <div class="diff-cell row-label">Recover 精准度</div>
+      <div class="diff-cell content"><span class="cross">粗</span></div>
+      <div class="diff-cell content"><span class="cross">粗</span></div>
+      <div class="diff-cell content"><span class="special">精准+加分</span></div>
+      <div class="diff-cell content"><span class="special">精准+加分</span></div>
+
+      <div class="diff-cell row-label">Build 独占视觉</div>
+      <div class="diff-cell content"><span class="cross">—</span></div>
+      <div class="diff-cell content"><span class="check">✓ 锻铁纹理/金属质感</span></div>
+      <div class="diff-cell content"><span class="cross">—</span></div>
+      <div class="diff-cell content"><span class="check">✓</span></div>
+
+      <div class="diff-cell row-label">Recover 独占视觉</div>
+      <div class="diff-cell content"><span class="cross">—</span></div>
+      <div class="diff-cell content"><span class="cross">—</span></div>
+      <div class="diff-cell content"><span class="check">✓ 泉水/暖光/雾气</span></div>
+      <div class="diff-cell content"><span class="check">✓</span></div>
+
+      <div class="diff-cell row-label">数据卡</div>
+      <div class="diff-cell content"><span class="cross">无</span></div>
+      <div class="diff-cell content"><span class="check">✓ 力量数据</span></div>
+      <div class="diff-cell content"><span class="check">✓ 恢复数据</span></div>
+      <div class="diff-cell content"><span class="check">✓ 两种</span></div>
+
+      <div class="diff-cell row-label">地的整体观感</div>
+      <div class="diff-cell content">正常好看</div>
+      <div class="diff-cell content"><span class="special">结构更精致壮实</span></div>
+      <div class="diff-cell content"><span class="special">环境更好 光/气氛</span></div>
+      <div class="diff-cell content"><span class="special">全面更好看</span></div>
+    </div>
+  </div>
+
+  <!-- Unity Scope -->
+  <div class="scope-section">
+    <h2>Unity Scope 分工</h2>
+    <div class="scope-grid">
+      <div class="scope-box unity-land">
+        <h3>Unity · Land 端</h3>
+        <ul>
+          <li>5种地形 3D 场景</li>
+          <li>栏位视觉（空/生长中/成熟）</li>
+          <li>通用配方 × 地形 = 产出模型</li>
+          <li>品质差异视觉（普通 vs 精炼）</li>
+          <li>Recover 环境效果（天气/光照/动物）</li>
+          <li>硬件独占 asset 的 3D 模型</li>
+          <li>朋友来访的视觉（脚印/痕迹）</li>
+        </ul>
+      </div>
+      <div class="scope-box unity-power">
+        <h3>Unity · Power 端</h3>
+        <ul>
+          <li>5种农场场景（和 Land 地形对齐）</li>
+          <li>农活动作动画（翻地/播种/浇水/收割）</li>
+          <li>作物生长 + 收割动画</li>
+          <li>Power 自己的游戏系统（独立扩展）</li>
+          <li>工具/升级的视觉</li>
+          <li>session 结束收割动画</li>
+        </ul>
+      </div>
+      <div class="scope-box native">
+        <h3>App Native UI</h3>
+        <ul>
+          <li>背包/资源管理界面</li>
+          <li>栏位分配交互（tap 选择）</li>
+          <li>社交界面（朋友/逛地/送礼）</li>
+          <li>数据卡展示 + 分享</li>
+          <li>推送和通知</li>
+          <li>"我的"页面（运动数据+趋势）</li>
+          <li>设置/同步/硬件连接</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Power Expandability -->
+  <div class="expand-section">
+    <h2>Power 的可扩展性</h2>
+    <p class="subtitle">Power 是独立游戏，有自己的深度。以下是可扩展方向（不影响 Land）：</p>
+    <div class="expand-grid">
+      <div class="expand-card">
+        <div class="exp-icon">🌾</div>
+        <div><div class="exp-title">作物系统</div><div class="exp-desc">季节轮换、解锁新品种、杂交育种、稀有作物</div></div>
+      </div>
+      <div class="expand-card">
+        <div class="exp-icon">🗺️</div>
+        <div><div class="exp-title">土地扩张</div><div class="exp-desc">开垦新地块、解锁新区域、不同区域种不同东西</div></div>
+      </div>
+      <div class="expand-card">
+        <div class="exp-icon">🔨</div>
+        <div><div class="exp-title">工具升级</div><div class="exp-desc">坚持训练 → 工具升级 → 同样rep效率更高/画面更好</div></div>
+      </div>
+      <div class="expand-card">
+        <div class="exp-icon">🌦️</div>
+        <div><div class="exp-title">天气事件</div><div class="exp-desc">随机旱灾（多做几组）、丰收季翻倍、台风（限时挑战）</div></div>
+      </div>
+      <div class="expand-card">
+        <div class="exp-icon">👤</div>
+        <div><div class="exp-title">NPC / 剧情</div><div class="exp-desc">角色订单（"帮我种3行"=3组深蹲）、解锁故事线</div></div>
+      </div>
+      <div class="expand-card">
+        <div class="exp-icon">🏆</div>
+        <div><div class="exp-title">成就系统</div><div class="exp-desc">累积解锁、里程碑奖励、装饰物、农场等级</div></div>
+      </div>
+      <div class="expand-card">
+        <div class="exp-icon">👥</div>
+        <div><div class="exp-title">多人合作</div><div class="exp-desc">同时 session → 一起种一片大田、合作收割</div></div>
+      </div>
+      <div class="expand-card">
+        <div class="exp-icon">🎪</div>
+        <div><div class="exp-title">轮作策略</div><div class="exp-desc">不同动作组合 = 不同种植策略 → 不同产出配比</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Alignment Points -->
+  <div class="principles" style="margin-top: 0;">
+    <div class="principle-card">
+      <h3>📐 双方需要对齐的</h3>
+      <p>① 5种地形的美术风格<br>② Power 独占 asset 的视觉设计<br>③ 管子的数据格式<br>④ "精炼"品质的视觉表达标准</p>
+    </div>
+    <div class="principle-card">
+      <h3>🔓 Power 可以自己决定的</h3>
+      <p>游戏深度、关卡设计、作物系统、NPC剧情、工具升级、天气机制、成就——全部独立，不需要 Land 配合。</p>
+    </div>
+    <div class="principle-card">
+      <h3>🔓 Land 可以自己决定的</h3>
+      <p>生态系统规则、社交玩法、新配方、季节事件、新地形——全部独立，不需要 Power 配合。</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
