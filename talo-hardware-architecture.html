@@ -205,6 +205,59 @@ h1 { font-size: 28px; font-weight: 300; margin-bottom: 8px; }
 .scope-box ul li { font-size: 11px; color: #999; padding: 4px 0; padding-left: 14px; position: relative; }
 .scope-box ul li::before { content: '→'; position: absolute; left: 0; color: #555; font-size: 10px; }
 
+/* Two Worlds Comparison */
+.two-worlds { margin-bottom: 64px; }
+.two-worlds h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
+.worlds-grid {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+.world-col {
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+.world-col.power-col {
+  background: linear-gradient(180deg, #1a2014, #0e140a);
+  border: 1px solid #2a4020;
+}
+.world-col.land-col {
+  background: linear-gradient(180deg, #0e1420, #080e18);
+  border: 1px solid #1a2a4a;
+}
+.world-col h3 { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+.world-col .world-device { font-size: 11px; color: #666; margin-bottom: 20px; }
+.world-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.world-row:first-of-type { border-top: none; }
+.world-row .wr-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; min-width: 56px; padding-top: 2px; }
+.world-row .wr-value { font-size: 13px; color: #ddd; line-height: 1.5; }
+.world-row .wr-value em { font-style: normal; color: #888; font-size: 11px; }
+.worlds-vs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.worlds-vs .vs-line { width: 1px; height: 40px; background: #2a2a36; }
+.worlds-vs .vs-text { font-size: 10px; color: #555; writing-mode: vertical-rl; letter-spacing: 2px; }
+.world-highlight {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.power-col .world-highlight { background: rgba(74,122,64,0.15); color: #9bba7e; border: 1px solid rgba(74,122,64,0.3); }
+.land-col .world-highlight { background: rgba(64,112,160,0.15); color: #7eb8c8; border: 1px solid rgba(64,112,160,0.3); }
+
 /* Scene Alignment */
 .scene-section { margin-bottom: 64px; }
 .scene-section h2 { font-size: 18px; font-weight: 400; margin-bottom: 24px; }
@@ -329,6 +382,105 @@ h1 { font-size: 28px; font-weight: 300; margin-bottom: 8px; }
           <li>使用 = 主动恢复行为</li>
           <li>主要产出：Recover 维度精准度 + 独占 asset</li>
           <li>让世界环境更好（光照/天气/动物）</li>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Worlds Experience -->
+  <div class="two-worlds">
+    <h2>两个世界，两种体验</h2>
+    <div class="worlds-grid">
+      <!-- Power -->
+      <div class="world-col power-col">
+        <h3>⚡ Kiwii Power</h3>
+        <div class="world-device">TV · 阻力踏板</div>
+        <div class="world-row">
+          <div class="wr-label">本质</div>
+          <div class="wr-value">一个用身体驱动的农活游戏</div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">视角</div>
+          <div class="wr-value">近景 — 你站在田里，手上有工具</div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">交互</div>
+          <div class="wr-value">做动作 = 干农活<br><em>深蹲=翻地 · 硬拉=收割 · 推举=浇水</em></div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">节奏</div>
+          <div class="wr-value">高密度 · 每个 rep 都有反馈<br><em>8-10分钟全程参与</em></div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">时间感</div>
+          <div class="wr-value">今天这一次 session<br><em>每次开机是新一轮农活</em></div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">情感</div>
+          <div class="wr-value">"干活的爽感"<br><em>劳动→收获→满足，即时闭环</em></div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">社交</div>
+          <div class="wr-value">无 — 这是你和土地的私密时间</div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">深度</div>
+          <div class="wr-value">有自己完整的进阶系统<br><em>作物/季节/工具/NPC/剧情线</em></div>
+        </div>
+        <div class="world-highlight">
+          💡 你在 Power 里的感受：我在用力气换真实的收获。每一下都看得见变化。做完的满足感像下班回家。
+        </div>
+      </div>
+
+      <!-- VS -->
+      <div class="worlds-vs">
+        <div class="vs-line"></div>
+        <div class="vs-text">同一世界</div>
+        <div class="vs-line"></div>
+        <div style="font-size:16px;color:#444">⇄</div>
+        <div class="vs-line"></div>
+        <div class="vs-text">数据管子</div>
+        <div class="vs-line"></div>
+      </div>
+
+      <!-- Land -->
+      <div class="world-col land-col">
+        <h3>🌍 Kiwii Land</h3>
+        <div class="world-device">手机 App</div>
+        <div class="world-row">
+          <div class="wr-label">本质</div>
+          <div class="wr-value">一个用生活养出来的世界</div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">视角</div>
+          <div class="wr-value">远景 — 你俯瞰自己的整块地</div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">交互</div>
+          <div class="wr-value">轻操作 = 分配资源、看生长、逛朋友<br><em>3-5个tap完成今天的事</em></div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">节奏</div>
+          <div class="wr-value">低密度 · 打开看一眼就够了<br><em>隔天回来有惊喜</em></div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">时间感</div>
+          <div class="wr-value">这周 / 这个月的积累<br><em>地是你长期的资产，永不重置</em></div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">情感</div>
+          <div class="wr-value">"积累后的身份"<br><em>我的地就是我的运动人格名片</em></div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">社交</div>
+          <div class="wr-value">核心功能 — 逛地/送礼/互助/被看到</div>
+        </div>
+        <div class="world-row">
+          <div class="wr-label">深度</div>
+          <div class="wr-value">生态系统 × 社交 × 养成<br><em>地形/配方/季节/稀有度/朋友互动</em></div>
+        </div>
+        <div class="world-highlight">
+          💡 你在 Land 里的感受：这是我的世界，它慢慢变成了只属于我的样子。朋友能看到我最近过得怎么样。
         </div>
       </div>
     </div>
