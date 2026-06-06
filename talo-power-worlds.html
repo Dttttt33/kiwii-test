@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii Power — 6种世界观 × Land 映射</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  background: #08080c;
+  color: #e8e8e8;
+  min-height: 100vh;
+  padding: 48px 24px;
+}
+.container { max-width: 1000px; margin: 0 auto; }
+h1 { font-size: 28px; font-weight: 300; margin-bottom: 8px; }
+.subtitle { color: #888; font-size: 14px; margin-bottom: 56px; }
+
+.world-card {
+  background: #10101a;
+  border: 1px solid #2a2a36;
+  border-radius: 20px;
+  padding: 36px 32px;
+  margin-bottom: 24px;
+  transition: border-color 0.2s;
+}
+.world-card:hover { border-color: #4a4a5a; }
+
+.world-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.world-num { font-size: 12px; color: #555; font-weight: 500; }
+.world-title { font-size: 20px; font-weight: 500; }
+.world-tag { font-size: 11px; color: #000; padding: 3px 10px; border-radius: 6px; font-weight: 600; }
+
+.world-desc {
+  font-size: 14px;
+  color: #bbb;
+  line-height: 1.8;
+  margin: 20px 0;
+  padding-left: 2px;
+}
+
+.world-core {
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+  margin: 20px 0;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.03);
+  border-left: 3px solid var(--accent, #888);
+  border-radius: 0 8px 8px 0;
+}
+
+.world-actions {
+  font-size: 12px;
+  color: #888;
+  margin: 16px 0;
+}
+.world-actions strong { color: #aaa; }
+
+.mapping-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #1e1e28;
+}
+.mapping-title { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px; }
+
+.mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.mapping-item {
+  background: #14141e;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.mapping-item .mi-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.mapping-item .mi-value { font-size: 12px; color: #ccc; line-height: 1.5; }
+
+.land-effect {
+  margin-top: 16px;
+  background: rgba(64,112,160,0.08);
+  border: 1px solid rgba(64,112,160,0.2);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 12px;
+  color: #9ab8cc;
+  line-height: 1.6;
+}
+.land-effect strong { color: #b8d4e4; }
+
+/* Color themes per card */
+.world-card:nth-child(1) { --accent: #ff6b4a; }
+.world-card:nth-child(1) .world-tag { background: #ff6b4a; }
+.world-card:nth-child(2) { --accent: #4a9aff; }
+.world-card:nth-child(2) .world-tag { background: #4a9aff; }
+.world-card:nth-child(3) { --accent: #7acc7a; }
+.world-card:nth-child(3) .world-tag { background: #7acc7a; }
+.world-card:nth-child(4) { --accent: #ffb84a; }
+.world-card:nth-child(4) .world-tag { background: #ffb84a; }
+.world-card:nth-child(5) { --accent: #cc7aff; }
+.world-card:nth-child(5) .world-tag { background: #cc7aff; }
+.world-card:nth-child(6) { --accent: #4adaaa; }
+.world-card:nth-child(6) .world-tag { background: #4adaaa; }
+
+/* Principle box */
+.principle-box {
+  background: #12121a;
+  border: 1px solid #2a2a36;
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-bottom: 48px;
+}
+.principle-box h2 { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: #aaa; }
+.principle-box p { font-size: 13px; color: #888; line-height: 1.7; }
+.principle-box strong { color: #ddd; }
+
+@media (max-width: 768px) {
+  .mapping-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Kiwii Power — 6种世界观</h1>
+  <p class="subtitle">每种世界观的故事 + 动作映射 + 对 Land 的资源效果</p>
+
+  <div class="principle-box">
+    <h2>统一原则</h2>
+    <p>
+      Power 不是 Land 里面的一块地。Power 是一个<strong>独立的世界</strong>。<br><br>
+      Power 的所有运动通过三条线路给 Land 输送资源：<br>
+      · <strong>Build 动作</strong>（深蹲/硬拉/推举等力量动作）→ 给 Land 的 Build 资源 → 让世界<strong>纵向变高变壮</strong><br>
+      · <strong>Move 动作</strong>（有氧/拉伸/跳跃）→ 给 Land 的 Move 资源 → 让世界<strong>横向铺展变多</strong><br>
+      · <strong>Recover</strong>（训练后的恢复状态）→ 给 Land 的 Recover → 让世界<strong>品质变好、稀有度提高</strong><br><br>
+      不同世界观 = 不同的故事包装。底层数据管子一样。
+    </p>
+  </div>
+
+  <!-- World 1 -->
+  <div class="world-card">
+    <div class="world-header">
+      <span class="world-num">01</span>
+      <span class="world-title">铸造/锻冶：异星锻造厂</span>
+      <span class="world-tag">建设感最强</span>
+    </div>
+    <div class="world-desc">
+      你在一颗陌生星球的废弃工厂里醒来。炉子还有余温，风箱已经锈死，铁砧上还留着上一个人没完成的半成品。<br><br>
+      这里没有救援、没有补给。但只要炉子还能烧，你就能把地上的废铁重新变成有用的东西。<br><br>
+      你踩风箱让火活过来。你把铁锭从炉里拖出来。你举起锤子一下一下打出形状。<br><br>
+      每一件从你手里出来的东西，都不是装饰。是结构。是骨架。是让一个世界能站得起来的东西。
+    </div>
+    <div class="world-core">
+      在一切都已经坍塌的地方，用力气把世界的骨架重新锻出来。
+    </div>
+    <div class="world-actions">
+      <strong>体感动作：</strong>踩风箱（深蹲节奏）、拔铁锭出炉（硬拉）、举锤锻打（推举）、拧螺栓（旋转）、拖重物过轨道（划船）
+    </div>
+    <div class="mapping-section">
+      <div class="mapping-title">→ 对 Land 的资源效果</div>
+      <div class="mapping-grid">
+        <div class="mapping-item">
+          <div class="mi-label">Build 动作产出</div>
+          <div class="mi-value">铁件、铰链、支撑杆、锻造板<br>→ 让 Land 的结构更高更稳</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Move 动作产出</div>
+          <div class="mi-value">碎铁屑、煤渣、矿砂<br>→ 让 Land 的地面铺展更远</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Recover 效果</div>
+          <div class="mi-value">炉温稳定度<br>→ 产出品质越高，Land 稀有度越高</div>
+        </div>
+      </div>
+      <div class="land-effect">
+        <strong>别人看你的 Land 时：</strong>你的世界有金属光泽的骨架若隐若现——灯塔有铁框、石阶有铁钉、树干缠着锻铁藤。一看就知道"这个人有 Power，在锻造厂干过活"。
+      </div>
+    </div>
+  </div>
+
+  <!-- World 2 -->
+  <div class="world-card">
+    <div class="world-header">
+      <span class="world-num">02</span>
+      <span class="world-title">造船/木工坊：雾海船坞</span>
+      <span class="world-tag">浪漫+力量</span>
+    </div>
+    <div class="world-desc">
+      雾海尽头有一个被遗弃的船坞。干船坞里躺着一艘没造完的船，龙骨还在，但肋骨断了大半，帆早就烂了。<br><br>
+      你不知道这艘船要去哪。但你知道它得被修好。<br><br>
+      你用力拉弯木板，让它贴合龙骨的弧度。你举起桅杆，扛到船头竖起来。你刨平甲板，一寸一寸让它变得光滑。<br><br>
+      每一次发力，这艘船就更接近完成。它完成的那天，也许你就知道它要去哪了。
+    </div>
+    <div class="world-core">
+      在雾海的尽头，一锤一刨地把一艘船从骨架变成可以出海的东西。
+    </div>
+    <div class="world-actions">
+      <strong>体感动作：</strong>刨木（硬拉节奏）、弯板压合（深蹲）、举桅杆（推举）、拉绳索（划船）、钉铆钉（爆发力短促）
+    </div>
+    <div class="mapping-section">
+      <div class="mapping-title">→ 对 Land 的资源效果</div>
+      <div class="mapping-grid">
+        <div class="mapping-item">
+          <div class="mi-label">Build 动作产出</div>
+          <div class="mi-value">船板、桅杆、龙骨件、绳索<br>→ 让 Land 的结构更高（桅杆=柱子，龙骨=梁）</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Move 动作产出</div>
+          <div class="mi-value">木屑、刨花、碎帆布<br>→ 让 Land 的覆盖面积延伸（铺路/架桥）</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Recover 效果</div>
+          <div class="mi-value">木材干燥度/工艺精细度<br>→ 恢复好时做出的件更精致，Land 稀有度高</div>
+        </div>
+      </div>
+      <div class="land-effect">
+        <strong>别人看你的 Land 时：</strong>你的世界有木质的温暖骨架——码头是手工木栈、高处有桅杆式的瞭望结构、绳索和帆布做的连接随风动。"这个人在造一艘什么东西。"
+      </div>
+    </div>
+  </div>
+
+  <!-- World 3 -->
+  <div class="world-card">
+    <div class="world-header">
+      <span class="world-num">03</span>
+      <span class="world-title">采石/建筑：山中石匠</span>
+      <span class="world-tag">最直觉</span>
+    </div>
+    <div class="world-desc">
+      山谷深处有一面裸露的石壁。千万年前地壳挤压留下的纹路还清清楚楚地刻在上面。<br><br>
+      你的工具很简单：一把锤，一根凿，一副手套。<br><br>
+      你把石头从山体里一块块凿出来。你扛着它们走到空地上。你把它们垒起来——先是一面矮墙，然后是台阶，然后是拱门，然后是更高的东西。<br><br>
+      石头不说话。但每一块都记得你用了多大力气把它凿出来。
+    </div>
+    <div class="world-core">
+      用锤子和双手，把山里的石头变成站在地面上的结构。
+    </div>
+    <div class="world-actions">
+      <strong>体感动作：</strong>锤击凿石（推举/爆发）、搬石扛石（深蹲）、拖石板（硬拉）、夯土压实（踏步）、垒砌（重复上举）
+    </div>
+    <div class="mapping-section">
+      <div class="mapping-title">→ 对 Land 的资源效果</div>
+      <div class="mapping-grid">
+        <div class="mapping-item">
+          <div class="mi-label">Build 动作产出</div>
+          <div class="mi-value">石砖、石柱、拱门件、台阶<br>→ 最直接让 Land 往上垒</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Move 动作产出</div>
+          <div class="mi-value">碎石、沙砾、石粉<br>→ 铺路、填地、让地面更平整更远</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Recover 效果</div>
+          <div class="mi-value">石纹清晰度/切面光滑度<br>→ 恢复好的石头更好看，Land 出稀有石材</div>
+        </div>
+      </div>
+      <div class="land-effect">
+        <strong>别人看你的 Land 时：</strong>你的世界有裸露的石质骨架——干净的石阶、精致的石拱、手凿纹路清晰可见的石墙。没有任何多余装饰，但每一块石头都有分量。
+      </div>
+    </div>
+  </div>
+
+  <!-- World 4 -->
+  <div class="world-card">
+    <div class="world-header">
+      <span class="world-num">04</span>
+      <span class="world-title">酿造/发酵：地下酒窖</span>
+      <span class="world-tag">品质+时间感</span>
+    </div>
+    <div class="world-desc">
+      山坡下面有一条通往地底的楼梯。推开木门，是一排又一排落满灰的橡木桶。空气里是酵母、果香和时间混在一起的味道。<br><br>
+      这里的工作不快。但每一下都在改变什么。<br><br>
+      你踩碎果实让汁液流出来。你搬动沉重的桶让它换一个位置。你搅拌大缸里正在发生变化的液体。你把盖子压紧，让时间去做剩下的事。<br><br>
+      一周后你打开桶盖，闻到的味道跟上周不一样了。那就是你的力气留下的痕迹。
+    </div>
+    <div class="world-core">
+      在地下的安静里，用力气启动一些需要时间才能完成的变化。
+    </div>
+    <div class="world-actions">
+      <strong>体感动作：</strong>踩压/踏碎（深蹲节奏）、搬桶/推桶（硬拉）、举倒料（推举）、搅拌大缸（旋转划船）、拧压盖（握力）
+    </div>
+    <div class="mapping-section">
+      <div class="mapping-title">→ 对 Land 的资源效果</div>
+      <div class="mapping-grid">
+        <div class="mapping-item">
+          <div class="mi-label">Build 动作产出</div>
+          <div class="mi-value">发酵精华、酒液、浓缩汁<br>→ 浇灌 Land 的根系，让已有结构变粗变壮</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Move 动作产出</div>
+          <div class="mi-value">果渣、酒糟、发酵气泡<br>→ 做肥料让 Land 地面生命更旺盛</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Recover 效果</div>
+          <div class="mi-value">发酵环境温湿度<br>→ 恢复好 = 发酵更完美，Land 稀有变种概率高</div>
+        </div>
+      </div>
+      <div class="land-effect">
+        <strong>别人看你的 Land 时：</strong>你的世界有一种"底蕴感"——不是表面高大，而是同样一棵树在你这里根系更深、树干更粗、颜色更饱和。好像所有东西都被好的土壤养过。"这个人的地有底子。"
+      </div>
+    </div>
+  </div>
+
+  <!-- World 5 -->
+  <div class="world-card">
+    <div class="world-header">
+      <span class="world-num">05</span>
+      <span class="world-title">开矿/掘进：深岩矿道</span>
+      <span class="world-tag">力量感最强</span>
+    </div>
+    <div class="world-desc">
+      矿道入口只有一点微光。越往里走，岩壁越窄，空气越重。但你知道深处有东西在等你。<br><br>
+      你举起镐，对着岩面一下一下地凿。石屑飞溅。火星四射。汗从额头掉进黑暗里。<br><br>
+      突然，镐尖碰到了不一样的东西。纹路变了。硬度变了。颜色变了。<br><br>
+      你凿开最后一层薄岩，看到了一小片从未见过光的晶体。它在你的头灯下第一次发光。<br><br>
+      你把它从岩壁里完整地撬出来。它很重。但你把它扛出了矿道。
+    </div>
+    <div class="world-core">
+      往深处走，往暗处挖，把藏在地心里的东西带回地面。
+    </div>
+    <div class="world-actions">
+      <strong>体感动作：</strong>镐击（推举/爆发）、撬石（硬拉）、蹲挖/掘进（深蹲）、推矿车（冲刺）、扛矿石上梯（负重走）
+    </div>
+    <div class="mapping-section">
+      <div class="mapping-title">→ 对 Land 的资源效果</div>
+      <div class="mapping-grid">
+        <div class="mapping-item">
+          <div class="mi-label">Build 动作产出</div>
+          <div class="mi-value">矿石、晶体、金属锭、化石<br>→ 成为 Land 结构的"内核"，让建筑从内部发光/更坚固</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Move 动作产出</div>
+          <div class="mi-value">碎矿、石英砂、矿尘<br>→ 铺在 Land 地面形成发光小路/矿物质土壤</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Recover 效果</div>
+          <div class="mi-value">挖掘深度/矿脉纯度<br>→ 恢复好时挖得更深，能触及稀有矿层</div>
+        </div>
+      </div>
+      <div class="land-effect">
+        <strong>别人看你的 Land 时：</strong>你的世界有矿物质的光泽——石头里嵌着晶体、地面有矿砂微微发光、结构里透出一种来自地底深处的颜色。"这个人挖到了很深的地方。"
+      </div>
+    </div>
+  </div>
+
+  <!-- World 6 -->
+  <div class="world-card">
+    <div class="world-header">
+      <span class="world-num">06</span>
+      <span class="world-title">重型开荒：荒原拓荒者</span>
+      <span class="world-tag">最兼容所有设定</span>
+    </div>
+    <div class="world-desc">
+      眼前是一片没有人来过的荒地。灌木纠缠成墙，石头堆满地面，枯树横在你想走的方向上。<br><br>
+      没有路。没有平地。没有任何可以直接使用的东西。<br><br>
+      你弯腰抓住枯树根，用全身的力气把它从土里拔出来。你搬开一块又一块石头，露出下面的土。你扛起原木清出一片空地。<br><br>
+      到傍晚，你回头看——身后是你今天清出来的一小块平地。很小。但是昨天这里什么都没有。<br><br>
+      明天你会继续。后天也会。直到这片荒地上长出它本来应该有的东西。
+    </div>
+    <div class="world-core">
+      在什么都没有的地方，用蛮力清出第一块可以生长的空间。
+    </div>
+    <div class="world-actions">
+      <strong>体感动作：</strong>拔树根/拔桩（硬拉）、搬石/扛木（深蹲）、挥斧伐木（推举）、推翻障碍（冲刺）、夯地（踏步）、犁地（划船）
+    </div>
+    <div class="mapping-section">
+      <div class="mapping-title">→ 对 Land 的资源效果</div>
+      <div class="mapping-grid">
+        <div class="mapping-item">
+          <div class="mi-label">Build 动作产出</div>
+          <div class="mi-value">清出的空地、地基、原木桩<br>→ 给 Land 提供"地基"，让结构有地方往上长</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Move 动作产出</div>
+          <div class="mi-value">清除的灌木、翻过的土<br>→ 让 Land 可用面积变大，能铺展得更远</div>
+        </div>
+        <div class="mapping-item">
+          <div class="mi-label">Recover 效果</div>
+          <div class="mi-value">体力恢复/土壤翻新程度<br>→ 恢复好时清出的地更肥沃，种啥长啥</div>
+        </div>
+      </div>
+      <div class="land-effect">
+        <strong>别人看你的 Land 时：</strong>你的世界有一种"刚被人类碰过"的野性——不是精致花园，而是原始森林边缘被清出的一片开阔地。有原木桩当柱子、有翻过的深棕色土壤、有刚冒出来的新芽。"这个人用蛮力打开了一片天地。"
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
