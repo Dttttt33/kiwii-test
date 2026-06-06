@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii — 5个Power世界 → 5套Land设定 × 各5人格</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  background: #08080c;
+  color: #e8e8e8;
+  min-height: 100vh;
+  padding: 48px 24px;
+}
+.container { max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 28px; font-weight: 300; margin-bottom: 8px; }
+.subtitle { color: #888; font-size: 14px; margin-bottom: 48px; }
+
+.world-block {
+  margin-bottom: 64px;
+  padding-bottom: 64px;
+  border-bottom: 1px solid #1e1e28;
+}
+.world-block:last-child { border-bottom: none; }
+
+.world-header-bar {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 6px;
+}
+.world-num { font-size: 11px; color: #555; font-weight: 600; letter-spacing: 1px; }
+.world-title { font-size: 24px; font-weight: 500; }
+
+.power-recap {
+  font-size: 12px; color: #777; margin-bottom: 24px; line-height: 1.6;
+}
+.power-recap strong { color: #aaa; }
+
+.land-setting {
+  background: #12121a;
+  border: 1px solid #2a2a36;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+.land-setting h3 { font-size: 14px; font-weight: 500; color: #ccc; margin-bottom: 12px; }
+.land-setting p { font-size: 13px; color: #999; line-height: 1.8; }
+.land-setting strong { color: #e8e8e8; }
+
+.dim-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.dim-box {
+  border-radius: 12px;
+  padding: 18px 18px;
+  border: 1px solid;
+}
+.dim-box.move { background: rgba(122,204,122,0.04); border-color: rgba(122,204,122,0.15); }
+.dim-box.build { background: rgba(255,184,74,0.04); border-color: rgba(255,184,74,0.15); }
+.dim-box.recover { background: rgba(155,122,204,0.04); border-color: rgba(155,122,204,0.15); }
+.dim-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
+.dim-box.move .dim-label { color: #7acc7a; }
+.dim-box.build .dim-label { color: #ffb84a; }
+.dim-box.recover .dim-label { color: #9b7acc; }
+.dim-meaning { font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 6px; }
+.dim-visual { font-size: 12px; color: #888; line-height: 1.6; }
+
+.personas-title { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px; }
+.persona-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.persona-card {
+  background: #14141e;
+  border: 1px solid #2a2a36;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.persona-icon { font-size: 22px; padding-top: 2px; }
+.persona-content {}
+.persona-name { font-size: 14px; font-weight: 500; color: #eee; margin-bottom: 4px; }
+.persona-match { font-size: 10px; color: #666; margin-bottom: 8px; }
+.persona-desc { font-size: 12px; color: #999; line-height: 1.6; }
+.persona-move { font-size: 11px; color: #7acc7a; margin-top: 6px; }
+.persona-build { font-size: 11px; color: #ffb84a; margin-top: 3px; }
+
+@media (max-width: 768px) {
+  .dim-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>从 Power 出发 → Land 该长什么样</h1>
+  <p class="subtitle">每个 Power 世界推导出一套 Land 设定：Move 是什么、Build 是什么、5 种人格分别是什么</p>
+
+  <!-- ==================== WORLD 1 ==================== -->
+  <div class="world-block">
+    <div class="world-header-bar">
+      <span class="world-num">POWER 01</span>
+      <span class="world-title">异星生存食堂</span>
+    </div>
+    <div class="power-recap">
+      <strong>Power 里你在做：</strong>水培泵压、搬培养缸、接管道、搅藻池、撒种采摘、做补给餐<br>
+      <strong>核心感受：</strong>在不适合生存的地方，一点一点造出一个能活的系统
+    </div>
+
+    <div class="land-setting">
+      <h3>这个 Power 推导出的 Land 世界</h3>
+      <p>
+        你的 Land 是一颗<strong>刚被唤醒的星球</strong>。一开始什么都没有——灰色的地表、稀薄的空气、沉默的石头。<br><br>
+        你的运动让这颗星球一点一点<strong>活过来</strong>。先是空气有了氧、然后地面出现第一抹绿、然后水开始流、然后第一个生物出现。<br><br>
+        这个 Land 的叙事是：<strong>从零到有的造星过程</strong>。别人来你的地，看到的是"这颗星球被这个人养活了"。
+      </p>
+    </div>
+
+    <div class="dim-row">
+      <div class="dim-box move">
+        <div class="dim-label">Move 看起来是</div>
+        <div class="dim-meaning">生命扩散</div>
+        <div class="dim-visual">氧气圈扩大、绿色从中心向外蔓延、新区域被"激活"变得可以生存。从灰色变成有颜色。</div>
+      </div>
+      <div class="dim-box build">
+        <div class="dim-label">Build 看起来是</div>
+        <div class="dim-meaning">系统成熟</div>
+        <div class="dim-visual">植物从幼苗变成完整生态、结构从临时变成永久、系统从脆弱变成自循环。一个东西从"勉强活着"变成"稳定运行"。</div>
+      </div>
+      <div class="dim-box recover">
+        <div class="dim-label">Recover 看起来是</div>
+        <div class="dim-meaning">变异进化</div>
+        <div class="dim-visual">已有生物出现适应性变异——发光、变色、形态更复杂。整颗星球的"进化速度"在加快。</div>
+      </div>
+    </div>
+
+    <div class="personas-title">这个 Land 里的五种人格</div>
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="persona-icon">🫁</div>
+        <div class="persona-content">
+          <div class="persona-name">造氧者</div>
+          <div class="persona-match">匹配：稳定输出型、享受基础建设、不急于看到结果</div>
+          <div class="persona-desc">你的星球以"空气"为核心。第一优先是让大气变得可呼吸。你的地远看有一层淡绿色的雾——那是氧气在扩散。</div>
+          <div class="persona-move">Move → 氧气圈径变大，更多地表从"死"变成"可生存"</div>
+          <div class="persona-build">Build → 产氧植物从小苗变成巨型制氧林，空气浓度可视化变深</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">💧</div>
+        <div class="persona-content">
+          <div class="persona-name">引水者</div>
+          <div class="persona-match">匹配：路径思维、喜欢规划流动、享受"通了"的快感</div>
+          <div class="persona-desc">你的星球以"水"为核心。第一优先是让液态水出现和流动。你的地有越来越复杂的水系——溪、湖、瀑布、地下河。</div>
+          <div class="persona-move">Move → 水路延伸到新区域，干涸地带出现第一滴水</div>
+          <div class="persona-build">Build → 水系从细流变成河、从浅洼变成深湖、瀑布落差变大</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🌱</div>
+        <div class="persona-content">
+          <div class="persona-name">播种者</div>
+          <div class="persona-match">匹配：多样性导向、喜欢收集、享受"又多了一种"</div>
+          <div class="persona-desc">你的星球以"物种多样性"为核心。第一优先是让尽可能多种类的生物出现。你的地像一个快速进化的实验场。</div>
+          <div class="persona-move">Move → 新物种出现（植物/菌/小生物），地表越来越杂越来越满</div>
+          <div class="persona-build">Build → 已有物种成熟到可以繁殖的阶段、形成稳定种群</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🏗️</div>
+        <div class="persona-content">
+          <div class="persona-name">建站者</div>
+          <div class="persona-match">匹配：结构思维、喜欢搭系统、享受"跑通了"</div>
+          <div class="persona-desc">你的星球以"基础设施"为核心。第一优先是让系统互相连通。你的地有管道、温室、储能装置——人造的和自然的混合。</div>
+          <div class="persona-move">Move → 新节点出现（小温室/储水站/能量桩），网络扩展</div>
+          <div class="persona-build">Build → 节点升级，从临时变永久、从单机变联网、从手动变自动</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🔬</div>
+        <div class="persona-content">
+          <div class="persona-name">变异者</div>
+          <div class="persona-match">匹配：猎奇型、喜欢稀有、享受"没人见过这个"</div>
+          <div class="persona-desc">你的星球以"异变"为核心。第一优先不是数量而是极端形态。你的地上东西不多，但每一个都很怪很美很稀有。</div>
+          <div class="persona-move">Move → 新变异位点出现（可能变异的"热点"区域增多）</div>
+          <div class="persona-build">Build → 已有变异体稳定下来、从偶发变成可繁殖的稳定种</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== WORLD 2 ==================== -->
+  <div class="world-block">
+    <div class="world-header-bar">
+      <span class="world-num">POWER 02</span>
+      <span class="world-title">孤独灯塔食堂</span>
+    </div>
+    <div class="power-recap">
+      <strong>Power 里你在做：</strong>翻盐碱地、拉渔网海藻、搬挡风石、搅汤揉面、采摘、递餐、点灯<br>
+      <strong>核心感受：</strong>在雾海孤岛上经营一间食堂，为迷路的人提供热饭和方向
+    </div>
+
+    <div class="land-setting">
+      <h3>这个 Power 推导出的 Land 世界</h3>
+      <p>
+        你的 Land 是一座<strong>雾中慢慢显现的岛</strong>。一开始被浓雾完全包围，什么都看不清。<br><br>
+        你的运动让雾一层一层散开——先看到脚下的地，然后是近处的海岸线，然后是远处的礁石，最后是海平线和星空。<br><br>
+        这个 Land 的叙事是：<strong>雾散了，世界亮了</strong>。别人来你的地，看到的是"这个人的岛越来越清晰了，灯塔越来越亮了"。
+      </p>
+    </div>
+
+    <div class="dim-row">
+      <div class="dim-box move">
+        <div class="dim-label">Move 看起来是</div>
+        <div class="dim-meaning">雾散/可见范围扩大</div>
+        <div class="dim-visual">雾退一圈，新的区域从模糊变清晰。海岸线露出更多、远处的岛变得可见。你的世界在"被看见"。</div>
+      </div>
+      <div class="dim-box build">
+        <div class="dim-label">Build 看起来是</div>
+        <div class="dim-meaning">建筑/结构从废墟中修复</div>
+        <div class="dim-visual">灯塔加一层、食堂多一面墙、栈桥延伸一段、挡风墙变高。已有的废墟从破烂变成完整变成美。</div>
+      </div>
+      <div class="dim-box recover">
+        <div class="dim-label">Recover 看起来是</div>
+        <div class="dim-meaning">光变暖/旅人来访</div>
+        <div class="dim-visual">灯塔的光从冷白变暖黄、食堂窗户透出暖光、偶尔有旅人/候鸟/海兽来访留下痕迹。</div>
+      </div>
+    </div>
+
+    <div class="personas-title">这个 Land 里的五种人格</div>
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="persona-icon">🔦</div>
+        <div class="persona-content">
+          <div class="persona-name">守灯人</div>
+          <div class="persona-match">匹配：责任感强、稳定输出、享受"被需要"</div>
+          <div class="persona-desc">你的岛以灯塔为核心。灯塔在一层一层变高变亮——从废墟里修出来的光，是整个岛的支柱。</div>
+          <div class="persona-move">Move → 灯光照射范围变远，照亮更多海域和暗礁</div>
+          <div class="persona-build">Build → 灯塔加层变高、结构更稳、光更亮更远</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🍲</div>
+        <div class="persona-content">
+          <div class="persona-name">煮汤人</div>
+          <div class="persona-match">匹配：关系导向、温暖、享受"有人来了"</div>
+          <div class="persona-desc">你的岛以食堂为核心。食堂越来越完整——从一口锅变成有桌椅、有菜单、有屋顶的温暖空间。</div>
+          <div class="persona-move">Move → 食堂周围出现更多配套——菜园/晾衣绳/香草架，生活气息扩散</div>
+          <div class="persona-build">Build → 食堂本身变大变完整，厨房设备增加，能做的菜变多</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🌊</div>
+        <div class="persona-content">
+          <div class="persona-name">探雾人</div>
+          <div class="persona-match">匹配：好奇心驱动、喜欢发现、享受"又看到新东西了"</div>
+          <div class="persona-desc">你的岛以"散雾"为核心。你最关心的不是修什么——是看到更多。雾每退一点你就兴奋。</div>
+          <div class="persona-move">Move → 雾退更快更远，新区域被照亮/显现</div>
+          <div class="persona-build">Build → 已显现区域里的细节变丰富——不是更大，是更清晰更真实</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🐚</div>
+        <div class="persona-content">
+          <div class="persona-name">拾潮人</div>
+          <div class="persona-match">匹配：收集癖、观察型、享受"潮水带来了什么"</div>
+          <div class="persona-desc">你的岛以海岸线为核心。你不急着修灯塔——你每天在意的是退潮后沙滩上多了什么。</div>
+          <div class="persona-move">Move → 海岸线变长、潮池变多、能捡到的东西种类增加</div>
+          <div class="persona-build">Build → 收集到的东西从散落变成陈列——贝壳墙、漂流木架、海玻璃马赛克</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🐦</div>
+        <div class="persona-content">
+          <div class="persona-name">候鸟站</div>
+          <div class="persona-match">匹配：社交能量型、喜欢热闹、享受"来人了"</div>
+          <div class="persona-desc">你的岛以"来访者"为核心。你修的一切都是为了让更多人/鸟/兽愿意来、愿意留。</div>
+          <div class="persona-move">Move → 可停靠的位置增多——码头/鸟架/浅滩台阶</div>
+          <div class="persona-build">Build → 来访者的种类升级——从虫到鸟到大型海兽到人类旅人</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== WORLD 3 ==================== -->
+  <div class="world-block">
+    <div class="world-header-bar">
+      <span class="world-num">POWER 03</span>
+      <span class="world-title">四季山间民宿</span>
+    </div>
+    <div class="power-recap">
+      <strong>Power 里你在做：</strong>翻地插秧、割稻拔草、扛粮立竿、采茶采果、捣年糕烤团子、挂灯笼摇铃<br>
+      <strong>核心感受：</strong>在四季分明的山间民宿里，用料理和节日把人情味找回来
+    </div>
+
+    <div class="land-setting">
+      <h3>这个 Power 推导出的 Land 世界</h3>
+      <p>
+        你的 Land 是一座<strong>有四季流转的山村</strong>。它真的在随时间变——春天有樱花和新芽、夏天有浓绿和蝉、秋天有红叶和稻黄、冬天有雪和炉火。<br><br>
+        你的运动让这个村子<strong>越来越有人住过的痕迹</strong>——从荒废的旧村变成有烟火气的活地方。田在被种、灯在亮着、路在被走。<br><br>
+        这个 Land 的叙事是：<strong>一个冷清的山村被你一点一点暖回来</strong>。别人来你的地，能感觉到"有人在这里认真过日子"。
+      </p>
+    </div>
+
+    <div class="dim-row">
+      <div class="dim-box move">
+        <div class="dim-label">Move 看起来是</div>
+        <div class="dim-meaning">生活半径变大</div>
+        <div class="dim-visual">可走的路变长——从民宿到田、到神社、到温泉、到竹林、到集市。地图上亮着的区域越来越多。</div>
+      </div>
+      <div class="dim-box build">
+        <div class="dim-label">Build 看起来是</div>
+        <div class="dim-meaning">房子/田/设施修复完善</div>
+        <div class="dim-visual">民宿从破旧变成干净、田从荒草变成整齐、设施从坏掉变成能用。每一样东西在被"修好"。</div>
+      </div>
+      <div class="dim-box recover">
+        <div class="dim-label">Recover 看起来是</div>
+        <div class="dim-meaning">季节更分明/节日出现</div>
+        <div class="dim-visual">四季变化的幅度更大、颜色更饱和。恢复好时触发节日事件——祭典、集市、花见、雪祭。</div>
+      </div>
+    </div>
+
+    <div class="personas-title">这个 Land 里的五种人格</div>
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="persona-icon">🌾</div>
+        <div class="persona-content">
+          <div class="persona-name">田主</div>
+          <div class="persona-match">匹配：踏实务实、享受劳动成果、有耐心等收成</div>
+          <div class="persona-desc">你的村以稻田为核心。最显眼的是一片越来越大越来越整齐的田——四季最明显（插秧/抽穗/金黄/雪覆）。</div>
+          <div class="persona-move">Move → 田的面积变大，从一块变成一片梯田</div>
+          <div class="persona-build">Build → 田的设施完善——水渠通了、谷仓建了、晒场铺好了</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🏮</div>
+        <div class="persona-content">
+          <div class="persona-name">宿主</div>
+          <div class="persona-match">匹配：关系导向、好客、享受"招待人"的快乐</div>
+          <div class="persona-desc">你的村以民宿为核心。你的民宿在变大——从一间屋变成有庭院、有茶室、有展望台的完整旅馆。</div>
+          <div class="persona-move">Move → 客房增多、能接待的客人类型增加</div>
+          <div class="persona-build">Build → 民宿建筑变精致——从修补变成扩建、从简陋变成有风格</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🍵</div>
+        <div class="persona-content">
+          <div class="persona-name">料理人</div>
+          <div class="persona-match">匹配：手艺型、讲究过程、享受"做出来了"</div>
+          <div class="persona-desc">你的村以厨房/食堂为核心。你在意的不是房子多大——是能做的菜有多少种、食材有多丰富。</div>
+          <div class="persona-move">Move → 食材种类增加——菜园物种变多、能采集的区域变广</div>
+          <div class="persona-build">Build → 厨房设施升级——灶台变好、器具增多、能做的料理复杂度上升</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">⛩️</div>
+        <div class="persona-content">
+          <div class="persona-name">祭司</div>
+          <div class="persona-match">匹配：仪式感强、重视节奏/节日、精神性</div>
+          <div class="persona-desc">你的村以神社和节日为核心。你的四季事件最丰富——别人的村可能只有春秋两个节日，你的每个月都有。</div>
+          <div class="persona-move">Move → 节日种类/数量增多、能参与的活动变多</div>
+          <div class="persona-build">Build → 神社/祭坛修复完善、节日规模变大（从一个人变成一群人）</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🚶</div>
+        <div class="persona-content">
+          <div class="persona-name">散步者</div>
+          <div class="persona-match">匹配：慢节奏、不目标驱动、享受"路上"而非终点</div>
+          <div class="persona-desc">你的村以"路"为核心。你不急着修民宿——你在意的是能走的小路有多长、经过多少风景。</div>
+          <div class="persona-move">Move → 小路延伸到更远——到山顶、到瀑布、到隐秘的花田</div>
+          <div class="persona-build">Build → 路两边的风景变密变好——从空荡变成有竹林/石灯/溪流/野花</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== WORLD 4 ==================== -->
+  <div class="world-block">
+    <div class="world-header-bar">
+      <span class="world-num">POWER 04</span>
+      <span class="world-title">小车厨房旅行记</span>
+    </div>
+    <div class="power-recap">
+      <strong>Power 里你在做：</strong>搬土箱/提水桶、拉遮阳棚/固定支架、揉面翻锅切菜、撒种采摘、推车展摊<br>
+      <strong>核心感受：</strong>开着小餐车走遍世界，把一路遇见的风景做成料理
+    </div>
+
+    <div class="land-setting">
+      <h3>这个 Power 推导出的 Land 世界</h3>
+      <p>
+        你的 Land 是一张<strong>不断展开的地图</strong>。不是一块固定的地——是一条路线。你的车在走，经过的地方都留下了痕迹。<br><br>
+        你的运动让这条路<strong>越来越长、经过的地方越来越多</strong>。每到一个新地方就解锁一小块区域，上面留下你待过的痕迹——一个小摊、几盆植物、一群认识你的人。<br><br>
+        这个 Land 的叙事是：<strong>一条越来越长的旅途，沿路全是你留下的气味</strong>。别人来你的地，看到的是"这个人走过好多地方"。
+      </p>
+    </div>
+
+    <div class="dim-row">
+      <div class="dim-box move">
+        <div class="dim-label">Move 看起来是</div>
+        <div class="dim-meaning">路线变长/新地点解锁</div>
+        <div class="dim-visual">地图上新的一段路亮了，新的地点出现——海边小镇、山间村落、沙漠绿洲、港口集市。你到过的地方越来越多。</div>
+      </div>
+      <div class="dim-box build">
+        <div class="dim-label">Build 看起来是</div>
+        <div class="dim-meaning">已到过的地方痕迹加深</div>
+        <div class="dim-visual">你在某个地方留下的痕迹变重——临时小摊变成固定铺位、车顶花箱变成小花园、路人变成熟客。一个"路过"变成"驻扎过"。</div>
+      </div>
+      <div class="dim-box recover">
+        <div class="dim-label">Recover 看起来是</div>
+        <div class="dim-meaning">各地风味融合/独特料理</div>
+        <div class="dim-visual">你做的料理开始出现"混合风味"——两个地方的食材组合出新东西。恢复好时解锁独特配方。</div>
+      </div>
+    </div>
+
+    <div class="personas-title">这个 Land 里的五种人格</div>
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="persona-icon">🗺️</div>
+        <div class="persona-content">
+          <div class="persona-name">远行者</div>
+          <div class="persona-match">匹配：好奇心强、数量导向、享受"又解锁了一个新地方"</div>
+          <div class="persona-desc">你的地图以"长度"为核心。你走过的路比谁都长，到过的地方比谁都多。每个地方只浅浅留痕就走了。</div>
+          <div class="persona-move">Move → 路线延伸极快、新地点解锁多</div>
+          <div class="persona-build">Build → 不深耕单点，但路线本身变得更"清晰"——标记/路标/通路质量</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🏕️</div>
+        <div class="persona-content">
+          <div class="persona-name">扎营者</div>
+          <div class="persona-match">匹配：深度型、喜欢把一个地方经营透、不急着走</div>
+          <div class="persona-desc">你的地图点不多，但每个点都很"厚"。你在一个地方待久一点——临时摊变成了小店，有了回头客。</div>
+          <div class="persona-move">Move → 单点周围可探索区域增多（镇上的巷子/附近的山）</div>
+          <div class="persona-build">Build → 单点设施从简陋变完善——从路边摊变成有招牌有桌椅的小餐厅</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🧑‍🍳</div>
+        <div class="persona-content">
+          <div class="persona-name">融合料理人</div>
+          <div class="persona-match">匹配：创造型、喜欢混搭、享受"新组合"</div>
+          <div class="persona-desc">你的地图以"食谱"为核心。你每到一个地方不是看风景——是收集食材和做法。你的价值是"别人组合不出来的菜"。</div>
+          <div class="persona-move">Move → 可获得食材种类增多（到新地方就解锁新原料）</div>
+          <div class="persona-build">Build → 食谱复杂度提升——从单一菜系到多地融合、从简单到精致</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">📸</div>
+        <div class="persona-content">
+          <div class="persona-name">记录者</div>
+          <div class="persona-match">匹配：审美型、重视展示、享受"别人看到我走过的路"</div>
+          <div class="persona-desc">你的地图以"视觉"为核心。你在每个地方留下的痕迹很好看——像一本摄影集/旅行日记。</div>
+          <div class="persona-move">Move → 新的"画面"解锁——每个地点呈现为一帧很美的画</div>
+          <div class="persona-build">Build → 每帧画的细节/丰富度增加——从素描变成完整着色</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🤝</div>
+        <div class="persona-content">
+          <div class="persona-name">结交者</div>
+          <div class="persona-match">匹配：社交驱动、关系导向、享受"认识了新朋友"</div>
+          <div class="persona-desc">你的地图以"人"为核心。你每个地方最在意的是遇到了谁。你的路线上标记的不是地名——是人名。</div>
+          <div class="persona-move">Move → 遇到的人变多（NPC/路人/其他用户）</div>
+          <div class="persona-build">Build → 关系从"路人"变成"熟客"变成"朋友"，互动深度增加</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== WORLD 5 ==================== -->
+  <div class="world-block">
+    <div class="world-header-bar">
+      <span class="world-num">POWER 05</span>
+      <span class="world-title">城市屋顶生态合作社</span>
+    </div>
+    <div class="power-recap">
+      <strong>Power 里你在做：</strong>搬花箱上楼、搭架子/拉管道、扛土袋、浇水撒种采摘、铺防水布展棚子<br>
+      <strong>核心感受：</strong>在钢筋水泥的城市上方，搭出一个会生长的邻里厨房
+    </div>
+
+    <div class="land-setting">
+      <h3>这个 Power 推导出的 Land 世界</h3>
+      <p>
+        你的 Land 是一座<strong>正在被绿色侵入的城市</strong>。一开始是纯水泥灰——天台、管道、排风口、混凝土缝。<br><br>
+        你的运动让绿色<strong>一点一点从缝隙里长出来</strong>、从屋顶蔓延到墙面、从一栋楼扩散到一个街区。人造和自然在混合。<br><br>
+        这个 Land 的叙事是：<strong>城市正在被你亲手变绿</strong>。别人来你的地，看到的是"水泥森林里居然长出了这些"。
+      </p>
+    </div>
+
+    <div class="dim-row">
+      <div class="dim-box move">
+        <div class="dim-label">Move 看起来是</div>
+        <div class="dim-meaning">绿色蔓延到新楼/新区域</div>
+        <div class="dim-visual">隔壁楼的天台也开始长东西了、墙面有藤了、阳台有花箱了。绿色从一个点扩散到一片区。</div>
+      </div>
+      <div class="dim-box build">
+        <div class="dim-label">Build 看起来是</div>
+        <div class="dim-meaning">种植结构往上搭/系统变完整</div>
+        <div class="dim-visual">从平面花箱变成垂直墙、从一层架子变成多层、从手动浇水变成自动灌溉。你的屋顶农园在"长高"。</div>
+      </div>
+      <div class="dim-box recover">
+        <div class="dim-label">Recover 看起来是</div>
+        <div class="dim-meaning">生态出现/动物来了</div>
+        <div class="dim-visual">蜜蜂来了、蝴蝶来了、猫上来了、楼下的人来串门了。从"人造种植"变成"有了生态"。</div>
+      </div>
+    </div>
+
+    <div class="personas-title">这个 Land 里的五种人格</div>
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="persona-icon">🌿</div>
+        <div class="persona-content">
+          <div class="persona-name">屋顶农夫</div>
+          <div class="persona-match">匹配：务实产出型、享受"种出来了就能吃"</div>
+          <div class="persona-desc">你的城市以"产出"为核心。你的屋顶种的是菜——番茄黄瓜香草辣椒。实用、丰收、有烟火气。</div>
+          <div class="persona-move">Move → 种植面积扩大——从一个花箱到占满整个天台</div>
+          <div class="persona-build">Build → 产量/品种升级——从只种一种到多种轮作、从小收获到需要分给邻居</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🏗️</div>
+        <div class="persona-content">
+          <div class="persona-name">架构师</div>
+          <div class="persona-match">匹配：系统思维、喜欢搭结构、享受"工程完成"</div>
+          <div class="persona-desc">你的城市以"结构"为核心。你享受的不是种什么——是搭出越来越复杂的垂直种植系统。管道、架子、自动化。</div>
+          <div class="persona-move">Move → 系统覆盖到新楼栋（管道跨楼延伸、架子连通相邻屋顶）</div>
+          <div class="persona-build">Build → 单栋系统复杂度增加——层数变多、自动化程度变高</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🐝</div>
+        <div class="persona-content">
+          <div class="persona-name">生态营造者</div>
+          <div class="persona-match">匹配：环保/自然导向、享受"生态回来了"</div>
+          <div class="persona-desc">你的城市以"生态恢复"为核心。你不只种菜——你在引蜂、引蝶、做雨水循环、堆肥、造小湿地。</div>
+          <div class="persona-move">Move → 生物种类增加——新的虫/鸟/小动物出现在你的区域</div>
+          <div class="persona-build">Build → 生态链变完整——从"只有植物"到"有完整食物链在运转"</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🍱</div>
+        <div class="persona-content">
+          <div class="persona-name">社区厨房</div>
+          <div class="persona-match">匹配：社交型、享受"分享/喂人"、邻里关系驱动</div>
+          <div class="persona-desc">你的城市以"共享"为核心。你种出来的东西不是自己留——是做成便当/果酱/茶分给楼里的人。</div>
+          <div class="persona-move">Move → 能辐射的"邻居"变多——从同一层到同一栋到隔壁栋</div>
+          <div class="persona-build">Build → 共享设施变完善——从随手分到有固定取餐点/公告板/预约系统</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🎨</div>
+        <div class="persona-content">
+          <div class="persona-name">绿化艺术家</div>
+          <div class="persona-match">匹配：审美驱动、视觉型、享受"好看比好吃重要"</div>
+          <div class="persona-desc">你的城市以"美"为核心。你种的不是菜——是观赏植物、垂吊藤、花墙。你的楼在变成城市里最好看的那栋。</div>
+          <div class="persona-move">Move → 可视面积增加——从天台到外墙到窗台到地面，绿色铺满建筑表面</div>
+          <div class="persona-build">Build → 视觉密度/层次增加——从几盆花变成整面绿墙、色彩搭配变精致</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
