@@ -52,9 +52,9 @@ canvas { border-radius: 12px; cursor: pointer; }
     <strong>空格 / 点击 = 下网!</strong><br><br>
     🐟🐠 普通 · 🐡🦐 优秀 · 🐙🦑 稀有 · 🐋🐉 传说<br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 前期：大网(~220px)，随机波动，鱼多且慢<br>
-    ▸ 中期：网缩小(~160px)，🌟金色鱼(×3)出现<br>
-    ▸ 后期：小网(~90px→40px)，🪼水母混入，精准判断是关键<br><br>
+    ▸ 前期：中网，🪼水母从一开始就有，学会避开<br>
+    ▸ 中期：网缩小，🌟金色鱼(×3)出现<br>
+    ▸ 后期：小网(精准)，好坏混杂，时机和位置都是关键<br><br>
     ▸ <span style="color:#aaa">扩展方向：不同网具选择、鱼群AI聚散、海域探索、boss鱼</span>
     </span>
   </p>
@@ -130,8 +130,9 @@ function getNetLabel() {
 
 function spawnFish(inView) {
   const p = t();
-  // Bad fish after 40%
-  if (p > 0.4 && Math.random() < (p - 0.4) * 0.25) {
+  // Bad fish from the start — chance grows with progress (10% → 30%)
+  const badChance = 0.10 + p * 0.20;
+  if (Math.random() < badChance) {
     const fromL = Math.random() > 0.5;
     fishes.push({
       ...BAD,
@@ -162,15 +163,30 @@ function spawnFish(inView) {
   });
 }
 
+function getNetHeight() {
+  const p = t();
+  // Net height also shrinks: ~200 → 160 → 120 → 80
+  let base;
+  if (p < 0.25) base = 200;
+  else if (p < 0.5) base = 160;
+  else if (p < 0.75) base = 120;
+  else base = 80;
+  const wobble = 0.8 + Math.random() * 0.4;
+  return Math.round(base * wobble);
+}
+
 function castNet() {
   if (globalRep >= TOTAL_REPS || activeNet) return;
   const nw = getNetWidth();
+  const nh = getNetHeight();
+  // Net drops from cursor's vertical position (centered around middle of water)
+  const dropY = WATER_TOP + 20;
   activeNet = {
     x: cursorX - nw / 2,
-    y: WATER_TOP,
+    y: dropY,
     w: nw,
     h: 0,
-    targetH: H - WATER_TOP - 40,
+    targetH: nh,
     dropping: true,
     catching: false,
     catchTimer: 0,
@@ -188,7 +204,7 @@ function netFinishDrop() {
   activeNet.catching = true;
   // Check which fish are inside the net area
   const nx1 = activeNet.x, nx2 = activeNet.x + activeNet.w;
-  const ny1 = WATER_TOP, ny2 = WATER_TOP + activeNet.h;
+  const ny1 = activeNet.y, ny2 = activeNet.y + activeNet.h;
   const caught = [];
   fishes = fishes.filter(f => {
     if (f.x > nx1 && f.x < nx2 && f.y > ny1 && f.y < ny2) {
@@ -337,20 +353,25 @@ function render() {
   // Net preview (cursor zone)
   if (!activeNet && state === 'play') {
     const nw = getNetWidth();
+    const nh = getNetHeight();
     const nx = cursorX - nw / 2;
+    const ny = WATER_TOP + 20;
     ctx.strokeStyle = 'rgba(77,201,246,0.4)'; ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
-    ctx.strokeRect(nx, WATER_TOP + 5, nw, H - WATER_TOP - 50);
+    ctx.strokeRect(nx, ny, nw, nh);
     ctx.setLineDash([]);
-    // Net width indicator at top
-    ctx.fillStyle = 'rgba(77,201,246,0.2)';
-    ctx.fillRect(nx, WATER_TOP, nw, 8);
+    // Net size indicator at top
+    ctx.fillStyle = 'rgba(77,201,246,0.15)';
+    ctx.fillRect(nx, ny, nw, nh);
     // Count fish in zone
-    const fishInZone = fishes.filter(f => f.x > nx && f.x < nx + nw && f.y > WATER_TOP).length;
+    const fishInZone = fishes.filter(f => f.x > nx && f.x < nx + nw && f.y > ny && f.y < ny + nh).length;
+    const badInZone = fishes.filter(f => f.tier === -1 && f.x > nx && f.x < nx + nw && f.y > ny && f.y < ny + nh).length;
     if (fishInZone > 0) {
       ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
       ctx.fillStyle = fishInZone >= 3 ? '#ffd700' : '#4dc9f6';
-      ctx.fillText(`${fishInZone} 条在网内`, cursorX, WATER_TOP - 8);
+      let label = `${fishInZone} 条`;
+      if (badInZone > 0) label += ` (${badInZone}🪼)`;
+      ctx.fillText(label, cursorX, WATER_TOP + 10);
     }
   }
 
