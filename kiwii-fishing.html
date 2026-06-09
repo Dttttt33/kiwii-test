@@ -130,8 +130,8 @@ function getNetLabel() {
 
 function spawnFish(inView) {
   const p = t();
-  // Bad fish from the start — chance grows with progress (10% → 30%)
-  const badChance = 0.10 + p * 0.20;
+  // Bad fish always present — 25% base, grows to 40%
+  const badChance = 0.25 + p * 0.15;
   if (Math.random() < badChance) {
     const fromL = Math.random() > 0.5;
     fishes.push({
@@ -460,7 +460,11 @@ function handleInput() {
     globalRep = 0; score = 0; combo = 0; cursorX = W/2; cursorDir = 1;
     fishes = []; activeNet = null; particles = []; feedbacks = [];
     state = 'play';
-    for (let i = 0; i < 8; i++) spawnFish(true);
+    for (let i = 0; i < 6; i++) spawnFish(true);
+    for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+      const fromL = Math.random() > 0.5;
+      fishes.push({ ...BAD, x: 80 + Math.random() * (W - 160), y: WATER_TOP + 40 + Math.random() * (H - WATER_TOP - 120), vx: BAD.spd * 0.5 * (fromL ? 1 : -1), vy: 0, golden: false, wobble: Math.random() * 6 });
+    }
     updateHUD();
     return;
   }
@@ -475,7 +479,18 @@ document.getElementById('go-btn').addEventListener('click', (e) => {
   e.stopPropagation();
   document.getElementById('start-overlay').style.display = 'none';
   state = 'play';
-  for (let i = 0; i < 8; i++) spawnFish(true);
+  for (let i = 0; i < 6; i++) spawnFish(true);
+  // Force 2-3 jellyfish in initial spawn
+  for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+    const fromL = Math.random() > 0.5;
+    fishes.push({
+      ...BAD,
+      x: 80 + Math.random() * (W - 160),
+      y: WATER_TOP + 40 + Math.random() * (H - WATER_TOP - 120),
+      vx: BAD.spd * (0.4 + Math.random() * 0.3) * (fromL ? 1 : -1),
+      vy: 0, golden: false, wobble: Math.random() * 6,
+    });
+  }
   updateHUD();
   loop();
 });
