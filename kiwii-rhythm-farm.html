@@ -33,7 +33,10 @@ canvas { border-radius: 12px; cursor: pointer; }
 #start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
 #start-overlay p { color: #aaa; font-size: 17px; max-width: 440px; text-align: center; line-height: 2.2; }
 #start-overlay strong { color: #7aff7a; }
-.phase-label { color: #ffd700; font-weight: 600; }
+.phase-label { font-weight: 600; }
+.p-con { color: #55dd55; }
+.p-hold { color: #ffd700; }
+.p-ecc { color: #ff8844; }
 #go-btn {
   margin-top: 14px; padding: 14px 40px; font-size: 16px;
   background: #3a8a3a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
@@ -47,10 +50,13 @@ canvas { border-radius: 12px; cursor: pointer; }
 <div id="start-overlay">
   <h1>🌾 农事节拍</h1>
   <p>
-    节拍从右边滚过来<br>
-    到达左侧 <strong>判定圈</strong> 时按 <strong>空格 / 点击</strong><br><br>
-    <span class="phase-label">🌱 向心</span> · <span class="phase-label">💧 Hold</span> · <span class="phase-label">🌾 离心</span><br><br>
-    跟上节奏，田里就丰收
+    色条持续从右边滚来<br><br>
+    <span class="phase-label p-con">🌱 绿 = 向心</span> — 按住<br>
+    <span class="phase-label p-hold">💧 黄 = Hold</span> — 继续按住<br>
+    <span class="phase-label p-ecc">🌾 橙 = 离心</span> — 继续按住<br>
+    <span style="color:#666">空隙 = 松开休息</span><br><br>
+    <strong>有色条时按住 · 空隙时松开</strong><br>
+    按准了果子掉，田就丰收
   </p>
   <button id="go-btn">开始</button>
 </div>
@@ -61,7 +67,7 @@ canvas { border-radius: 12px; cursor: pointer; }
   <div class="hi">分 <span class="y" id="h-sc">0</span></div>
   <div class="hi">连击 <span class="y" id="h-cb">—</span></div>
 </div>
-<div id="btm">空格/点击 = 击打</div>
+<div id="btm">有色条 = 按住 · 空隙 = 松开</div>
 
 <canvas id="c"></canvas>
 
@@ -75,336 +81,576 @@ canvas.width = W; canvas.height = H;
 const TOTAL_MOVES = 4, REPS_PER_MOVE = 10;
 const TOTAL_REPS = TOTAL_MOVES * REPS_PER_MOVE;
 
-// Note types — the movement phases
-const NOTE_TYPES = [
-  {emoji: '🌱', name: '向心', color: '#55dd55', ringColor: '#44cc44'},
-  {emoji: '💧', name: 'Hold', color: '#55aaff', ringColor: '#4499ee'},
-  {emoji: '🌾', name: '离心', color: '#ffaa44', ringColor: '#ee9933'},
+const PHASES = [
+  {name: '向心', emoji: '🌱', color: '#55dd55', dark: '#2a6a2a', fruit: '🥬'},
+  {name: 'Hold', emoji: '💧', color: '#ffd700', dark: '#7a6a10', fruit: '🌽'},
+  {name: '离心', emoji: '🌾', color: '#ff8844', dark: '#7a3a18', fruit: '🍎'},
 ];
 
-// QTE lane config
-const LANE_Y = H * 0.32;
+// Lane config
+const LANE_Y = H * 0.25;
 const LANE_H = 80;
-const HIT_X = 130; // judgment circle position
-const HIT_R = 36; // judgment circle radius
+const JUDGE_X = 100;
+
+// Each rep has a VERY different rhythm — extreme contrast between patterns
+const REP_PATTERNS = [
+  {con: 40, hold: 20, ecc: 200, name: '极慢离心'},    // snap up, looong way down
+  {con: 160, hold: 80, ecc: 40, name: '慢上快下'},    // slow grind up, quick release
+  {con: 50, hold: 140, ecc: 50, name: '超长Hold'},   // short burst, hold forever
+  {con: 35, hold: 15, ecc: 35, name: '快！'},         // super fast rep
+  {con: 120, hold: 20, ecc: 180, name: '双慢'},       // slow up slow down
+  {con: 30, hold: 100, ecc: 30, name: '等等等'},      // barely move, hold ages
+  {con: 70, hold: 30, ecc: 70, name: '均匀'},         // balanced
+  {con: 200, hold: 40, ecc: 60, name: '极慢向心'},    // crawl up, quick drop
+  {con: 45, hold: 15, ecc: 220, name: '3秒离心'},     // explosive + ultra slow ecc
+  {con: 30, hold: 200, ecc: 30, name: '死Hold'},     // hold until it burns
+];
 
 function getDiff(rep) {
   const t = rep / (TOTAL_REPS - 1);
+  const pattern = REP_PATTERNS[rep % REP_PATTERNS.length];
+  const speedMult = 1 - t * 0.2; // patterns get slightly tighter overall
   return {
-    speed: 3.0 + t * 2.5,          // scroll speed
-    noteSpacing: 180 - t * 60,      // px between notes (tighter = harder)
-    perfectWindow: 18,              // px distance
-    greatWindow: 34,
-    goodWindow: 55,
+    speed: 2.5 + t * 1.8,
+    conWidth: pattern.con * speedMult,
+    holdWidth: pattern.hold * speedMult,
+    eccWidth: pattern.ecc * speedMult,
+    gapWidth: 55 - t * 10,
+    patternName: pattern.name,
   };
 }
 
 // State
 let state = 'idle';
-let globalRep = 0, score = 0, combo = 0;
-let notes = []; // {x, type, hit, missed, result, alpha, scale}
-let repActive = false;
-let notesPerRep = 3; // one rep = concentric + hold + eccentric
-let repNoteIdx = 0;
-let spawnTimer = 0;
+let globalRep = 0, score = 0, combo = 0, displayScore = 0;
+let holding = false;
+
+// Continuous stream of segments
+let segments = []; // {x, width, phase, rep, judged, coverage, result}
+let nextSpawnX = W + 50;
 
 // Field
 let fieldGrowth = 0;
 let fieldPlants = [];
+let fallingFruits = []; // {x, y, vy, emoji, alpha}
 
+// Feedback
 let particles = [], feedbacks = [];
 let shakeX = 0, shakeY = 0;
 let flashAlpha = 0, flashColor = '';
 let bigText = '', bigTextAlpha = 0, bigTextColor = '';
-let hitRingPulse = 0, hitRingColor = '';
-let drumHit = 0; // visual drum animation
+let holdGlow = 0; // continuous glow when holding correctly
+let tickScore = 0, tickTimer = 0; // accumulated tick score for display
 
 function initField() {
   fieldPlants = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 12; i++) {
     fieldPlants.push({
-      x: 60 + i * ((W - 120) / 9),
-      y: H * 0.78 + (Math.random() - 0.5) * 20,
+      x: 50 + i * ((W - 100) / 11),
+      y: H * 0.72 + (Math.random() - 0.5) * 20,
       growth: 0,
     });
   }
 }
 
-function startNewRep() {
-  repActive = true;
-  repNoteIdx = 0;
-  spawnTimer = 0;
-  // Spawn 3 notes (one per phase) staggered
-  const diff = getDiff(globalRep);
-  const startX = W + 50;
-  for (let i = 0; i < 3; i++) {
-    notes.push({
-      x: startX + i * diff.noteSpacing,
-      type: NOTE_TYPES[i],
-      typeIdx: i,
-      hit: false,
-      missed: false,
+function spawnRep(repIdx) {
+  const diff = getDiff(repIdx);
+  let x = nextSpawnX;
+
+  // 3 segments per rep
+  for (let p = 0; p < 3; p++) {
+    const widths = [diff.conWidth, diff.holdWidth, diff.eccWidth];
+    segments.push({
+      x,
+      width: widths[p],
+      phase: p,
+      rep: repIdx,
+      judged: false,
+      coverage: 0,
       result: null,
-      alpha: 1,
-      scale: 1,
+      active: false, // currently in judge zone
+      scoreGiven: 0,
     });
+    x += widths[p] + 3; // tiny gap between phases within a rep
   }
-  updateHUD();
+  nextSpawnX = x + diff.gapWidth;
 }
 
-function endRep() {
-  repActive = false;
-  globalRep++;
-  updateHUD();
-  if (globalRep >= TOTAL_REPS) { state = 'sessionDone'; return; }
-  setTimeout(() => startNewRep(), 350);
-}
-
-function judgeHit() {
-  if (state !== 'play') return;
-
-  // Find the first unhit, unmissed note
-  let target = null;
-  for (let n of notes) {
-    if (!n.hit && !n.missed) { target = n; break; }
+function init() {
+  segments = [];
+  nextSpawnX = W + 80;
+  // Pre-spawn first few reps
+  for (let i = 0; i < Math.min(TOTAL_REPS, 5); i++) {
+    spawnRep(i);
   }
-
-  if (!target) return;
-
-  const dist = Math.abs(target.x - HIT_X);
-  const diff = getDiff(globalRep);
-
-  let pts, label, color;
-  if (dist <= diff.perfectWindow) {
-    pts = 30; label = 'Perfect!'; color = '#ffd700';
-    combo++;
-    hitRingPulse = 1.2; hitRingColor = '#ffd700';
-    drumHit = 1.0;
-    spawnParticles(HIT_X, LANE_Y + LANE_H/2, '#ffd700', 14);
-    flashAlpha = 0.06; flashColor = '#ffd700';
-    const p = fieldPlants[Math.floor(Math.random()*fieldPlants.length)];
-    p.growth = Math.min(1, p.growth + 0.1);
-    fieldGrowth = Math.min(1, fieldGrowth + 0.02);
-    target.scale = 1.4;
-  } else if (dist <= diff.greatWindow) {
-    pts = 20; label = 'Great'; color = '#7aff7a';
-    combo++;
-    hitRingPulse = 0.8; hitRingColor = '#7aff7a';
-    drumHit = 0.7;
-    spawnParticles(HIT_X, LANE_Y + LANE_H/2, '#7aff7a', 7);
-    const p = fieldPlants[Math.floor(Math.random()*fieldPlants.length)];
-    p.growth = Math.min(1, p.growth + 0.05);
-    fieldGrowth = Math.min(1, fieldGrowth + 0.012);
-    target.scale = 1.2;
-  } else if (dist <= diff.goodWindow) {
-    pts = 10; label = 'Good'; color = '#88cc88';
-    combo++;
-    hitRingPulse = 0.4; hitRingColor = '#88cc88';
-    drumHit = 0.4;
-    target.scale = 1.1;
-  } else {
-    // Too early
-    pts = 0; label = 'Miss'; color = '#cc5544';
-    combo = 0;
-    hitRingPulse = 0.3; hitRingColor = '#cc5544';
-    drumHit = 0.2;
-    shake(3);
-  }
-
-  if (combo > 4) pts += combo * 2;
-  score += pts;
-  target.hit = true;
-  target.result = label;
-
-  addFeedback(`${label}${pts > 0 ? ' +'+pts : ''}`, HIT_X + 70, LANE_Y + LANE_H/2 - 15, color);
-
-  // Check if all notes for this rep are resolved
-  const activeNotes = notes.filter(n => !n.hit && !n.missed);
-  if (activeNotes.length === 0 && repActive) {
-    // Full cycle bonus
-    const perfects = notes.filter(n => n.result === 'Perfect!').length;
-    if (perfects === 3 && combo >= 3) {
-      const bonus = 30 + combo * 3;
-      score += bonus;
-      bigText = `🌾 完美节拍! +${bonus}`; bigTextColor = '#ffd700'; bigTextAlpha = 1.1;
-      spawnParticles(W/2, LANE_Y + LANE_H + 20, '#ffd700', 18);
-    }
-    setTimeout(() => endRep(), 200);
-  }
-
-  updateHUD();
 }
 
 // Utils
-function spawnParticles(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,life:1,decay:0.013+Math.random()*0.008,size:3+Math.random()*4,color});}}
-function shake(n){shakeX+=(Math.random()-0.5)*n;shakeY+=(Math.random()-0.5)*n*0.4;}
-function addFeedback(t,x,y,c){feedbacks.push({text:t,x,y,alpha:1.4,vy:-1.3,color:c});}
+function spawnParticles(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.5+Math.random()*3;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,life:1,decay:0.015+Math.random()*0.01,size:2+Math.random()*4,color});}}
+function shake(n){shakeX+=(Math.random()-0.5)*n;shakeY+=(Math.random()-0.5)*n*0.3;}
+function addFeedback(t,x,y,c){feedbacks.push({text:t,x,y,alpha:1.3,vy:-1.5,color:c});}
+function dropFruit(emoji, x) {
+  fallingFruits.push({
+    x: x || JUDGE_X + Math.random() * 60,
+    y: LANE_Y + LANE_H + 10,
+    vy: 1 + Math.random() * 2,
+    vx: (Math.random() - 0.5) * 2,
+    emoji,
+    alpha: 1,
+    size: 18 + Math.random() * 8,
+  });
+}
 function updateHUD(){
   const moveNum=Math.min(Math.floor(globalRep/REPS_PER_MOVE)+1,TOTAL_MOVES);
   const repInMove=globalRep%REPS_PER_MOVE;
   document.getElementById('h-mv').textContent=`${moveNum}/${TOTAL_MOVES}`;
   document.getElementById('h-rp').textContent=`${repInMove}/${REPS_PER_MOVE}`;
-  document.getElementById('h-sc').textContent=score;
+  document.getElementById('h-sc').textContent=Math.round(displayScore);
   document.getElementById('h-cb').textContent=combo>0?`×${combo}`:'—';
 }
 
 // Update
 function update(){
   shakeX *= 0.85; shakeY *= 0.85;
-  if (flashAlpha > 0) flashAlpha -= 0.008;
-  if (bigTextAlpha > 0) bigTextAlpha -= 0.013;
-  if (hitRingPulse > 0) hitRingPulse *= 0.9;
-  if (drumHit > 0) drumHit *= 0.88;
+  if (flashAlpha > 0) flashAlpha -= 0.01;
+  if (bigTextAlpha > 0) bigTextAlpha -= 0.012;
+  if (holdGlow > 0 && !holding) holdGlow *= 0.9;
 
-  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.life-=p.decay;});
+  // Score ticker
+  if (displayScore < score) {
+    displayScore += Math.max(0.5, (score - displayScore) * 0.12);
+    if (displayScore > score) displayScore = score;
+    updateHUD();
+  }
+
+  // Tick score display
+  if (tickTimer > 0) { tickTimer--; if (tickTimer === 0) tickScore = 0; }
+
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.decay;});
   particles=particles.filter(p=>p.life>0);
   feedbacks.forEach(f=>{f.y+=f.vy;f.alpha-=0.013;});
   feedbacks=feedbacks.filter(f=>f.alpha>0);
 
-  if (state !== 'play') return;
-
-  const diff = getDiff(globalRep);
-
-  // Move notes left
-  for (let n of notes) {
-    if (n.hit) {
-      n.alpha -= 0.05;
-      n.scale += 0.02;
-      continue;
-    }
-    if (n.missed) { n.alpha -= 0.04; continue; }
-    n.x -= diff.speed;
-
-    // Missed — went too far past
-    if (n.x < HIT_X - diff.goodWindow - 30) {
-      n.missed = true;
-      n.result = 'Miss';
-      combo = 0;
-      addFeedback('Miss', HIT_X, LANE_Y - 15, '#cc5544');
-      shake(2);
-      updateHUD();
-
-      // Check if rep done
-      const active = notes.filter(nn => !nn.hit && !nn.missed);
-      if (active.length === 0 && repActive) {
-        setTimeout(() => endRep(), 200);
-      }
+  // Falling fruits
+  for (let f of fallingFruits) {
+    f.y += f.vy; f.vy += 0.2; f.x += f.vx;
+    f.alpha -= 0.012;
+    // Land on field
+    if (f.y > H * 0.68 && f.vy > 0) {
+      f.vy = -f.vy * 0.3;
+      if (Math.abs(f.vy) < 0.5) f.alpha -= 0.05;
     }
   }
-  notes = notes.filter(n => n.alpha > 0);
+  fallingFruits = fallingFruits.filter(f => f.alpha > 0);
+
+  if (state !== 'play') return;
+
+  const speed = getDiff(globalRep).speed;
+
+  // Move all segments left
+  for (let seg of segments) {
+    seg.x -= speed;
+  }
+  nextSpawnX -= speed;
+
+  // Spawn more reps as needed
+  const lastRep = segments.length > 0 ? segments[segments.length-1].rep : -1;
+  if (nextSpawnX < W + 200 && lastRep < TOTAL_REPS - 1) {
+    spawnRep(lastRep + 1);
+  }
+
+  // Check segments in judge zone — real-time scoring
+  let anyInZone = false;
+  for (let seg of segments) {
+    const segRight = seg.x + seg.width;
+    const inZone = seg.x <= JUDGE_X && segRight > JUDGE_X;
+
+    if (inZone) {
+      anyInZone = true;
+      seg.active = true;
+
+      if (holding) {
+        // Player is holding while segment is in zone — GOOD
+        seg.coverage += speed / seg.width;
+        seg.coverage = Math.min(1, seg.coverage);
+        holdGlow = Math.min(1, holdGlow + 0.08);
+
+        // Real-time tick rewards — juicy
+        const tickPts = 1.2 + (combo > 3 ? combo * 0.2 : 0);
+        score += tickPts;
+        tickScore += tickPts;
+        tickTimer = 40;
+
+        // Frequent visual feedback while holding
+        if (Math.random() < 0.08) {
+          dropFruit(PHASES[seg.phase].fruit, JUDGE_X + Math.random() * 60);
+        }
+        if (Math.random() < 0.12) {
+          spawnParticles(JUDGE_X + 10, LANE_Y + LANE_H/2, PHASES[seg.phase].color, 2);
+        }
+      } else {
+        // Not holding during segment — lose glow fast
+        holdGlow *= 0.7;
+      }
+    }
+
+    // Segment just left the zone — final judgment
+    if (seg.active && segRight <= JUDGE_X && !seg.judged) {
+      seg.judged = true;
+      seg.active = false;
+      judgeSegment(seg);
+    }
+  }
+
+  // If in a gap (no segment in zone) and player is holding — small penalty
+  if (!anyInZone && holding) {
+    // holding during rest — minor issue, flash red subtly
+    if (Math.random() < 0.02) {
+      addFeedback('松开~', JUDGE_X + 30, LANE_Y - 10, 'rgba(255,100,80,0.6)');
+    }
+  }
+
+  // Track rep completion
+  const completedReps = new Set(segments.filter(s => s.judged).map(s => s.rep));
+  if (completedReps.size > globalRep) {
+    globalRep = completedReps.size;
+    updateHUD();
+  }
+
+  // Clean up off-screen segments
+  segments = segments.filter(s => s.x + s.width > -50);
+
+  // End game
+  if (globalRep >= TOTAL_REPS && segments.every(s => s.judged || s.x + s.width < JUDGE_X)) {
+    state = 'sessionDone';
+  }
+}
+
+function judgeSegment(seg) {
+  const cov = seg.coverage;
+  let pts, label, color;
+
+  if (cov >= 0.85) {
+    pts = 25; label = 'Perfect!'; color = '#ffd700';
+    combo++;
+    spawnParticles(JUDGE_X, LANE_Y + LANE_H/2, '#ffd700', 8);
+    dropFruit('🌟', JUDGE_X + 30);
+    const p = fieldPlants[Math.floor(Math.random()*fieldPlants.length)];
+    p.growth = Math.min(1, p.growth + 0.06);
+    fieldGrowth = Math.min(1, fieldGrowth + 0.012);
+    shake(2);
+  } else if (cov >= 0.6) {
+    pts = 15; label = 'Great'; color = '#7aff7a';
+    combo++;
+    dropFruit(PHASES[seg.phase].fruit, JUDGE_X + 20);
+    const p = fieldPlants[Math.floor(Math.random()*fieldPlants.length)];
+    p.growth = Math.min(1, p.growth + 0.03);
+    fieldGrowth = Math.min(1, fieldGrowth + 0.007);
+  } else if (cov >= 0.3) {
+    pts = 5; label = 'Good'; color = '#88aa66';
+    combo = Math.max(0, combo - 1);
+  } else {
+    pts = 0; label = 'Miss'; color = '#cc5544';
+    combo = 0;
+    shake(3);
+  }
+
+  if (combo > 5) pts += combo;
+  score += pts;
+  seg.result = label;
+
+  addFeedback(`${label}`, JUDGE_X + 60, LANE_Y + 15 + seg.phase * 18, color);
+
+  // Rep complete — one full action = one crop result in the field
+  const repSegs = segments.filter(s => s.rep === seg.rep && s.judged);
+  if (repSegs.length === 3) {
+    const perfects = repSegs.filter(s => s.result === 'Perfect!').length;
+    const greats = repSegs.filter(s => s.result === 'Great').length;
+    const goods = repSegs.filter(s => s.result === 'Good').length;
+    const quality = perfects * 3 + greats * 2 + goods;
+
+    // This rep's plant
+    const targetPlant = fieldPlants[globalRep % fieldPlants.length];
+    targetPlant.flash = 1; // trigger flash animation
+
+    if (quality >= 8) {
+      // PERFECT REP — massive reward
+      const bonus = 60 + combo * 5;
+      score += bonus;
+      targetPlant.growth = 1;
+      targetPlant.harvest = true;
+      fieldGrowth = Math.min(1, fieldGrowth + 0.04);
+      // Explosion of particles
+      spawnParticles(targetPlant.x, targetPlant.y - 15, '#ffd700', 25);
+      spawnParticles(targetPlant.x - 20, targetPlant.y, '#ff88aa', 12);
+      spawnParticles(targetPlant.x + 20, targetPlant.y, '#88ffaa', 12);
+      // Rain of fruits
+      dropFruit('🌻', targetPlant.x - 25);
+      dropFruit('🌟', targetPlant.x);
+      dropFruit('🍎', targetPlant.x + 25);
+      dropFruit('✨', targetPlant.x - 10);
+      dropFruit('✨', targetPlant.x + 10);
+      bigText = `🌻 PERFECT! +${bonus}`; bigTextColor = '#ffd700'; bigTextAlpha = 1.5;
+      shake(8);
+      flashAlpha = 0.18; flashColor = '#ffd700';
+    } else if (quality >= 5) {
+      // GREAT REP
+      const bonus = 30 + combo * 2;
+      score += bonus;
+      targetPlant.growth = Math.min(1, targetPlant.growth + 0.4);
+      fieldGrowth = Math.min(1, fieldGrowth + 0.022);
+      spawnParticles(targetPlant.x, targetPlant.y - 10, '#7aff7a', 14);
+      dropFruit('🌾', targetPlant.x - 10);
+      dropFruit('🌾', targetPlant.x + 10);
+      dropFruit('🍊', targetPlant.x);
+      bigText = `🌾 Great! +${bonus}`; bigTextColor = '#7aff7a'; bigTextAlpha = 1.1;
+      shake(4);
+      flashAlpha = 0.08; flashColor = '#7aff7a';
+    } else if (quality >= 2) {
+      score += 12;
+      targetPlant.growth = Math.min(1, targetPlant.growth + 0.2);
+      fieldGrowth = Math.min(1, fieldGrowth + 0.01);
+      spawnParticles(targetPlant.x, targetPlant.y, '#88aa66', 5);
+      dropFruit('🌱', targetPlant.x);
+      addFeedback('OK +12', targetPlant.x, targetPlant.y - 35, '#88aa66');
+    } else {
+      // BAD — visible weed + screen shake
+      targetPlant.weed = true;
+      shake(6);
+      flashAlpha = 0.06; flashColor = '#ff3333';
+      spawnParticles(targetPlant.x, targetPlant.y, '#664433', 6);
+      addFeedback('💀 Miss', targetPlant.x, targetPlant.y - 35, '#cc4433');
+    }
+  }
+
+  updateHUD();
+}
+
+function onPress() {
+  if (state === 'sessionDone') { resetGame(); return; }
+  if (state !== 'play') return;
+  holding = true;
+}
+function onRelease() {
+  holding = false;
 }
 
 // Draw
 function drawBG(){
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#141e14'); g.addColorStop(0.4, '#1a2a1a'); g.addColorStop(1, '#0f1a0f');
+  g.addColorStop(0, '#101a10'); g.addColorStop(0.4, '#1a2a18'); g.addColorStop(1, '#0a140a');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 }
 
 function drawLane() {
-  // The QTE track — taiko-style horizontal lane
   const ly = LANE_Y, lh = LANE_H;
 
-  // Lane background
-  ctx.fillStyle = 'rgba(30,20,10,0.6)';
-  ctx.beginPath(); ctx.roundRect(30, ly, W - 60, lh, 14); ctx.fill();
+  // Lane bg
+  ctx.fillStyle = 'rgba(15,10,5,0.6)';
+  ctx.beginPath(); ctx.roundRect(20, ly - 5, W - 40, lh + 10, 12); ctx.fill();
 
-  // Lane lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(50, ly + lh/2); ctx.lineTo(W - 50, ly + lh/2); ctx.stroke();
-
-  // Judgment circle (the "drum")
+  // Judge line
   ctx.save();
-  // Outer glow
-  if (hitRingPulse > 0) {
-    ctx.shadowColor = hitRingColor; ctx.shadowBlur = 30 * hitRingPulse;
-  }
-  // Circle
-  const drumScale = 1 + drumHit * 0.15;
-  ctx.strokeStyle = hitRingPulse > 0.2 ? hitRingColor : 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.arc(HIT_X, ly + lh/2, HIT_R * drumScale, 0, Math.PI*2); ctx.stroke();
-  // Inner
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(HIT_X, ly + lh/2, HIT_R * 0.6 * drumScale, 0, Math.PI*2); ctx.stroke();
+  const glowAmt = holding ? 0.8 : 0.2;
+  ctx.shadowColor = holding ? '#7aff7a' : '#fff'; ctx.shadowBlur = 12 * glowAmt;
+  ctx.strokeStyle = holding ? `rgba(120,255,120,${0.6+holdGlow*0.4})` : 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = holding ? 4 : 2;
+  ctx.beginPath(); ctx.moveTo(JUDGE_X, ly - 8); ctx.lineTo(JUDGE_X, ly + lh + 8); ctx.stroke();
   ctx.restore();
 
-  // "Hit here" label
-  ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.fillText('⬇︎ 击打', HIT_X, ly - 8);
+  // Active hold glow at judge line
+  if (holdGlow > 0.1) {
+    ctx.fillStyle = `rgba(120,255,120,${holdGlow * 0.1})`;
+    ctx.fillRect(JUDGE_X - 15, ly, 30, lh);
+  }
 }
 
-function drawNotes() {
+function drawSegments() {
   const ly = LANE_Y, lh = LANE_H;
-  for (let n of notes) {
-    ctx.save();
-    ctx.globalAlpha = n.alpha;
-    const ny = ly + lh/2;
-    const s = n.scale || 1;
 
-    if (!n.hit && !n.missed) {
-      // Approaching note — colored circle with emoji
-      // Outer ring
-      ctx.strokeStyle = n.type.ringColor; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(n.x, ny, 28 * s, 0, Math.PI*2); ctx.stroke();
-      // Fill
-      ctx.fillStyle = n.type.color + '22';
-      ctx.beginPath(); ctx.arc(n.x, ny, 26 * s, 0, Math.PI*2); ctx.fill();
-      // Emoji
-      ctx.font = `${26*s}px serif`; ctx.textAlign = 'center';
-      ctx.fillText(n.type.emoji, n.x, ny + 9*s);
-      // Phase label
-      ctx.font = '11px -apple-system, sans-serif';
-      ctx.fillStyle = n.type.color;
-      ctx.fillText(n.type.name, n.x, ny + 28*s);
-    } else if (n.hit) {
-      // Expanding hit effect
-      ctx.font = `${26*s}px serif`; ctx.textAlign = 'center';
-      ctx.fillText(n.type.emoji, n.x, ny + 9*s);
+  for (let seg of segments) {
+    if (seg.x > W + 10 || seg.x + seg.width < 0) continue;
+
+    const phase = PHASES[seg.phase];
+    const sx = Math.max(25, seg.x);
+    const sw = Math.min(seg.x + seg.width, W - 25) - sx;
+    if (sw <= 0) continue;
+
+    // Each phase looks different:
+    // 向心 = rising diagonal stripes (energy going up)
+    // Hold = solid flat bar (stable)
+    // 离心 = descending gradient (energy releasing)
+    const barY = ly + 10, barH2 = lh - 20;
+
+    if (seg.phase === 0) {
+      // 向心: rounded left, pointed right, diagonal hatching
+      ctx.fillStyle = seg.judged ? 'rgba(30,50,20,0.25)' : phase.dark + 'cc';
+      ctx.beginPath();
+      ctx.moveTo(sx, barY + barH2); ctx.lineTo(sx, barY + 8);
+      ctx.quadraticCurveTo(sx, barY, sx + 8, barY);
+      ctx.lineTo(sx + sw - 6, barY); ctx.lineTo(sx + sw, barY + barH2/2);
+      ctx.lineTo(sx + sw - 6, barY + barH2); ctx.lineTo(sx + 8, barY + barH2);
+      ctx.quadraticCurveTo(sx, barY + barH2, sx, barY + barH2 - 8);
+      ctx.closePath(); ctx.fill();
+      // Diagonal stripes
+      if (!seg.judged) {
+        ctx.save(); ctx.clip();
+        ctx.strokeStyle = phase.color + '33'; ctx.lineWidth = 2;
+        for (let dx = -barH2; dx < sw + barH2; dx += 12) {
+          ctx.beginPath(); ctx.moveTo(sx + dx, barY + barH2); ctx.lineTo(sx + dx + barH2, barY); ctx.stroke();
+        }
+        ctx.restore();
+      }
+    } else if (seg.phase === 1) {
+      // Hold: flat rectangle, thinner, with a pulsing center line
+      const holdY = barY + 12, holdH = barH2 - 24;
+      ctx.fillStyle = seg.judged ? 'rgba(50,40,10,0.25)' : phase.dark + 'cc';
+      ctx.beginPath(); ctx.roundRect(sx, holdY, sw, holdH, 4); ctx.fill();
+      // Center pulse line
+      if (!seg.judged) {
+        ctx.strokeStyle = phase.color + '55'; ctx.lineWidth = 2; ctx.setLineDash([8, 4]);
+        ctx.beginPath(); ctx.moveTo(sx + 4, holdY + holdH/2); ctx.lineTo(sx + sw - 4, holdY + holdH/2); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    } else {
+      // 离心: pointed left, rounded right, gradient fade
+      ctx.fillStyle = seg.judged ? 'rgba(40,20,10,0.25)' : phase.dark + 'cc';
+      ctx.beginPath();
+      ctx.moveTo(sx, barY + barH2/2); ctx.lineTo(sx + 6, barY);
+      ctx.lineTo(sx + sw - 8, barY); ctx.quadraticCurveTo(sx + sw, barY, sx + sw, barY + 8);
+      ctx.lineTo(sx + sw, barY + barH2 - 8); ctx.quadraticCurveTo(sx + sw, barY + barH2, sx + sw - 8, barY + barH2);
+      ctx.lineTo(sx + 6, barY + barH2);
+      ctx.closePath(); ctx.fill();
+      // Gradient overlay (fades out to right)
+      if (!seg.judged) {
+        const grad = ctx.createLinearGradient(sx, 0, sx + sw, 0);
+        grad.addColorStop(0, phase.color + '44');
+        grad.addColorStop(1, phase.color + '00');
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
     }
-    ctx.restore();
+
+    // Filled coverage overlay (universal)
+    if (seg.coverage > 0) {
+      const fillW = sw * Math.min(1, seg.coverage);
+      ctx.save();
+      ctx.globalAlpha = seg.judged ? 0.3 : 0.7;
+      ctx.fillStyle = phase.color;
+      ctx.beginPath(); ctx.rect(sx, barY, fillW, barH2); ctx.clip();
+      ctx.beginPath(); ctx.roundRect(sx, barY, sw, barH2, 6); ctx.fill();
+      ctx.restore();
+    }
+
+    // Border highlight
+    if (!seg.judged && seg.active) {
+      ctx.strokeStyle = phase.color; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(sx, barY, sw, barH2, 6); ctx.stroke();
+    }
+
+    // Phase emoji centered
+    if (sw > 45 && !seg.judged) {
+      const cx = sx + sw / 2;
+      const ey = seg.phase === 1 ? ly + lh/2 + 2 : ly + lh/2 + 4;
+      ctx.font = seg.phase === 1 ? '16px serif' : '22px serif'; ctx.textAlign = 'center';
+      ctx.fillText(phase.emoji, cx, ey);
+    }
+
+    // Result text
+    if (seg.judged && seg.result && sw > 30) {
+      const cx = sx + sw / 2;
+      ctx.font = 'bold 11px -apple-system, sans-serif'; ctx.textAlign = 'center';
+      const rc = seg.result === 'Perfect!' ? '#ffd700' : seg.result === 'Great' ? '#7aff7a' : seg.result === 'Good' ? '#88aa66' : '#cc5544';
+      ctx.fillStyle = rc;
+      ctx.fillText(seg.result === 'Perfect!' ? '★' : seg.result === 'Great' ? '●' : seg.result === 'Good' ? '○' : '✗', cx, ly + 5);
+    }
   }
 }
 
 function drawField() {
-  const baseY = H * 0.78;
-  // Soil
-  ctx.fillStyle = 'rgba(40,55,20,0.3)';
-  ctx.beginPath(); ctx.roundRect(50, baseY - 20, W - 100, 55, 10); ctx.fill();
+  const baseY = H * 0.72;
+  // Ground
+  ctx.fillStyle = 'rgba(30,50,18,0.35)';
+  ctx.beginPath(); ctx.roundRect(35, baseY - 18, W - 70, 65, 10); ctx.fill();
 
   const plantEmojis = ['🌱','🌿','🌾','🌻'];
   for (let p of fieldPlants) {
+    // Plot
+    ctx.fillStyle = 'rgba(40,30,15,0.3)';
+    ctx.beginPath(); ctx.roundRect(p.x - 20, baseY - 10, 40, 46, 6); ctx.fill();
+
+    // Flash on result
+    if (p.flash && p.flash > 0) {
+      ctx.save();
+      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 22 * p.flash;
+      ctx.fillStyle = `rgba(255,215,0,${p.flash * 0.2})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 26, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      p.flash *= 0.92;
+      if (p.flash < 0.03) p.flash = 0;
+    }
+
+    // Weed
+    if (p.weed) {
+      ctx.font = '11px serif'; ctx.textAlign = 'center';
+      ctx.fillText('🌫️', p.x + 10, p.y + 10);
+    }
+
+    // Plant
     const stage = Math.min(3, Math.floor(p.growth * 4));
-    const size = 12 + p.growth * 18;
+    const size = 16 + p.growth * 22;
     ctx.font = `${size}px serif`; ctx.textAlign = 'center';
     ctx.fillText(plantEmojis[stage], p.x, p.y);
+
+    // Harvest sparkle
+    if (p.harvest) {
+      ctx.save(); ctx.globalAlpha = 0.5 + Math.sin(performance.now()*0.005)*0.3;
+      ctx.font = '9px serif'; ctx.fillText('✨', p.x + 12, p.y - 10);
+      ctx.restore();
+    }
+  }
+
+  // Falling fruits
+  for (let f of fallingFruits) {
+    ctx.save(); ctx.globalAlpha = f.alpha;
+    ctx.font = `${f.size}px serif`; ctx.textAlign = 'center';
+    ctx.fillText(f.emoji, f.x, f.y);
+    ctx.restore();
   }
 
   // Growth bar
-  const barW = 140, barH = 5, bx = W - barW - 30, by = baseY + 40;
+  const barW = 160, barH = 7, bx = W/2 - barW/2, by = baseY + 55;
   ctx.fillStyle = 'rgba(255,255,255,0.06)';
-  ctx.beginPath(); ctx.roundRect(bx, by, barW, barH, 2); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(bx, by, barW, barH, 3); ctx.fill();
   ctx.fillStyle = '#7aff7a';
-  ctx.beginPath(); ctx.roundRect(bx, by, barW * fieldGrowth, barH, 2); ctx.fill();
-  ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.fillText(`丰收 ${Math.round(fieldGrowth*100)}%`, bx - 8, by + 5);
+  ctx.beginPath(); ctx.roundRect(bx, by, barW * fieldGrowth, barH, 3); ctx.fill();
+  ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillText(`🌾 丰收 ${Math.round(fieldGrowth*100)}%`, W/2, by + 20);
 }
 
-function drawNextUp() {
-  // Show upcoming sequence preview
-  const upcoming = notes.filter(n => !n.hit && !n.missed);
-  if (upcoming.length === 0) return;
-  const px = W - 140, py = LANE_Y - 30;
-  ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'left';
-  ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillText('接下来', px, py);
-  for (let i = 0; i < Math.min(3, upcoming.length); i++) {
-    ctx.font = '18px serif';
-    ctx.globalAlpha = 1 - i * 0.3;
-    ctx.fillText(upcoming[i].type.emoji, px + i * 28, py + 20);
-    ctx.globalAlpha = 1;
+function drawHoldState() {
+  const iy = LANE_Y + LANE_H + 25;
+  // Hold state
+  if (holding && holdGlow > 0.3) {
+    ctx.font = 'bold 15px -apple-system, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillStyle = `rgba(120,255,120,${holdGlow})`;
+    ctx.fillText('● 按住中', 30, iy);
+    if (tickScore > 0) {
+      ctx.font = 'bold 13px -apple-system, sans-serif';
+      ctx.fillStyle = '#ffd700';
+      ctx.fillText(`+${Math.round(tickScore)}`, 120, iy);
+    }
+  } else if (!holding) {
+    ctx.font = '13px -apple-system, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillText('○ 松开', 30, iy);
   }
+  // Current pattern name
+  const diff = getDiff(globalRep);
+  ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillText(`节奏: ${diff.patternName}`, W - 30, iy);
 }
 
 function drawProgress(){
@@ -419,20 +665,20 @@ function drawBigText(){
   ctx.save();ctx.globalAlpha=Math.min(1,bigTextAlpha);
   ctx.font='bold 24px -apple-system, sans-serif';
   ctx.textAlign='center';ctx.fillStyle=bigTextColor;ctx.shadowColor=bigTextColor;ctx.shadowBlur=12;
-  ctx.fillText(bigText,W/2,H*0.6);ctx.restore();
+  ctx.fillText(bigText,W/2,H*0.55);ctx.restore();
 }
 
 function drawDone(){
   ctx.save();ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fillRect(0,0,W,H);
   ctx.textAlign='center';
   ctx.font='28px -apple-system, sans-serif';ctx.fillStyle='#fff';ctx.fillText('Session 完成',W/2,H/2-60);
-  ctx.font='bold 28px -apple-system, sans-serif';ctx.fillStyle='#ffd700';ctx.fillText(`${score} 分`,W/2,H/2-20);
+  ctx.font='bold 30px -apple-system, sans-serif';ctx.fillStyle='#ffd700';ctx.fillText(`${Math.round(score)} 分`,W/2,H/2-15);
   ctx.font='16px -apple-system, sans-serif';ctx.fillStyle='#aaa';
-  ctx.fillText(`丰收度 ${Math.round(fieldGrowth*100)}%`,W/2,H/2+10);
-  const grade=score>=800?'S':score>=500?'A':score>=300?'B':'C';
-  const gc=score>=800?'#ffd700':score>=500?'#7aff7a':score>=300?'#88aaff':'#aaa';
-  ctx.font='bold 48px -apple-system, sans-serif';ctx.fillStyle=gc;ctx.fillText(grade,W/2,H/2+70);
-  ctx.font='14px -apple-system, sans-serif';ctx.fillStyle='#888';ctx.fillText('点击重玩',W/2,H/2+100);ctx.restore();
+  ctx.fillText(`丰收度 ${Math.round(fieldGrowth*100)}%`,W/2,H/2+15);
+  const grade=score>=1000?'S':score>=650?'A':score>=400?'B':'C';
+  const gc=score>=1000?'#ffd700':score>=650?'#7aff7a':score>=400?'#88aaff':'#aaa';
+  ctx.font='bold 48px -apple-system, sans-serif';ctx.fillStyle=gc;ctx.fillText(grade,W/2,H/2+75);
+  ctx.font='14px -apple-system, sans-serif';ctx.fillStyle='#888';ctx.fillText('点击重玩',W/2,H/2+105);ctx.restore();
 }
 
 function render(){
@@ -440,27 +686,31 @@ function render(){
   drawBG();
   drawField();
   drawLane();
-  drawNotes();
+  drawSegments();
   ctx.restore();
-  drawNextUp();
+  drawHoldState();
   drawFlash(); drawBigText(); drawProgress();
   for(let p of particles){ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+shakeX,p.y+shakeY,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();}
-  for(let f of feedbacks){ctx.save();ctx.globalAlpha=Math.min(1,f.alpha);ctx.font='bold 18px -apple-system, sans-serif';ctx.textAlign='center';ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);ctx.restore();}
+  for(let f of feedbacks){ctx.save();ctx.globalAlpha=Math.min(1,f.alpha);ctx.font='bold 16px -apple-system, sans-serif';ctx.textAlign='center';ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);ctx.restore();}
   if(state==='sessionDone') drawDone();
 }
 
 function loop(){ update(); ctx.clearRect(0,0,W,H); render(); requestAnimationFrame(loop); }
 
-function handleInput(){ if(state==='sessionDone'){resetGame();return;} judgeHit(); }
-document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();handleInput();}});
-canvas.addEventListener('click', handleInput);
-canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
+// Input
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();onPress();}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'){e.preventDefault();onRelease();}});
+canvas.addEventListener('mousedown',onPress);
+canvas.addEventListener('mouseup',onRelease);
+canvas.addEventListener('mouseleave',onRelease);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onPress();});
+canvas.addEventListener('touchend',e=>{e.preventDefault();onRelease();});
 
-function resetGame(){globalRep=0;score=0;combo=0;fieldGrowth=0;notes=[];initField();updateHUD();startNewRep();}
+function resetGame(){globalRep=0;score=0;displayScore=0;combo=0;fieldGrowth=0;holding=false;holdGlow=0;fallingFruits=[];segments=[];initField();init();updateHUD();state='play';}
 
 document.getElementById('go-btn').addEventListener('click',()=>{
   document.getElementById('start-overlay').style.display='none';
-  state = 'play'; initField(); startNewRep(); loop();
+  state = 'play'; initField(); init(); loop();
 });
 </script>
 </body>
