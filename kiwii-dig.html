@@ -156,6 +156,8 @@ let particles = [], feedbacks = [];
 let shakeX = 0, shakeY = 0;
 let flashAlpha = 0, flashColor = '';
 let frame = 0;
+let collection = []; // last N items dug up, shown in collection tray
+let revealAnim = null; // { col, depth, item, timer } — big emoji reveal animation
 
 function colX(i) { return COL_GAP + i * (COL_W + COL_GAP); }
 
@@ -187,7 +189,7 @@ function digColumn(ci) {
   cell.revealed = true;
   const item = cell.item;
   const cx = colX(ci) + COL_W / 2;
-  const cy = GRID_TOP + col.depth * CELL_H + CELL_H / 2;
+  const cy = GRID_TOP + CELL_H / 2; // always row 0 visually
 
   if (item.tier === -1) {
     // BOMB!
@@ -196,24 +198,24 @@ function digColumn(ci) {
     shakeX = (Math.random() - 0.5) * 16; shakeY = (Math.random() - 0.5) * 10;
     spawnP(cx, cy, '#ff4400', 20);
     spawnP(cx, cy, '#ffaa00', 12);
-    addFeedback(`💥 炸了! ${item.pts}`, cx, cy - 30, '#ff4444');
-    // Reset this column
-    setTimeout(() => resetColumn(ci), 400);
+    addFeedback(`💥 -${Math.abs(item.pts)}`, cx, cy - 30, '#ff4444');
+    revealAnim = { col: ci, item, timer: 30 };
+    setTimeout(() => resetColumn(ci), 500);
   } else {
     score += item.pts;
     const tc = TIER_COLORS[item.tier] || TIER_COLORS[0];
-    spawnP(cx, cy, tc.glow, 6 + item.tier * 3);
+    spawnP(cx, cy, tc.glow, 8 + item.tier * 4);
     if (item.tier >= 3) {
       flashAlpha = 0.15; flashColor = tc.glow;
       shakeX = (Math.random() - 0.5) * 5;
-      addFeedback(`${item.emoji} +${item.pts}!`, cx, cy - 30, tc.glow);
-    } else if (item.tier >= 2) {
-      addFeedback(`${item.emoji} +${item.pts}`, cx, cy - 30, tc.glow);
-    } else {
-      addFeedback(`+${item.pts}`, cx, cy - 20, '#aaa');
     }
+    addFeedback(`+${item.pts}`, cx, cy - 35, tc.glow);
+    // Big reveal animation
+    revealAnim = { col: ci, item, timer: 40 };
+    // Add to collection tray
+    collection.push({ emoji: item.emoji, tier: item.tier, pts: item.pts });
+    if (collection.length > 12) collection.shift();
     col.depth++;
-    // Generate more cells if needed
     while (col.cells.length <= col.depth + VISIBLE_ROWS) {
       col.cells.push({ item: pickItem(col.cells.length), revealed: false });
     }
@@ -273,6 +275,12 @@ function update() {
       if (globalRep >= TOTAL_REPS) { state = 'done'; return; }
       setTimeout(() => { repActive = true; struck = false; repTimer = 0; }, 250);
     }
+  }
+
+  // Reveal animation countdown
+  if (revealAnim) {
+    revealAnim.timer--;
+    if (revealAnim.timer <= 0) revealAnim = null;
   }
 
   particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.018; });
@@ -359,6 +367,44 @@ function render() {
     const depthColor = col.depth < 2 ? '#aa8844' : col.depth < 4 ? '#88aacc' : col.depth < 6 ? '#aa88ff' : '#ffd700';
     ctx.fillStyle = depthColor;
     ctx.fillText(`${depthLabel} (${col.depth})`, x + COL_W / 2, GRID_TOP + VISIBLE_ROWS * CELL_H + 16);
+
+    // Reveal animation — big emoji popping out of the cell
+    if (revealAnim && revealAnim.col === i) {
+      const progress = 1 - (revealAnim.timer / 40);
+      const scale = progress < 0.3 ? progress / 0.3 * 1.4 : 1.4 - (progress - 0.3) * 0.5;
+      const alpha = revealAnim.timer / 40;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, alpha + 0.3);
+      ctx.font = `${Math.round(36 * scale)}px serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(revealAnim.item.emoji, x + COL_W / 2, GRID_TOP + CELL_H / 2 + 10 - progress * 20);
+      if (revealAnim.item.tier >= 2) {
+        ctx.shadowColor = TIER_COLORS[revealAnim.item.tier].glow;
+        ctx.shadowBlur = 15;
+        ctx.fillText(revealAnim.item.emoji, x + COL_W / 2, GRID_TOP + CELL_H / 2 + 10 - progress * 20);
+      }
+      ctx.restore();
+    }
+  }
+
+  // Collection tray — show recent finds at top-right
+  if (collection.length > 0) {
+    const trayX = W - 20;
+    const trayY = 50;
+    ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('收获:', trayX, trayY - 5);
+    for (let i = collection.length - 1, row = 0; i >= 0 && row < 12; i--, row++) {
+      const c = collection[i];
+      const ty = trayY + 8 + row * 26;
+      const tc = TIER_COLORS[c.tier] || TIER_COLORS[0];
+      ctx.font = '20px serif'; ctx.textAlign = 'right';
+      ctx.fillText(c.emoji, trayX, ty + 6);
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = tc.glow;
+      ctx.fillText(`+${c.pts}`, trayX - 26, ty + 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    }
   }
 
   // Cursor
