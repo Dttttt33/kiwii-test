@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii Power — 捕鱼达人</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a1628;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  overflow: hidden; user-select: none;
+}
+canvas { border-radius: 12px; cursor: crosshair; }
+#hud {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 12px; z-index: 10;
+}
+.hi {
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 7px 16px; border-radius: 14px; font-size: 15px; color: #ccc;
+}
+.hi span { font-weight: 600; }
+.hi .g { color: #7aff7a; }
+.hi .y { color: #ffd700; }
+#start-overlay {
+  position: fixed; inset: 0; background: rgba(4,10,24,0.96);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; gap: 16px;
+}
+#start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
+#start-overlay p { color: #aaa; font-size: 17px; max-width: 460px; text-align: center; line-height: 2.2; }
+#start-overlay strong { color: #4dc9f6; }
+#go-btn {
+  margin-top: 14px; padding: 14px 40px; font-size: 16px;
+  background: #1a6090; color: #fff; border: none; border-radius: 24px; cursor: pointer;
+}
+#go-btn:active { transform: scale(0.95); }
+#btm { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 13px; z-index: 10; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay">
+  <h1>🐟 捕鱼达人</h1>
+  <p>
+    炮台自动旋转瞄准<br>
+    <strong>空格 / 点击 = 发射渔网!</strong><br><br>
+    🐟🐠 普通 · 🐡🦐 优秀<br>
+    🐙🦑 稀有 · 🐋🐉 传说<br><br>
+    <span style="color:#888;font-size:14px;line-height:1.8">
+    ▸ 前期：鱼慢且大，容易命中<br>
+    ▸ 中期：出现快鱼、闪避鱼、金色鱼(×3)<br>
+    ▸ 后期：🪼水母扣分、鱼群加速、传说鱼出没
+    </span>
+  </p>
+  <button id="go-btn">开炮</button>
+</div>
+
+<div id="hud">
+  <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
+  <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
+  <div class="hi">分 <span class="y" id="h-sc">0</span></div>
+  <div class="hi">连击 <span class="y" id="h-cb">—</span></div>
+</div>
+<div id="btm">空格/点击 = 发射 · 瞄准时机是关键</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = Math.min(960, window.innerWidth - 20);
+const H = Math.min(640, window.innerHeight - 20);
+canvas.width = W; canvas.height = H;
+
+const TOTAL_REPS = 40;
+const CANNON_Y = H - 50;
+const CANNON_X = W / 2;
+const WATER_TOP = 60;
+
+const FISH_TYPES = [
+  { emoji: '🐟', tier: 1, pts: 10, size: 28, speed: [0.4, 0.8], weight: 30 },
+  { emoji: '🐠', tier: 1, pts: 12, size: 26, speed: [0.5, 0.9], weight: 25 },
+  { emoji: '🦐', tier: 2, pts: 20, size: 22, speed: [0.6, 1.1], weight: 18 },
+  { emoji: '🐡', tier: 2, pts: 25, size: 30, speed: [0.3, 0.7], weight: 15 },
+  { emoji: '🦀', tier: 2, pts: 22, size: 26, speed: [0.4, 0.8], weight: 14 },
+  { emoji: '🐙', tier: 3, pts: 40, size: 34, speed: [0.5, 1.0], weight: 8 },
+  { emoji: '🦑', tier: 3, pts: 45, size: 32, speed: [0.6, 1.2], weight: 7 },
+  { emoji: '🦈', tier: 3, pts: 50, size: 40, speed: [0.7, 1.3], weight: 5 },
+  { emoji: '🐋', tier: 4, pts: 80, size: 48, speed: [0.3, 0.6], weight: 3 },
+  { emoji: '🐉', tier: 4, pts: 100, size: 44, speed: [0.5, 0.9], weight: 2 },
+  { emoji: '🐳', tier: 4, pts: 90, size: 46, speed: [0.4, 0.7], weight: 2 },
+];
+
+const BAD_TYPES = [
+  { emoji: '🪼', tier: -1, pts: -30, size: 30, speed: [0.2, 0.5], weight: 0 },
+  { emoji: '💣', tier: -1, pts: -40, size: 26, speed: [0.3, 0.6], weight: 0 },
+];
+
+const TIER_COLORS = { 1: '#88ccff', 2: '#66eebb', 3: '#bb88ff', 4: '#ffd700', '-1': '#ff4444' };
+
+let state = 'idle';
+let globalRep = 0, score = 0, combo = 0;
+let aimAngle = 0, aimDir = 1, aimSpeed = 0.018;
+let fishes = [];
+let nets = [];
+let particles = [], feedbacks = [];
+let shakeX = 0, shakeY = 0;
+let flashAlpha = 0, flashColor = '';
+let bigText = '', bigTextAlpha = 0, bigTextColor = '';
+let catches = [];
+let spawnTimer = 0;
+
+function getDiff(rep) {
+  const t = rep / (TOTAL_REPS - 1);
+  return {
+    aimSpeed: 0.016 + t * 0.012,
+    fishSpeed: 1 + t * 0.8,
+    spawnInterval: Math.max(25, 55 - t * 30),
+    maxFish: Math.floor(8 + t * 7),
+    badChance: Math.max(0, (t - 0.4) * 0.3),
+    goldenChance: Math.max(0, (t - 0.3) * 0.2),
+    dodgeChance: Math.max(0, (t - 0.5) * 0.25),
+    rareTierBoost: t * 4,
+  };
+}
+
+function pickFishType() {
+  const diff = getDiff(globalRep);
+  if (Math.random() < diff.badChance) {
+    return { ...BAD_TYPES[Math.floor(Math.random() * BAD_TYPES.length)] };
+  }
+  let pool = FISH_TYPES.map(f => ({ ...f, w: f.weight }));
+  pool.forEach(f => { if (f.tier >= 3) f.w += diff.rareTierBoost; });
+  const total = pool.reduce((s, f) => s + f.w, 0);
+  let r = Math.random() * total;
+  for (const f of pool) { r -= f.w; if (r <= 0) return { ...f }; }
+  return { ...pool[0] };
+}
+
+function spawnFish() {
+  const diff = getDiff(globalRep);
+  if (fishes.length >= diff.maxFish) return;
+  const type = pickFishType();
+  const fromLeft = Math.random() > 0.5;
+  const y = WATER_TOP + 30 + Math.random() * (CANNON_Y - WATER_TOP - 100);
+  const baseSpeed = type.speed[0] + Math.random() * (type.speed[1] - type.speed[0]);
+  const speed = baseSpeed * diff.fishSpeed * (fromLeft ? 1 : -1);
+  const golden = type.tier > 0 && Math.random() < diff.goldenChance;
+  const dodges = type.tier > 0 && Math.random() < diff.dodgeChance;
+
+  fishes.push({
+    ...type,
+    x: fromLeft ? -50 : W + 50,
+    y,
+    vx: speed,
+    vy: (Math.random() - 0.5) * 0.3,
+    golden,
+    dodges,
+    dodging: false,
+    dodgeTimer: 0,
+    wobble: Math.random() * Math.PI * 2,
+    caught: false,
+    catchAnim: 0,
+  });
+}
+
+function fire() {
+  if (state !== 'play') return;
+  const nx = Math.sin(aimAngle);
+  const ny = -Math.cos(aimAngle);
+  nets.push({
+    x: CANNON_X,
+    y: CANNON_Y - 20,
+    vx: nx * 8,
+    vy: ny * 8,
+    radius: 30,
+    active: true,
+    life: 80,
+    hit: false,
+    hitFish: null,
+  });
+  globalRep++;
+  updateHUD();
+  if (globalRep >= TOTAL_REPS) {
+    setTimeout(() => { state = 'done'; }, 600);
+  }
+}
+
+function checkNetCollisions() {
+  for (const net of nets) {
+    if (!net.active) continue;
+    for (const fish of fishes) {
+      if (fish.caught) continue;
+      const dx = net.x - fish.x;
+      const dy = net.y - fish.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < net.radius + fish.size * 0.4) {
+        if (fish.dodges && !fish.dodging && Math.random() < 0.5) {
+          fish.dodging = true;
+          fish.dodgeTimer = 20;
+          fish.vy += (Math.random() > 0.5 ? 1 : -1) * 3;
+          addFeedback('闪!', fish.x, fish.y - 20, '#ffaa00');
+          continue;
+        }
+        net.active = false;
+        net.hit = true;
+        net.hitFish = fish;
+        fish.caught = true;
+        fish.catchAnim = 1;
+        onCatch(fish, net);
+        break;
+      }
+    }
+    if (net.active && (net.x < -30 || net.x > W + 30 || net.y < -30)) {
+      net.active = false;
+      if (!net.hit) onMiss();
+    }
+  }
+}
+
+function onCatch(fish, net) {
+  if (fish.tier === -1) {
+    combo = 0;
+    score = Math.max(0, score + fish.pts);
+    flashAlpha = 0.3; flashColor = '#ff2200';
+    shake(14);
+    spawnParticles(fish.x, fish.y, '#ff4444', 12);
+    bigText = `${fish.emoji} ${fish.pts}`; bigTextColor = '#ff4444'; bigTextAlpha = 1.1;
+    addFeedback(`${fish.pts}`, fish.x, fish.y - 30, '#ff4444');
+  } else {
+    combo++;
+    const mult = fish.golden ? 3 : 1;
+    const comboMult = 1 + Math.min(combo - 1, 9) * 0.1;
+    const pts = Math.round(fish.pts * mult * comboMult);
+    score += pts;
+    const tierColor = TIER_COLORS[fish.tier];
+    flashAlpha = fish.tier >= 3 ? 0.35 : 0.2;
+    flashColor = fish.golden ? '#ffd700' : tierColor;
+    shake(4 + fish.tier * 3);
+    spawnParticles(fish.x, fish.y, tierColor, 10 + fish.tier * 5);
+    if (fish.golden) spawnParticles(fish.x, fish.y, '#ffd700', 15);
+    const label = fish.golden ? `🌟×3 +${pts}` : `+${pts}`;
+    bigText = combo >= 3 ? `🔥×${combo} ${label}` : label;
+    bigTextColor = fish.golden ? '#ffd700' : tierColor;
+    bigTextAlpha = 1.2;
+    addFeedback(`${fish.emoji} +${pts}`, fish.x, fish.y - 30, tierColor);
+    catches.push({ emoji: fish.emoji, golden: fish.golden, tier: fish.tier });
+    if (catches.length > 20) catches.shift();
+  }
+  updateHUD();
+}
+
+function onMiss() {
+  combo = 0;
+  addFeedback('空!', CANNON_X + (Math.random() - 0.5) * 60, CANNON_Y - 80, '#666');
+  updateHUD();
+}
+
+function updateHUD() {
+  const moveNum = Math.floor(globalRep / 10) + 1;
+  const repInMove = globalRep % 10;
+  document.getElementById('h-mv').textContent = `${Math.min(moveNum, 4)}/4`;
+  document.getElementById('h-rp').textContent = `${repInMove}/10`;
+  document.getElementById('h-sc').textContent = score;
+  document.getElementById('h-cb').textContent = combo > 0 ? `×${combo}` : '—';
+}
+
+function spawnParticles(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 4;
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 2, life: 1, decay: 0.015 + Math.random() * 0.01, size: 3 + Math.random() * 4, color });
+  }
+}
+function shake(n) { shakeX = (Math.random() - 0.5) * n; shakeY = (Math.random() - 0.5) * n; }
+function addFeedback(t, x, y, c) { feedbacks.push({ text: t, x, y, alpha: 1.3, vy: -1.8, color: c }); }
+
+function update() {
+  if (state !== 'play' && state !== 'done') return;
+
+  shakeX *= 0.85; shakeY *= 0.85;
+  if (flashAlpha > 0) flashAlpha -= 0.02;
+  if (bigTextAlpha > 0) bigTextAlpha -= 0.016;
+
+  const diff = getDiff(globalRep);
+  aimSpeed = diff.aimSpeed;
+  aimAngle += aimSpeed * aimDir;
+  const maxAngle = Math.PI * 0.42;
+  if (aimAngle > maxAngle) { aimAngle = maxAngle; aimDir = -1; }
+  if (aimAngle < -maxAngle) { aimAngle = -maxAngle; aimDir = 1; }
+
+  spawnTimer++;
+  if (spawnTimer >= diff.spawnInterval) { spawnTimer = 0; spawnFish(); }
+
+  for (const fish of fishes) {
+    if (fish.caught) { fish.catchAnim -= 0.03; continue; }
+    fish.wobble += 0.04;
+    fish.x += fish.vx;
+    fish.y += fish.vy + Math.sin(fish.wobble) * 0.3;
+    if (fish.y < WATER_TOP + 20) fish.vy = Math.abs(fish.vy);
+    if (fish.y > CANNON_Y - 60) fish.vy = -Math.abs(fish.vy);
+    if (fish.dodging) {
+      fish.dodgeTimer--;
+      if (fish.dodgeTimer <= 0) { fish.dodging = false; fish.vy *= 0.3; }
+    }
+  }
+  fishes = fishes.filter(f => {
+    if (f.caught && f.catchAnim <= 0) return false;
+    if (!f.caught && (f.x < -80 || f.x > W + 80)) return false;
+    return true;
+  });
+
+  for (const net of nets) {
+    if (!net.active && !net.hit) { net.life--; continue; }
+    if (net.active) { net.x += net.vx; net.y += net.vy; net.life--; }
+    if (net.life <= 0) net.active = false;
+  }
+  nets = nets.filter(n => n.life > -20);
+
+  checkNetCollisions();
+
+  particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life -= p.decay; });
+  particles = particles.filter(p => p.life > 0);
+  feedbacks.forEach(f => { f.y += f.vy; f.alpha -= 0.015; });
+  feedbacks = feedbacks.filter(f => f.alpha > 0);
+}
+
+function drawBG() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0a1e3d');
+  g.addColorStop(0.1, '#0d2a4a');
+  g.addColorStop(0.5, '#0a2040');
+  g.addColorStop(1, '#061428');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // Water caustics
+  const time = Date.now ? 0 : 0; // static pattern
+  ctx.save();
+  ctx.globalAlpha = 0.04;
+  for (let i = 0; i < 12; i++) {
+    const x = (i * 97 + globalRep * 3) % W;
+    const y = WATER_TOP + 50 + (i * 43) % (H - WATER_TOP - 100);
+    ctx.fillStyle = '#4dc9f6';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 40 + i * 5, 15, i * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Water surface
+  ctx.strokeStyle = 'rgba(77,201,246,0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x = 0; x <= W; x += 4) {
+    const y = WATER_TOP + Math.sin(x * 0.02 + globalRep * 0.1) * 3;
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Bottom sand
+  const sg = ctx.createLinearGradient(0, H - 40, 0, H);
+  sg.addColorStop(0, 'rgba(60,45,20,0.3)');
+  sg.addColorStop(1, 'rgba(40,30,15,0.5)');
+  ctx.fillStyle = sg;
+  ctx.fillRect(0, H - 40, W, 40);
+}
+
+function drawFish(fish) {
+  ctx.save();
+  if (fish.caught) {
+    ctx.globalAlpha = Math.max(0, fish.catchAnim);
+    ctx.translate(fish.x, fish.y - (1 - fish.catchAnim) * 30);
+    ctx.scale(1 + (1 - fish.catchAnim) * 0.3, 1 + (1 - fish.catchAnim) * 0.3);
+  } else {
+    ctx.translate(fish.x, fish.y);
+  }
+
+  if (fish.golden && !fish.caught) {
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = 'rgba(255,215,0,0.15)';
+    ctx.beginPath();
+    ctx.arc(0, 0, fish.size * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (fish.tier === -1 && !fish.caught) {
+    ctx.shadowColor = '#ff4444';
+    ctx.shadowBlur = 10;
+  }
+
+  if (fish.dodges && !fish.caught) {
+    ctx.shadowColor = '#ffaa00';
+    ctx.shadowBlur = 8;
+  }
+
+  const flip = fish.vx < 0 ? -1 : 1;
+  ctx.scale(flip, 1);
+  ctx.font = `${fish.size}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(fish.emoji, 0, 0);
+
+  if (fish.golden && !fish.caught) {
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText('×3', 0, -fish.size * 0.6);
+  }
+
+  ctx.restore();
+}
+
+function drawCannon() {
+  ctx.save();
+  ctx.translate(CANNON_X, CANNON_Y);
+
+  // Aim line (laser sight)
+  ctx.save();
+  ctx.rotate(aimAngle);
+  ctx.strokeStyle = 'rgba(77,201,246,0.3)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.moveTo(0, -30);
+  ctx.lineTo(0, -H);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // Cannon base
+  ctx.fillStyle = '#2a3a50';
+  ctx.beginPath();
+  ctx.arc(0, 0, 28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#4a6a90';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Cannon barrel
+  ctx.save();
+  ctx.rotate(aimAngle);
+  const bg = ctx.createLinearGradient(-8, 0, 8, 0);
+  bg.addColorStop(0, '#3a5a7a');
+  bg.addColorStop(0.5, '#5a8aaa');
+  bg.addColorStop(1, '#3a5a7a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(-8, -45, 16, 35);
+  ctx.strokeStyle = '#6a9abb';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-8, -45, 16, 35);
+  // Muzzle
+  ctx.fillStyle = '#4dc9f6';
+  ctx.shadowColor = '#4dc9f6';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(0, -45, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Inner circle
+  ctx.fillStyle = '#1a2a3a';
+  ctx.beginPath();
+  ctx.arc(0, 0, 16, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ammo count
+  const remaining = TOTAL_REPS - globalRep;
+  ctx.font = 'bold 12px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = remaining <= 5 ? '#ff6644' : '#4dc9f6';
+  ctx.fillText(remaining, 0, 4);
+
+  ctx.restore();
+}
+
+function drawNets() {
+  for (const net of nets) {
+    if (net.life <= -20) continue;
+    ctx.save();
+    const alpha = net.active ? 1 : Math.max(0, 1 + net.life / 20);
+    ctx.globalAlpha = alpha;
+    ctx.translate(net.x, net.y);
+
+    if (net.hit) {
+      ctx.fillStyle = '#ffd700';
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(0, 0, 20 - net.life * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Net mesh
+      ctx.strokeStyle = 'rgba(77,201,246,0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-12, -12); ctx.lineTo(12, 12);
+      ctx.moveTo(12, -12); ctx.lineTo(-12, 12);
+      ctx.moveTo(0, -16); ctx.lineTo(0, 16);
+      ctx.moveTo(-16, 0); ctx.lineTo(16, 0);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(77,201,246,0.1)';
+      ctx.beginPath();
+      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawCatches() {
+  if (catches.length === 0) return;
+  ctx.save();
+  const startX = 10;
+  const y = H - 18;
+  ctx.font = '16px serif';
+  ctx.textAlign = 'left';
+  ctx.globalAlpha = 0.7;
+  for (let i = 0; i < catches.length; i++) {
+    const c = catches[i];
+    if (c.golden) {
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 6;
+    } else {
+      ctx.shadowBlur = 0;
+    }
+    ctx.fillText(c.emoji, startX + i * 22, y);
+  }
+  ctx.restore();
+}
+
+function drawProgress() {
+  const bW = 200, bH = 4, bx = W / 2 - bW / 2, by = H - 8;
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.beginPath(); ctx.roundRect(bx, by, bW, bH, 2); ctx.fill();
+  ctx.fillStyle = '#4dc9f6';
+  ctx.beginPath(); ctx.roundRect(bx, by, bW * (globalRep / TOTAL_REPS), bH, 2); ctx.fill();
+}
+
+function drawFlash() {
+  if (flashAlpha <= 0) return;
+  ctx.save(); ctx.globalAlpha = flashAlpha; ctx.fillStyle = flashColor; ctx.fillRect(0, 0, W, H); ctx.restore();
+}
+function drawBigText() {
+  if (bigTextAlpha <= 0) return;
+  ctx.save(); ctx.globalAlpha = Math.min(1, bigTextAlpha);
+  ctx.font = `bold ${30 + (1.2 - Math.min(1.2, bigTextAlpha)) * 8}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center'; ctx.fillStyle = bigTextColor; ctx.shadowColor = bigTextColor; ctx.shadowBlur = 20;
+  ctx.fillText(bigText, W / 2, H * 0.25); ctx.restore();
+}
+
+function drawDone() {
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.font = '26px -apple-system, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('捕鱼结束', W / 2, H / 2 - 60);
+  ctx.font = '22px -apple-system, sans-serif'; ctx.fillStyle = '#ffd700'; ctx.fillText(`总分: ${score}`, W / 2, H / 2 - 20);
+  ctx.font = '16px -apple-system, sans-serif'; ctx.fillStyle = '#aaa'; ctx.fillText(`捕获: ${catches.length} 条`, W / 2, H / 2 + 15);
+  const grade = score >= 600 ? 'S' : score >= 400 ? 'A' : score >= 250 ? 'B' : 'C';
+  const gc = score >= 600 ? '#ffd700' : score >= 400 ? '#7aff7a' : score >= 250 ? '#88aaff' : '#aaa';
+  ctx.font = 'bold 40px -apple-system, sans-serif'; ctx.fillStyle = gc; ctx.fillText(grade, W / 2, H / 2 + 65);
+  ctx.font = '12px -apple-system, sans-serif'; ctx.fillStyle = '#888';
+  ctx.fillText('40发用完 · 点击重玩', W / 2, H / 2 + 100); ctx.restore();
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.save(); ctx.translate(shakeX, shakeY);
+  drawBG();
+  for (const fish of fishes) drawFish(fish);
+  drawNets();
+  drawCannon();
+  ctx.restore();
+  drawCatches();
+  drawFlash(); drawBigText(); drawProgress();
+  for (const p of particles) { ctx.save(); ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x + shakeX, p.y + shakeY, p.size * p.life, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+  for (const f of feedbacks) { ctx.save(); ctx.globalAlpha = Math.min(1, f.alpha); ctx.font = 'bold 20px -apple-system, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); ctx.restore(); }
+  if (state === 'done') drawDone();
+}
+
+function loop() { update(); render(); requestAnimationFrame(loop); }
+
+function handleInput() {
+  if (state === 'done') { resetGame(); return; }
+  if (state === 'play' && globalRep < TOTAL_REPS) fire();
+}
+
+document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); handleInput(); } });
+canvas.addEventListener('click', handleInput);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); handleInput(); });
+
+function resetGame() {
+  globalRep = 0; score = 0; combo = 0;
+  aimAngle = 0; aimDir = 1;
+  fishes = []; nets = []; particles = []; feedbacks = [];
+  catches = []; spawnTimer = 0;
+  state = 'play';
+  updateHUD();
+}
+
+document.getElementById('go-btn').addEventListener('click', () => {
+  document.getElementById('start-overlay').style.display = 'none';
+  state = 'play';
+  updateHUD();
+  loop();
+});
+</script>
+</body>
+</html>
