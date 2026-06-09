@@ -134,10 +134,12 @@ function generateOrder() {
   const diff = getDiff(globalRep);
   const available = CROPS.slice(0, diff.cropTypes);
   order = [];
-  // Each order item is 1 crop, total items = orderSize
+  // Early game: only ask for crops currently growing in slots
+  const growingCrops = [...new Set(slots.filter(s => !s.harvested && !s.stolen).map(s => s.crop.emoji))];
+  const pool = growingCrops.length >= 2 ? growingCrops : available.map(c => c.emoji);
   for (let i = 0; i < diff.orderSize; i++) {
-    const crop = available[Math.floor(Math.random() * available.length)];
-    order.push({ crop: crop.emoji, needed: 1, collected: 0, perfect: 0 });
+    const crop = pool[Math.floor(Math.random() * pool.length)];
+    order.push({ crop, needed: 1, collected: 0, perfect: 0 });
   }
   // Each item slides in with staggered delay
   orderSlideIn = order.map((_, i) => -i * 0.35);
