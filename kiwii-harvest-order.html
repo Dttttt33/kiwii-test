@@ -44,15 +44,17 @@ canvas { border-radius: 12px; cursor: pointer; }
 <body>
 
 <div id="start-overlay">
-  <h1>抢收交单</h1>
+  <h1>🥕 抢收交单</h1>
   <p>
+    <strong style="color:#fff;font-size:15px">核心玩法：判断最佳收获时机 + 凑订单策略</strong><br><br>
     果子在长大：小 → 中 → <strong>大(完美)</strong> → 烂掉<br>
     凑齐上方订单 → 交单得大分<br><br>
     <strong>空格 / 点击 = 收获</strong><br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 前期：1 种作物，订单只要 1 个<br>
-    ▸ 中期：多种作物、订单变大、生长加快<br>
-    ▸ 后期：飞鸟来偷、4 种作物、订单 5 个
+    ▸ 前期：3 种作物、订单 2 件，练习看准「大」时收割<br>
+    ▸ 中期：5 种作物、订单变大、生长加速，需要取舍<br>
+    ▸ 后期：飞鸟来偷、连续交单 combo 奖励、订单 5 件<br>
+    ▸ 全程：收错的存入筐里，下轮自动补订单
     </span>
   </p>
   <button id="go-btn">开始</button>
@@ -97,12 +99,13 @@ const PHASE_BIG = 0.92;
 function getDiff(rep) {
   const t = rep / (TOTAL_REPS - 1);
   return {
-    cropTypes: Math.min(2 + Math.floor(t * 2), 4),
-    orderSize: Math.min(1 + Math.floor(t * 3), 5), // starts at 1, ramps to 5
-    growSpeed: 0.0007 + t * 0.0008,       // very slow: 0.0007→0.0015
+    cropTypes: Math.min(3 + Math.floor(t * 1.5), 5),
+    orderSize: Math.min(2 + Math.floor(t * 2.5), 5),
+    growSpeed: 0.001 + t * 0.0008,
     cursorSpeed: 1.5 + t * 0.8,
-    birdChance: Math.max(0, t - 0.3) * 0.012, // birds come even later
+    birdChance: Math.max(0, t - 0.35) * 0.012,
     birdSpeed: 1.2 + t * 1.2,
+    perfectBonus: Math.floor(5 + t * 15),
   };
 }
 

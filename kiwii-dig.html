@@ -46,14 +46,16 @@ canvas { border-radius: 12px; cursor: pointer; }
 <div id="start-overlay">
   <h1>⛏️ 挖地寻宝</h1>
   <p>
+    <strong style="color:#fff;font-size:15px">核心玩法：连续命中下潜 + 扭蛋式惊喜揭示</strong><br><br>
     每块地里埋着不同的好东西<br>
     光标扫过时 <strong>空格 / 点击 = 挖!</strong><br><br>
     🥕🥔🌽 蔬菜 · 🍅🍓🍇🍑🫐 水果<br>
     🍉🎃 大丰收 · 🌻🌸 花卉 · 💎🌈 传说<br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 前期：地表层，普通蔬菜为主<br>
-    ▸ 中期：连续命中不空挖 → 下潜到深层，稀有率飙升<br>
-    ▸ 后期：出现💣炸弹(扣分+重置层数)、矿脉层全是好货
+    ▸ 前期：地表层，普通蔬菜为主，建立命中节奏<br>
+    ▸ 中期：连续命中不空挖 → 自动下潜到深层，稀有率飙升<br>
+    ▸ 后期：💣炸弹(扣分+重置层数) — 越深风险越大收益越高<br>
+    ▸ 揭示越慢 = 越稀有！紫光/金光 = 大奖来了
     </span>
   </p>
   <button id="go-btn">开挖</button>
@@ -492,29 +494,63 @@ function update(){
 }
 
 // === DRAW ===
+const DEPTH_BG = [
+  { top: '#3a3018', mid: '#2a2210', bot: '#1e1a0c', ground: 'rgba(90,70,30,0.15)', line: 'rgba(100,80,40,0.15)' },
+  { top: '#2a2a28', mid: '#1e1e1a', bot: '#141410', ground: 'rgba(60,55,40,0.2)', line: 'rgba(80,70,50,0.15)' },
+  { top: '#1a1a2a', mid: '#121220', bot: '#0a0a18', ground: 'rgba(40,40,70,0.2)', line: 'rgba(60,60,100,0.15)' },
+  { top: '#1a0a1a', mid: '#120812', bot: '#0a040a', ground: 'rgba(80,30,80,0.15)', line: 'rgba(100,40,100,0.12)' },
+];
+let bgTransition = 0;
+
 function drawBG(){
+  const bg = DEPTH_BG[depth];
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#2a2210'); g.addColorStop(0.3, '#1e1a0c'); g.addColorStop(1, '#0f0c04');
+  g.addColorStop(0, bg.top); g.addColorStop(0.3, bg.mid); g.addColorStop(1, bg.bot);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(60,40,20,0.12)';
+  ctx.fillStyle = bg.ground;
   ctx.fillRect(0, SLOT_Y + SLOT_H + 10, W, H);
-  ctx.strokeStyle = 'rgba(80,60,30,0.15)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = bg.line; ctx.lineWidth = 1;
   for (let ly = SLOT_Y + SLOT_H + 40; ly < H; ly += 30) {
     ctx.beginPath(); ctx.moveTo(0, ly); ctx.lineTo(W, ly); ctx.stroke();
+  }
+  // Depth indicator — large text top-left
+  if (depth > 0) {
+    ctx.save();
+    ctx.font = 'bold 14px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    const dColors = ['#aa8844', '#88aacc', '#aa88ff', '#ffaa44'];
+    ctx.fillStyle = dColors[depth];
+    ctx.globalAlpha = 0.8;
+    ctx.fillText(`▼ ${DEPTH_NAMES[depth]} · 连击 ${digStreak}`, 16, 50);
+    // Depth bar
+    const barW = 100, barH = 4;
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fillRect(16, 56, barW, barH);
+    ctx.fillStyle = dColors[depth];
+    const nextThresh = (depth + 1) * 3;
+    ctx.fillRect(16, 56, barW * Math.min(1, digStreak / nextThresh), barH);
+    ctx.restore();
   }
 }
 
 function drawSlot(s, i) {
   const x = s.x, y = SLOT_Y;
   if (!s.dug) {
+    const moundColors = [
+      { inner: '#7a5a30', outer: '#4a3218', grass: '#4a8a3a' },
+      { inner: '#6a6a5a', outer: '#3a3a30', grass: '#3a6a4a' },
+      { inner: '#4a4a6a', outer: '#2a2a40', grass: '#3a5a7a' },
+      { inner: '#6a3a6a', outer: '#3a1a3a', grass: '#8a4a8a' },
+    ];
+    const mc = moundColors[depth];
     const mg = ctx.createRadialGradient(x+SLOT_W/2, y+SLOT_H-20, 5, x+SLOT_W/2, y+SLOT_H-20, SLOT_W/2);
-    mg.addColorStop(0, '#7a5a30'); mg.addColorStop(1, '#4a3218');
+    mg.addColorStop(0, mc.inner); mg.addColorStop(1, mc.outer);
     ctx.fillStyle = mg;
     ctx.beginPath();
     ctx.moveTo(x+10, y+SLOT_H);
     ctx.quadraticCurveTo(x+SLOT_W/2, y+20, x+SLOT_W-10, y+SLOT_H);
     ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#4a8a3a'; ctx.lineWidth = 2;
+    ctx.strokeStyle = mc.grass; ctx.lineWidth = 2;
     for (let g = 0; g < 4; g++) {
       const gx = x + 20 + g * 25, gy = y + 35 + g * 5;
       ctx.beginPath(); ctx.moveTo(gx, gy); ctx.quadraticCurveTo(gx+3, gy-14, gx+1, gy-20); ctx.stroke();

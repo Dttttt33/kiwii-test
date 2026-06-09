@@ -46,13 +46,15 @@ canvas { border-radius: 12px; cursor: pointer; }
 <div id="start-overlay">
   <h1>🌳 摇果树</h1>
   <p>
+    <strong style="color:#fff;font-size:15px">核心玩法：选择哪棵树摇 + 老虎机式连击</strong><br><br>
     光标扫过果树<br>
     <strong>空格 / 点击 = 摇！</strong><br><br>
     果子掉下来就是分 · 连续摇出同色 = 🎰 大奖<br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 前期：普通果子，每棵掉 1 个<br>
-    ▸ 中期：出现烂果🫤、连摇同棵树有 combo 加成<br>
-    ▸ 后期：金色树(必出稀有)、三连烂果大扣分、掉 4 个
+    ▸ 前期：普通果子 × 2，轻松得分<br>
+    ▸ 中期：出现烂果🫤(掉 3 个烂果 = -50!)、连摇同棵树 combo<br>
+    ▸ 后期：✨金色树(必出稀有×2)、掉 4 个果子、combo ×3 爆分<br>
+    ▸ 策略：认准金色树追摇 vs 避开烂果风险
     </span>
   </p>
   <button id="go-btn">开始摇</button>
@@ -94,12 +96,14 @@ const FRUITS = [
 function getDiff(rep) {
   const t = rep / (TOTAL_REPS - 1);
   return {
-    fruitsPerTree: Math.round(3 + t * 2),
+    fruitsPerTree: Math.round(4 + t * 2),
     cursorSpeed: 1.3 + t * 0.8,
-    goldenChance: 0.03 + t * 0.07,
-    dropCount: Math.min(1 + Math.floor(t * 2), 4),
-    goldenTreeChance: Math.max(0, (t - 0.4) * 0.3), // golden trees after 40%
-    rottenWeight: Math.max(0, Math.floor((t - 0.3) * 20)), // rotten fruit after 30%
+    goldenChance: 0.02 + t * 0.08,
+    dropCount: Math.min(2 + Math.floor(t * 2), 4),
+    goldenTreeChance: Math.max(0, (t - 0.25) * 0.35),
+    rottenWeight: Math.max(0, Math.floor((t - 0.2) * 18)),
+    witherSpeed: Math.max(0, (t - 0.4) * 0.015),
+    bonusTreeChance: Math.max(0, (t - 0.5) * 0.2),
   };
 }
 
@@ -137,12 +141,18 @@ function initTrees() {
   trees = [];
   for (let i = 0; i < TREE_COUNT; i++) {
     const isGolden = Math.random() < diff.goldenTreeChance;
+    const isBonus = !isGolden && Math.random() < diff.bonusTreeChance;
     const fruits = [];
-    for (let f = 0; f < diff.fruitsPerTree; f++) {
+    const fruitCount = isBonus ? diff.fruitsPerTree + 3 : diff.fruitsPerTree;
+    for (let f = 0; f < fruitCount; f++) {
       const fruit = isGolden ? FRUITS[3 + Math.floor(Math.random() * 2)] : pickFruit(diff.goldenChance, diff.rottenWeight);
       fruits.push({ fruit, ox: (Math.random() - 0.5) * 55, oy: -15 - Math.random() * 55 });
     }
-    trees.push({ x: treeLeftX(i), fruits, shakeAmt: 0, shakePhase: 0, regrow: 0, golden: isGolden });
+    trees.push({
+      x: treeLeftX(i), fruits, shakeAmt: 0, shakePhase: 0, regrow: 0,
+      golden: isGolden, bonus: isBonus,
+      wither: 0, maxWither: isBonus ? 180 : 0,
+    });
   }
 }
 
@@ -306,6 +316,7 @@ function update(){
   scorePops=scorePops.filter(s=>s.alpha>0);
 
   // Trees
+  const diff = getDiff(globalRep);
   for (let t of trees) {
     if (t.shakeAmt > 0) {
       t.shakePhase += 0.5;
@@ -315,13 +326,33 @@ function update(){
     if (t.fruits.length === 0 && t.regrow > 0) {
       t.regrow--;
       if (t.regrow <= 0) {
-        const diff = getDiff(globalRep);
         for (let f = 0; f < diff.fruitsPerTree; f++) {
           t.fruits.push({
             fruit: pickFruit(diff.goldenChance),
             ox: (Math.random() - 0.5) * 55,
             oy: -15 - Math.random() * 55,
           });
+        }
+      }
+    }
+    // Bonus trees wither over time — lose a fruit periodically
+    if (t.bonus && t.fruits.length > 0 && t.maxWither > 0) {
+      t.wither++;
+      if (t.wither > t.maxWither) {
+        t.fruits.pop();
+        t.wither = 0;
+        if (t.fruits.length === 0) {
+          addFeedback('枯了!', t.x + TREE_W/2, TREE_Y + 40, '#885533');
+          t.bonus = false;
+        }
+      }
+    }
+    // Normal trees wither slowly in late game
+    if (!t.bonus && !t.golden && diff.witherSpeed > 0 && t.fruits.length > 0) {
+      if (Math.random() < diff.witherSpeed) {
+        t.fruits.pop();
+        if (t.fruits.length === 0) {
+          t.regrow = 80 + Math.floor(Math.random() * 40);
         }
       }
     }
