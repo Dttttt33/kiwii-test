@@ -13,7 +13,7 @@ body {
   font-family: -apple-system, 'SF Pro Display', sans-serif;
   overflow: hidden; user-select: none;
 }
-canvas { border-radius: 12px; cursor: crosshair; }
+canvas { border-radius: 12px; cursor: pointer; }
 #hud {
   position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 12px; z-index: 10;
@@ -46,29 +46,28 @@ canvas { border-radius: 12px; cursor: crosshair; }
 <div id="start-overlay">
   <h1>🐟 捕鱼达人</h1>
   <p>
-    <strong style="color:#fff;font-size:15px">本质：瞄准精度 × 资源管理</strong><br>
-    <span style="color:#aaa;font-size:13px">40 发有限弹药，每一下发力都要选好目标 — 训练有限资源下的最优选择</span><br><br>
-    炮台自动旋转瞄准<br>
-    <strong>空格 / 点击 = 发射渔网!</strong><br><br>
-    🐟🐠 普通 · 🐡🦐 优秀<br>
-    🐙🦑 稀有 · 🐋🐉 传说<br><br>
+    <strong style="color:#fff;font-size:15px">本质：区域判断 × 耐心等待</strong><br>
+    <span style="color:#aaa;font-size:13px">下网捕鱼，一网多鱼！等鱼群聚拢再出手 — 训练延迟满足和空间判断</span><br><br>
+    光标自动扫描水面，显示当前下网位置<br>
+    <strong>空格 / 点击 = 下网!</strong><br><br>
+    🐟🐠 普通 · 🐡🦐 优秀 · 🐙🦑 稀有 · 🐋🐉 传说<br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 前期：鱼慢、网大，练习瞄准节奏<br>
-    ▸ 中期：🌟金色鱼(×3) + 闪避鱼(会躲!)<br>
-    ▸ 后期：🪼水母扣分、网越来越小、鱼加速<br><br>
-    ▸ <span style="color:#aaa">扩展方向：不同武器(鱼叉/电网)、海域探索、钓鱼排行赛、boss 鱼</span>
+    ▸ 前期：大网(宽120)，鱼多且慢，练习时机<br>
+    ▸ 中期：网变小(宽80)，🌟金色鱼(×3)出现<br>
+    ▸ 后期：精准网(宽50)，🪼水母混入，一网多鱼是关键<br><br>
+    ▸ <span style="color:#aaa">扩展方向：不同网具选择、鱼群AI聚散、海域探索、boss鱼</span>
     </span>
   </p>
-  <button id="go-btn">开炮</button>
+  <button id="go-btn">开捕</button>
 </div>
 
 <div id="hud">
   <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
   <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
   <div class="hi">分 <span class="y" id="h-sc">0</span></div>
-  <div class="hi">连击 <span class="y" id="h-cb">—</span></div>
+  <div class="hi">网 <span class="g" id="h-net">大</span></div>
 </div>
-<div id="btm">空格/点击 = 发射 · 瞄准时机是关键</div>
+<div id="btm">空格/点击 = 下网 · 一网能兜多条鱼!</div>
 
 <canvas id="c"></canvas>
 
@@ -80,160 +79,230 @@ const H = Math.min(640, window.innerHeight - 20);
 canvas.width = W; canvas.height = H;
 
 const TOTAL_REPS = 40;
-const CANNON_X = W / 2;
-const CANNON_Y = H - 50;
+const WATER_TOP = 70;
+const NET_DROP_SPEED = 5;
 
 const FISH = [
-  { emoji: '🐟', tier: 1, pts: 10, sz: 28, spd: 0.5 },
-  { emoji: '🐠', tier: 1, pts: 12, sz: 26, spd: 0.6 },
-  { emoji: '🦐', tier: 2, pts: 20, sz: 22, spd: 0.7 },
-  { emoji: '🐡', tier: 2, pts: 25, sz: 30, spd: 0.4 },
-  { emoji: '🦀', tier: 2, pts: 22, sz: 26, spd: 0.5 },
-  { emoji: '🐙', tier: 3, pts: 40, sz: 34, spd: 0.6 },
-  { emoji: '🦑', tier: 3, pts: 45, sz: 32, spd: 0.7 },
-  { emoji: '🦈', tier: 3, pts: 50, sz: 40, spd: 0.8 },
-  { emoji: '🐋', tier: 4, pts: 80, sz: 48, spd: 0.4 },
-  { emoji: '🐉', tier: 4, pts: 100, sz: 44, spd: 0.6 },
+  { emoji: '🐟', tier: 1, pts: 8, sz: 26, spd: 0.4, w: 30 },
+  { emoji: '🐠', tier: 1, pts: 10, sz: 24, spd: 0.5, w: 25 },
+  { emoji: '🦐', tier: 2, pts: 18, sz: 20, spd: 0.6, w: 16 },
+  { emoji: '🐡', tier: 2, pts: 22, sz: 28, spd: 0.35, w: 14 },
+  { emoji: '🦀', tier: 2, pts: 20, sz: 24, spd: 0.45, w: 13 },
+  { emoji: '🐙', tier: 3, pts: 35, sz: 32, spd: 0.5, w: 7 },
+  { emoji: '🦑', tier: 3, pts: 40, sz: 30, spd: 0.6, w: 6 },
+  { emoji: '🦈', tier: 3, pts: 50, sz: 38, spd: 0.7, w: 4 },
+  { emoji: '🐋', tier: 4, pts: 70, sz: 46, spd: 0.3, w: 2 },
+  { emoji: '🐉', tier: 4, pts: 100, sz: 42, spd: 0.5, w: 1 },
 ];
-const BAD = [
-  { emoji: '🪼', tier: -1, pts: -30, sz: 30, spd: 0.3 },
-];
+const BAD = { emoji: '🪼', tier: -1, pts: -25, sz: 28, spd: 0.25 };
+
+const TIER_COL = { 1: '#88ccff', 2: '#66eebb', 3: '#bb88ff', 4: '#ffd700', '-1': '#ff4444' };
 
 let state = 'idle';
 let globalRep = 0, score = 0, combo = 0;
-let angle = 0, angleDir = 1;
-let fishes = [], bullets = [];
+let cursorX = W / 2, cursorDir = 1, cursorSpeed = 1.2;
+let fishes = [];
+let activeNet = null; // { x, y, w, h, dropping, catching, catchTimer, caught }
 let particles = [], feedbacks = [];
 let frame = 0;
 
-function progress() { return globalRep / (TOTAL_REPS - 1); }
+function t() { return globalRep / (TOTAL_REPS - 1); }
+
+function getNetWidth() {
+  const p = t();
+  if (p < 0.25) return 130;
+  if (p < 0.5) return 100;
+  if (p < 0.75) return 70;
+  return 50;
+}
+function getNetLabel() {
+  const p = t();
+  if (p < 0.25) return '大';
+  if (p < 0.5) return '中';
+  if (p < 0.75) return '小';
+  return '精准';
+}
 
 function spawnFish(inView) {
-  const t = progress();
-  const weights = [30,25,18,15,14,8,7,5,3,2];
-  // Boost rares later
-  const pool = FISH.map((f, i) => ({ ...f, w: weights[i] + (f.tier >= 3 ? t * 6 : 0) }));
+  const p = t();
   // Bad fish after 40%
-  if (t > 0.4 && Math.random() < (t - 0.4) * 0.3) {
-    const b = BAD[0];
+  if (p > 0.4 && Math.random() < (p - 0.4) * 0.25) {
     const fromL = Math.random() > 0.5;
     fishes.push({
-      ...b, x: inView ? 100 + Math.random() * (W - 200) : (fromL ? -40 : W + 40),
-      y: 80 + Math.random() * (H - 200),
-      vx: b.spd * (0.5 + t * 0.5) * (fromL ? 1 : -1),
+      ...BAD,
+      x: inView ? 80 + Math.random() * (W - 160) : (fromL ? -35 : W + 35),
+      y: WATER_TOP + 40 + Math.random() * (H - WATER_TOP - 120),
+      vx: BAD.spd * (0.4 + p * 0.4) * (fromL ? 1 : -1),
       vy: 0, golden: false, wobble: Math.random() * 6,
     });
     return;
   }
-  const total = pool.reduce((s, f) => s + f.w, 0);
+  // Weighted pick
+  const pool = FISH.map(f => ({ ...f, weight: f.w + (f.tier >= 3 ? p * 5 : 0) }));
+  const total = pool.reduce((s, f) => s + f.weight, 0);
   let r = Math.random() * total;
   let pick = pool[0];
-  for (const f of pool) { r -= f.w; if (r <= 0) { pick = f; break; } }
+  for (const f of pool) { r -= f.weight; if (r <= 0) { pick = f; break; } }
 
   const fromL = Math.random() > 0.5;
-  const spdMult = 0.5 + t * 0.6;
-  const golden = pick.tier > 0 && t > 0.3 && Math.random() < (t - 0.3) * 0.2;
+  const spdMult = 0.5 + p * 0.5;
+  const golden = pick.tier > 0 && p > 0.3 && Math.random() < (p - 0.3) * 0.18;
   fishes.push({
     ...pick,
-    x: inView ? 100 + Math.random() * (W - 200) : (fromL ? -40 : W + 40),
-    y: 80 + Math.random() * (H - 200),
+    x: inView ? 80 + Math.random() * (W - 160) : (fromL ? -35 : W + 35),
+    y: WATER_TOP + 40 + Math.random() * (H - WATER_TOP - 120),
     vx: pick.spd * spdMult * (fromL ? 1 : -1),
-    vy: (Math.random() - 0.5) * 0.2,
+    vy: (Math.random() - 0.5) * 0.15,
     golden, wobble: Math.random() * 6,
   });
 }
 
-function fire() {
-  if (globalRep >= TOTAL_REPS) return;
-  const t = progress();
-  const netR = Math.max(20, 35 - t * 15);
-  bullets.push({
-    x: CANNON_X, y: CANNON_Y - 25,
-    vx: Math.sin(angle) * 6, vy: -Math.cos(angle) * 6,
-    r: netR, age: 0,
-  });
+function castNet() {
+  if (globalRep >= TOTAL_REPS || activeNet) return;
+  const nw = getNetWidth();
+  activeNet = {
+    x: cursorX - nw / 2,
+    y: WATER_TOP,
+    w: nw,
+    h: 0,
+    targetH: H - WATER_TOP - 40,
+    dropping: true,
+    catching: false,
+    catchTimer: 0,
+    caught: [],
+  };
   globalRep++;
   updateHUD();
-  if (globalRep >= TOTAL_REPS) setTimeout(() => { state = 'done'; }, 800);
+  if (globalRep >= TOTAL_REPS && !activeNet.dropping) {
+    setTimeout(() => { state = 'done'; }, 600);
+  }
+}
+
+function netFinishDrop() {
+  activeNet.dropping = false;
+  activeNet.catching = true;
+  // Check which fish are inside the net area
+  const nx1 = activeNet.x, nx2 = activeNet.x + activeNet.w;
+  const ny1 = WATER_TOP, ny2 = WATER_TOP + activeNet.h;
+  const caught = [];
+  fishes = fishes.filter(f => {
+    if (f.x > nx1 && f.x < nx2 && f.y > ny1 && f.y < ny2) {
+      caught.push(f);
+      return false;
+    }
+    return true;
+  });
+  activeNet.caught = caught;
+  activeNet.catchTimer = 0;
+}
+
+function netFinishCatch() {
+  const caught = activeNet.caught;
+  if (caught.length === 0) {
+    combo = 0;
+    addFeedback('空网!', activeNet.x + activeNet.w / 2, H / 2, '#666');
+  } else {
+    let totalPts = 0;
+    let hasBad = false;
+    for (const f of caught) {
+      if (f.tier === -1) {
+        hasBad = true;
+        totalPts += f.pts;
+      } else {
+        combo++;
+        const mult = (f.golden ? 3 : 1);
+        totalPts += Math.round(f.pts * mult);
+      }
+    }
+    // Multi-catch bonus
+    const multiBonus = caught.filter(f => f.tier > 0).length >= 3 ? Math.round(totalPts * 0.5) : 0;
+    totalPts += multiBonus;
+
+    if (hasBad) { combo = 0; }
+    score = Math.max(0, score + totalPts);
+
+    const cx = activeNet.x + activeNet.w / 2;
+    const goodCount = caught.filter(f => f.tier > 0).length;
+    if (goodCount >= 3) {
+      addFeedback(`🎣 一网${goodCount}条! +${totalPts}`, cx, H / 2 - 40, '#ffd700');
+      spawnP(cx, H / 2, '#ffd700', 20);
+    } else if (totalPts > 0) {
+      addFeedback(`+${totalPts}`, cx, H / 2 - 20, '#88ccff');
+    }
+    if (hasBad) {
+      addFeedback('🪼 水母入网!', cx, H / 2 + 20, '#ff4444');
+    }
+    // Individual fish feedback
+    let fy = H / 2 - 60;
+    for (const f of caught) {
+      const col = TIER_COL[f.tier] || '#888';
+      spawnP(cx + (Math.random() - 0.5) * 60, fy, col, 5);
+      fy += 25;
+    }
+  }
+  updateHUD();
+  activeNet = null;
+  if (globalRep >= TOTAL_REPS) {
+    setTimeout(() => { state = 'done'; }, 400);
+  }
 }
 
 function updateHUD() {
   document.getElementById('h-mv').textContent = `${Math.min(Math.floor(globalRep / 10) + 1, 4)}/4`;
   document.getElementById('h-rp').textContent = `${globalRep % 10}/10`;
   document.getElementById('h-sc').textContent = score;
-  document.getElementById('h-cb').textContent = combo > 0 ? `×${combo}` : '—';
+  document.getElementById('h-net').textContent = getNetLabel();
 }
 
 function update() {
   if (state !== 'play' && state !== 'done') return;
   frame++;
 
-  // Cannon rotation — slow sweep
-  const t = progress();
-  const speed = 0.004 + t * 0.004;
-  angle += speed * angleDir;
-  if (angle > 1.2) { angle = 1.2; angleDir = -1; }
-  if (angle < -1.2) { angle = -1.2; angleDir = 1; }
+  // Cursor sweep
+  if (!activeNet) {
+    cursorSpeed = 1.0 + t() * 0.6;
+    cursorX += cursorSpeed * cursorDir;
+    if (cursorX > W - 40) { cursorX = W - 40; cursorDir = -1; }
+    if (cursorX < 40) { cursorX = 40; cursorDir = 1; }
+  }
 
-  // Spawn fish
-  if (frame % Math.max(20, 50 - Math.floor(t * 30)) === 0 && fishes.length < 10 + t * 5) {
+  // Spawn
+  const spawnRate = Math.max(18, 45 - Math.floor(t() * 25));
+  if (frame % spawnRate === 0 && fishes.length < 12 + t() * 5) {
     spawnFish(false);
   }
 
-  // Move fish
+  // Fish movement
   for (const f of fishes) {
     f.wobble += 0.03;
     f.x += f.vx;
-    f.y += f.vy + Math.sin(f.wobble) * 0.2;
-    if (f.y < 70) f.vy = Math.abs(f.vy) + 0.1;
-    if (f.y > H - 80) f.vy = -(Math.abs(f.vy) + 0.1);
+    f.y += f.vy + Math.sin(f.wobble) * 0.15;
+    if (f.y < WATER_TOP + 30) f.vy += 0.05;
+    if (f.y > H - 60) f.vy -= 0.05;
+    f.vy *= 0.98;
   }
-  fishes = fishes.filter(f => f.x > -80 && f.x < W + 80);
+  fishes = fishes.filter(f => f.x > -70 && f.x < W + 70);
 
-  // Move bullets
-  for (const b of bullets) { b.x += b.vx; b.y += b.vy; b.age++; }
-  bullets = bullets.filter(b => b.age < 100 && b.y > -50 && b.x > -50 && b.x < W + 50);
-
-  // Collision
-  for (let bi = bullets.length - 1; bi >= 0; bi--) {
-    const b = bullets[bi];
-    for (let fi = fishes.length - 1; fi >= 0; fi--) {
-      const f = fishes[fi];
-      const dx = b.x - f.x, dy = b.y - f.y;
-      if (dx * dx + dy * dy < (b.r + f.sz * 0.4) * (b.r + f.sz * 0.4)) {
-        // Hit!
-        bullets.splice(bi, 1);
-        fishes.splice(fi, 1);
-        if (f.tier === -1) {
-          score = Math.max(0, score + f.pts);
-          combo = 0;
-          addFeedback(`${f.emoji} ${f.pts}`, f.x, f.y - 20, '#ff4444');
-          spawnP(f.x, f.y, '#ff4444', 8);
-        } else {
-          combo++;
-          const mult = (f.golden ? 3 : 1) * (1 + Math.min(combo - 1, 9) * 0.1);
-          const pts = Math.round(f.pts * mult);
-          score += pts;
-          const col = f.tier >= 4 ? '#ffd700' : f.tier >= 3 ? '#bb88ff' : f.tier >= 2 ? '#66eebb' : '#88ccff';
-          addFeedback(`${f.emoji}${f.golden ? '🌟' : ''} +${pts}`, f.x, f.y - 20, col);
-          spawnP(f.x, f.y, col, 8 + f.tier * 4);
-          if (f.golden) spawnP(f.x, f.y, '#ffd700', 10);
-        }
-        updateHUD();
-        break;
+  // Net animation
+  if (activeNet) {
+    if (activeNet.dropping) {
+      activeNet.h += NET_DROP_SPEED;
+      if (activeNet.h >= activeNet.targetH) {
+        activeNet.h = activeNet.targetH;
+        netFinishDrop();
+      }
+    } else if (activeNet.catching) {
+      activeNet.catchTimer++;
+      if (activeNet.catchTimer > 35) {
+        netFinishCatch();
       }
     }
   }
 
-  // Missed bullets
-  for (const b of bullets) {
-    if (b.y < -40 && !b.missed) { b.missed = true; combo = 0; updateHUD(); }
-  }
-
   // Particles
-  particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life -= 0.02; });
+  particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.life -= 0.018; });
   particles = particles.filter(p => p.life > 0);
-  feedbacks.forEach(f => { f.y -= 1.2; f.life -= 0.015; });
+  feedbacks.forEach(f => { f.y -= 1; f.life -= 0.012; });
   feedbacks = feedbacks.filter(f => f.life > 0);
 }
 
@@ -243,110 +312,116 @@ function spawnP(x, y, color, n) {
     particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s - 1.5, life: 1, color, sz: 2 + Math.random() * 3 });
   }
 }
-function addFeedback(text, x, y, color) { feedbacks.push({ text, x, y, life: 1.2, color }); }
+function addFeedback(text, x, y, color) { feedbacks.push({ text, x, y, life: 1.5, color }); }
 
 function render() {
-  // Background
+  // BG
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#0a1e3d'); g.addColorStop(0.5, '#0a2040'); g.addColorStop(1, '#061428');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
-  // Water surface line
-  ctx.strokeStyle = 'rgba(77,201,246,0.25)'; ctx.lineWidth = 2;
+  // Water surface
+  ctx.strokeStyle = 'rgba(77,201,246,0.3)'; ctx.lineWidth = 2;
   ctx.beginPath();
   for (let x = 0; x <= W; x += 5) {
-    const y = 60 + Math.sin(x * 0.015 + frame * 0.02) * 3;
+    const y = WATER_TOP + Math.sin(x * 0.015 + frame * 0.02) * 3;
     x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   }
   ctx.stroke();
+
+  // Net preview (cursor zone)
+  if (!activeNet && state === 'play') {
+    const nw = getNetWidth();
+    const nx = cursorX - nw / 2;
+    ctx.strokeStyle = 'rgba(77,201,246,0.4)'; ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(nx, WATER_TOP + 5, nw, H - WATER_TOP - 50);
+    ctx.setLineDash([]);
+    // Net width indicator at top
+    ctx.fillStyle = 'rgba(77,201,246,0.2)';
+    ctx.fillRect(nx, WATER_TOP, nw, 8);
+    // Count fish in zone
+    const fishInZone = fishes.filter(f => f.x > nx && f.x < nx + nw && f.y > WATER_TOP).length;
+    if (fishInZone > 0) {
+      ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = fishInZone >= 3 ? '#ffd700' : '#4dc9f6';
+      ctx.fillText(`${fishInZone} 条在网内`, cursorX, WATER_TOP - 8);
+    }
+  }
+
+  // Active net dropping
+  if (activeNet) {
+    ctx.save();
+    if (activeNet.catching) {
+      ctx.globalAlpha = 1 - activeNet.catchTimer / 40;
+    }
+    // Net area
+    ctx.strokeStyle = 'rgba(77,201,246,0.7)'; ctx.lineWidth = 2;
+    ctx.strokeRect(activeNet.x, WATER_TOP, activeNet.w, activeNet.h);
+    // Net mesh lines
+    ctx.strokeStyle = 'rgba(77,201,246,0.3)'; ctx.lineWidth = 1;
+    const meshGap = 25;
+    for (let mx = activeNet.x + meshGap; mx < activeNet.x + activeNet.w; mx += meshGap) {
+      ctx.beginPath(); ctx.moveTo(mx, WATER_TOP); ctx.lineTo(mx, WATER_TOP + activeNet.h); ctx.stroke();
+    }
+    for (let my = WATER_TOP + meshGap; my < WATER_TOP + activeNet.h; my += meshGap) {
+      ctx.beginPath(); ctx.moveTo(activeNet.x, my); ctx.lineTo(activeNet.x + activeNet.w, my); ctx.stroke();
+    }
+    // Caught fish inside net
+    if (activeNet.catching) {
+      for (const f of activeNet.caught) {
+        ctx.font = `${f.sz}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(f.emoji, f.x, f.y);
+      }
+    }
+    ctx.restore();
+  }
 
   // Fish
   for (const f of fishes) {
     ctx.save();
     ctx.translate(f.x, f.y);
-    if (f.golden) {
-      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 12;
-    }
-    if (f.tier === -1) {
-      ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 8;
-    }
+    if (f.golden) { ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 10; }
+    if (f.tier === -1) { ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 8; }
     ctx.scale(f.vx < 0 ? -1 : 1, 1);
     ctx.font = `${f.sz}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(f.emoji, 0, 0);
     if (f.golden) {
-      ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = '#ffd700'; ctx.fillText('×3', 0, -f.sz * 0.55);
+      ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#ffd700'; ctx.fillText('×3', 0, -f.sz * 0.5);
     }
     ctx.restore();
   }
 
-  // Bullets (nets)
-  for (const b of bullets) {
-    ctx.save();
-    ctx.translate(b.x, b.y);
-    ctx.strokeStyle = 'rgba(77,201,246,0.7)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(0, 0, b.r * 0.5, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(-b.r*0.35, -b.r*0.35); ctx.lineTo(b.r*0.35, b.r*0.35);
-    ctx.moveTo(b.r*0.35, -b.r*0.35); ctx.lineTo(-b.r*0.35, b.r*0.35);
-    ctx.moveTo(0, -b.r*0.5); ctx.lineTo(0, b.r*0.5);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // Cannon
-  ctx.save();
-  ctx.translate(CANNON_X, CANNON_Y);
-  // Aim line
-  ctx.save(); ctx.rotate(angle);
-  ctx.strokeStyle = 'rgba(77,201,246,0.2)'; ctx.lineWidth = 1; ctx.setLineDash([6,5]);
-  ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(0, -H); ctx.stroke(); ctx.setLineDash([]);
-  ctx.restore();
-  // Base
-  ctx.fillStyle = '#2a3a50';
-  ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#4a6a90'; ctx.lineWidth = 2; ctx.stroke();
-  // Barrel
-  ctx.save(); ctx.rotate(angle);
-  ctx.fillStyle = '#4a7a9a'; ctx.fillRect(-6, -40, 12, 30);
-  ctx.fillStyle = '#4dc9f6'; ctx.beginPath(); ctx.arc(0, -40, 4, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-  // Ammo count
-  ctx.fillStyle = '#1a2a3a'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
-  ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = (TOTAL_REPS - globalRep) <= 5 ? '#ff6644' : '#4dc9f6';
-  ctx.fillText(TOTAL_REPS - globalRep, 0, 0);
-  ctx.restore();
-
   // Particles
   for (const p of particles) {
-    ctx.globalAlpha = p.life;
+    ctx.globalAlpha = Math.max(0, p.life);
     ctx.fillStyle = p.color;
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.sz * p.life, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.5, p.sz * p.life), 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
 
   // Feedbacks
   for (const f of feedbacks) {
-    ctx.globalAlpha = Math.min(1, f.life);
+    ctx.globalAlpha = Math.min(1, Math.max(0, f.life));
     ctx.font = 'bold 18px -apple-system, sans-serif'; ctx.textAlign = 'center';
     ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
 
-  // Progress bar
+  // Progress
   ctx.fillStyle = 'rgba(255,255,255,0.06)';
   ctx.fillRect(W/2 - 100, H - 10, 200, 4);
   ctx.fillStyle = '#4dc9f6';
   ctx.fillRect(W/2 - 100, H - 10, 200 * (globalRep / TOTAL_REPS), 4);
 
-  // Done screen
+  // Done
   if (state === 'done') {
     ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center';
     ctx.font = '26px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('捕鱼结束', W/2, H/2 - 50);
     ctx.font = '22px sans-serif'; ctx.fillStyle = '#ffd700'; ctx.fillText(`总分: ${score}`, W/2, H/2 - 10);
-    const grade = score >= 600 ? 'S' : score >= 400 ? 'A' : score >= 250 ? 'B' : 'C';
-    const gc = score >= 600 ? '#ffd700' : score >= 400 ? '#7aff7a' : score >= 250 ? '#88aaff' : '#aaa';
+    const grade = score >= 500 ? 'S' : score >= 350 ? 'A' : score >= 200 ? 'B' : 'C';
+    const gc = score >= 500 ? '#ffd700' : score >= 350 ? '#7aff7a' : score >= 200 ? '#88aaff' : '#aaa';
     ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = gc; ctx.fillText(grade, W/2, H/2 + 45);
     ctx.font = '13px sans-serif'; ctx.fillStyle = '#888'; ctx.fillText('点击重玩', W/2, H/2 + 80);
   }
@@ -355,8 +430,15 @@ function render() {
 function loop() { update(); ctx.clearRect(0, 0, W, H); render(); requestAnimationFrame(loop); }
 
 function handleInput() {
-  if (state === 'done') { globalRep=0; score=0; combo=0; angle=0; angleDir=1; fishes=[]; bullets=[]; particles=[]; feedbacks=[]; state='play'; updateHUD(); return; }
-  if (state === 'play') fire();
+  if (state === 'done') {
+    globalRep = 0; score = 0; combo = 0; cursorX = W/2; cursorDir = 1;
+    fishes = []; activeNet = null; particles = []; feedbacks = [];
+    state = 'play';
+    for (let i = 0; i < 8; i++) spawnFish(true);
+    updateHUD();
+    return;
+  }
+  if (state === 'play') castNet();
 }
 
 document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); handleInput(); } });
@@ -367,10 +449,11 @@ document.getElementById('go-btn').addEventListener('click', (e) => {
   e.stopPropagation();
   document.getElementById('start-overlay').style.display = 'none';
   state = 'play';
-  for (let i = 0; i < 6; i++) spawnFish(true);
+  for (let i = 0; i < 8; i++) spawnFish(true);
   updateHUD();
   loop();
 });
 </script>
 </body>
+<!-- v1781023574 -->
 </html>
