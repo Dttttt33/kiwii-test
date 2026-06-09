@@ -133,7 +133,6 @@ let shakeX = 0, shakeY = 0;
 let flashAlpha = 0, flashColor = '';
 let bigText = '', bigTextAlpha = 0, bigTextColor = '';
 let reelHistory = []; // last fruits for slot matching
-let reelDisplay = ['','','']; // shown in the "reel" UI
 
 function treeLeftX(i) { return TREE_GAP + i * (TREE_W + TREE_GAP); }
 
@@ -222,11 +221,8 @@ function shakeTree(idx) {
   // Reel / slot matching
   for (let f of dropped) {
     reelHistory.push(f.emoji);
-    if (reelHistory.length > 20) reelHistory.shift();
+    if (reelHistory.length > 10) reelHistory.shift();
   }
-  // Update reel display (last 3)
-  const last3 = reelHistory.slice(-3);
-  reelDisplay = [last3[0]||'', last3[1]||'', last3[2]||''];
   checkSlotMatch();
 
   // Regrow if empty
@@ -238,31 +234,49 @@ function shakeTree(idx) {
 }
 
 function checkSlotMatch() {
-  if (reelHistory.length < 3) return;
-  const last3 = reelHistory.slice(-3);
-  if (last3[0] === last3[1] && last3[1] === last3[2]) {
-    const fruit = FRUITS.find(f => f.emoji === last3[0]);
+  const slotCount = getReelSlots();
+  if (reelHistory.length < slotCount) return;
+  const lastN = reelHistory.slice(-slotCount);
+
+  // Check full match
+  if (lastN.every(e => e === lastN[0])) {
+    const fruit = FRUITS.find(f => f.emoji === lastN[0]);
     if (fruit.value < 0) {
-      // 3 rotten = big penalty!
-      const penalty = -50;
+      const penalty = -30 * slotCount;
       score = Math.max(0, score + penalty);
-      flashAlpha = 0.3; flashColor = '#444';
-      bigText = `💀 三烂! ${penalty}`;
+      flashAlpha = 0.35; flashColor = '#444';
+      bigText = `💀 ${slotCount}连烂! ${penalty}`;
       bigTextColor = '#ff4444'; bigTextAlpha = 1.5;
-      shake(12);
+      shake(14);
     } else {
-      const mult = fruit.emoji === '🌟' ? 20 : (fruit.value >= 25 ? 8 : 5);
-      const bonus = fruit.value * mult;
+      const baseMult = fruit.emoji === '🌟' ? 20 : (fruit.value >= 25 ? 8 : 5);
+      const sizeMult = slotCount >= 5 ? 3 : slotCount >= 4 ? 2 : 1;
+      const bonus = fruit.value * baseMult * sizeMult;
       score += bonus;
-      flashAlpha = 0.25; flashColor = fruit.color;
-      bigText = `🎰 三连 ${fruit.emoji}${fruit.emoji}${fruit.emoji}  +${bonus}`;
-      bigTextColor = fruit.color; bigTextAlpha = 1.8;
-      spawnParticles(W/2, H*0.35, fruit.color, 30);
-      spawnParticles(W/2 - 60, H*0.35, '#ffd700', 15);
-      spawnParticles(W/2 + 60, H*0.35, '#ffd700', 15);
-      shake(10);
+      flashAlpha = 0.3; flashColor = fruit.color;
+      bigText = `🎰 ${slotCount}连! ${lastN.join('')}  +${bonus}`;
+      bigTextColor = fruit.color; bigTextAlpha = 2.0;
+      spawnParticles(W/2, 100, fruit.color, 25 + slotCount * 5);
+      spawnParticles(W/2 - 60, 100, '#ffd700', 15);
+      spawnParticles(W/2 + 60, 100, '#ffd700', 15);
+      shake(8 + slotCount * 2);
     }
     reelHistory = [];
+    return;
+  }
+
+  // Partial match: last 3 same within the reel (only when reel is 4+)
+  if (slotCount >= 4 && lastN.length >= 3) {
+    const tail3 = lastN.slice(-3);
+    if (tail3[0] === tail3[1] && tail3[1] === tail3[2]) {
+      const fruit = FRUITS.find(f => f.emoji === tail3[0]);
+      if (fruit && fruit.value > 0) {
+        const bonus = Math.round(fruit.value * 3);
+        score += bonus;
+        addFeedback(`🎰 ×3 +${bonus}`, W/2, 130, fruit.color);
+        spawnParticles(W/2, 100, fruit.color, 10);
+      }
+    }
   }
 }
 
@@ -523,25 +537,64 @@ function drawCursor(){
   }
 }
 
+function getReelSlots() {
+  const t = globalRep / (TOTAL_REPS - 1);
+  if (t < 0.3) return 3;
+  if (t < 0.6) return 4;
+  return 5;
+}
+
 function drawReel() {
-  // Slot reel display — top right
-  const rx = W - 130, ry = 60;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.beginPath(); ctx.roundRect(rx, ry, 115, 42, 10); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,200,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.font = '10px -apple-system, sans-serif'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255,200,0,0.6)'; ctx.fillText('🎰 连线', rx + 57, ry + 12);
-  for (let i = 0; i < 3; i++) {
-    const emoji = reelDisplay[i] || '·';
-    ctx.font = '22px serif'; ctx.textAlign = 'center';
-    ctx.globalAlpha = reelDisplay[i] ? 1 : 0.2;
-    ctx.fillText(emoji, rx + 20 + i * 38, ry + 34);
-    ctx.globalAlpha = 1;
+  const slotCount = getReelSlots();
+  const slotSize = 44;
+  const gap = 8;
+  const totalW = slotCount * slotSize + (slotCount - 1) * gap + 40;
+  const rx = W / 2 - totalW / 2;
+  const ry = 55;
+  const totalH = 62;
+
+  // Background
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.beginPath(); ctx.roundRect(rx, ry, totalW, totalH, 14); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,200,0,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Title
+  ctx.font = 'bold 12px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,200,0,0.8)';
+  const label = slotCount >= 5 ? '🎰 五连!' : slotCount >= 4 ? '🎰 四连' : '🎰 三连';
+  ctx.fillText(label, W / 2, ry + 14);
+
+  // Slots
+  const startX = rx + 20;
+  const display = reelHistory.slice(-slotCount);
+  for (let i = 0; i < slotCount; i++) {
+    const sx = startX + i * (slotSize + gap);
+    const sy = ry + 20;
+    // Slot bg
+    ctx.fillStyle = 'rgba(40,30,10,0.8)';
+    ctx.beginPath(); ctx.roundRect(sx, sy, slotSize, slotSize - 6, 8); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,200,0,0.2)'; ctx.lineWidth = 1; ctx.stroke();
+    // Emoji
+    const emoji = display[i] || '';
+    if (emoji) {
+      ctx.font = '28px serif'; ctx.textAlign = 'center';
+      ctx.fillText(emoji, sx + slotSize / 2, sy + slotSize / 2 + 4);
+    } else {
+      ctx.font = '20px serif'; ctx.textAlign = 'center';
+      ctx.globalAlpha = 0.2;
+      ctx.fillText('?', sx + slotSize / 2, sy + slotSize / 2 + 4);
+      ctx.globalAlpha = 1;
+    }
   }
-  // Separators
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(rx+38, ry+18); ctx.lineTo(rx+38, ry+40); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(rx+76, ry+18); ctx.lineTo(rx+76, ry+40); ctx.stroke();
+
+  // Match highlight
+  if (display.length >= slotCount && display.every(e => e === display[0])) {
+    ctx.save();
+    ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
+    ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.roundRect(rx + 2, ry + 2, totalW - 4, totalH - 4, 13); ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawScorePops() {
