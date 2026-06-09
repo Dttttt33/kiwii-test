@@ -47,9 +47,13 @@ canvas { border-radius: 12px; cursor: pointer; }
   <h1>抢收交单</h1>
   <p>
     果子在长大：小 → 中 → <strong>大(完美)</strong> → 烂掉<br>
-    飞鸟会来偷！在它叼走之前收获<br><br>
     凑齐上方订单 → 交单得大分<br><br>
-    <strong>空格 / 点击 = 收获</strong>
+    <strong>空格 / 点击 = 收获</strong><br><br>
+    <span style="color:#888;font-size:14px;line-height:1.8">
+    ▸ 前期：1 种作物，订单只要 1 个<br>
+    ▸ 中期：多种作物、订单变大、生长加快<br>
+    ▸ 后期：飞鸟来偷、4 种作物、订单 5 个
+    </span>
   </p>
   <button id="go-btn">开始</button>
 </div>
@@ -197,7 +201,6 @@ function startNewRound() {
   generateOrder();
   birds = [];
   const diff = getDiff(globalRep);
-  cursorX = 30; cursorDir = 1;
   cursorSpeed = diff.cursorSpeed;
   struck = false; repActive = false;
   showOrderTimer = 80;
@@ -661,7 +664,7 @@ document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();
 canvas.addEventListener('click',handleInput);
 canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
 
-function resetGame(){globalRep=0;score=0;combo=0;ordersCompleted=0;orderCombo=0;basket={};updateHUD();startNewRound();}
+function resetGame(){globalRep=0;score=0;combo=0;ordersCompleted=0;orderCombo=0;basket={};cursorX=30;cursorDir=1;updateHUD();startNewRound();}
 
 document.getElementById('go-btn').addEventListener('click',()=>{
   document.getElementById('start-overlay').style.display='none';

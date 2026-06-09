@@ -56,7 +56,12 @@ canvas { border-radius: 12px; cursor: pointer; }
     <span class="phase-label p-ecc">🌾 橙 = 离心</span> — 继续按住<br>
     <span style="color:#666">空隙 = 松开休息</span><br><br>
     <strong>有色条时按住 · 空隙时松开</strong><br>
-    按准了果子掉，田就丰收
+    按准了果子掉，田就丰收<br><br>
+    <span style="color:#888;font-size:14px;line-height:1.8">
+    ▸ 前期：慢滚动、宽条子、简单节奏<br>
+    ▸ 中期：加速、条子变窄、连击 combo 加倍率<br>
+    ▸ 后期：金色条(×3 分)、双段连击、10 种极端节奏
+    </span>
   </p>
   <button id="go-btn">开始</button>
 </div>
@@ -109,14 +114,16 @@ const REP_PATTERNS = [
 function getDiff(rep) {
   const t = rep / (TOTAL_REPS - 1);
   const pattern = REP_PATTERNS[rep % REP_PATTERNS.length];
-  const speedMult = 1 - t * 0.2; // patterns get slightly tighter overall
+  const speedMult = 1 - t * 0.2;
   return {
-    speed: 2.5 + t * 1.8,
+    speed: 1.5 + t * 1.0,
     conWidth: pattern.con * speedMult,
     holdWidth: pattern.hold * speedMult,
     eccWidth: pattern.ecc * speedMult,
     gapWidth: 55 - t * 10,
     patternName: pattern.name,
+    goldenChance: Math.max(0, (t - 0.35) * 0.25), // golden bars after 35%
+    doubleChance: Math.max(0, (t - 0.5) * 0.4),   // double segments after 50%
   };
 }
 
@@ -156,22 +163,28 @@ function initField() {
 function spawnRep(repIdx) {
   const diff = getDiff(repIdx);
   let x = nextSpawnX;
+  const isGolden = Math.random() < diff.goldenChance;
+  const isDouble = Math.random() < diff.doubleChance;
+  const repsToSpawn = isDouble ? 2 : 1;
 
-  // 3 segments per rep
-  for (let p = 0; p < 3; p++) {
-    const widths = [diff.conWidth, diff.holdWidth, diff.eccWidth];
-    segments.push({
-      x,
-      width: widths[p],
-      phase: p,
-      rep: repIdx,
-      judged: false,
-      coverage: 0,
-      result: null,
-      active: false, // currently in judge zone
-      scoreGiven: 0,
-    });
-    x += widths[p] + 3; // tiny gap between phases within a rep
+  for (let r = 0; r < repsToSpawn; r++) {
+    for (let p = 0; p < 3; p++) {
+      const widths = [diff.conWidth, diff.holdWidth, diff.eccWidth];
+      segments.push({
+        x,
+        width: widths[p] * (isDouble && r === 1 ? 0.7 : 1),
+        phase: p,
+        rep: repIdx,
+        judged: false,
+        coverage: 0,
+        result: null,
+        active: false,
+        scoreGiven: 0,
+        golden: isGolden,
+      });
+      x += widths[p] * (isDouble && r === 1 ? 0.7 : 1) + 3;
+    }
+    if (r === 0 && isDouble) x += 15; // small gap between double reps
   }
   nextSpawnX = x + diff.gapWidth;
 }
@@ -276,7 +289,8 @@ function update(){
         holdGlow = Math.min(1, holdGlow + 0.08);
 
         // Real-time tick rewards — juicy
-        const tickPts = 1.2 + (combo > 3 ? combo * 0.2 : 0);
+        const goldenMult = seg.golden ? 3 : 1;
+        const tickPts = (1.2 + (combo > 3 ? combo * 0.2 : 0)) * goldenMult;
         score += tickPts;
         tickScore += tickPts;
         tickTimer = 40;
@@ -540,6 +554,17 @@ function drawSegments() {
       ctx.beginPath(); ctx.rect(sx, barY, fillW, barH2); ctx.clip();
       ctx.beginPath(); ctx.roundRect(sx, barY, sw, barH2, 6); ctx.fill();
       ctx.restore();
+    }
+
+    // Golden glow
+    if (seg.golden && !seg.judged) {
+      ctx.save(); ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 10;
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(sx, barY, sw, barH2, 6); ctx.stroke();
+      ctx.restore();
+      // ×3 label
+      ctx.font = 'bold 10px -apple-system, sans-serif'; ctx.fillStyle = '#ffd700'; ctx.textAlign = 'center';
+      ctx.fillText('×3', sx + sw/2, barY - 4);
     }
 
     // Border highlight

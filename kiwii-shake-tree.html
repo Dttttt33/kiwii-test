@@ -48,8 +48,12 @@ canvas { border-radius: 12px; cursor: pointer; }
   <p>
     光标扫过果树<br>
     <strong>空格 / 点击 = 摇！</strong><br><br>
-    果子掉下来就是分<br>
-    连续摇出同色 = 🎰 大奖
+    果子掉下来就是分 · 连续摇出同色 = 🎰 大奖<br><br>
+    <span style="color:#888;font-size:14px;line-height:1.8">
+    ▸ 前期：普通果子，每棵掉 1 个<br>
+    ▸ 中期：出现烂果🫤、连摇同棵树有 combo 加成<br>
+    ▸ 后期：金色树(必出稀有)、三连烂果大扣分、掉 4 个
+    </span>
   </p>
   <button id="go-btn">开始摇</button>
 </div>
@@ -84,6 +88,7 @@ const FRUITS = [
   {emoji:'🍇', value: 25, color:'#aa55dd', weight: 20},
   {emoji:'🍋', value: 40, color:'#eedd22', weight: 12},
   {emoji:'🌟', value: 150, color:'#ffd700', weight: 5},
+  {emoji:'🫤', value: -15, color:'#666655', weight: 0}, // rotten — only in pool later
 ];
 
 function getDiff(rep) {
@@ -93,17 +98,23 @@ function getDiff(rep) {
     cursorSpeed: 1.3 + t * 0.8,
     goldenChance: 0.03 + t * 0.07,
     dropCount: Math.min(1 + Math.floor(t * 2), 4),
+    goldenTreeChance: Math.max(0, (t - 0.4) * 0.3), // golden trees after 40%
+    rottenWeight: Math.max(0, Math.floor((t - 0.3) * 20)), // rotten fruit after 30%
   };
 }
 
-function pickFruit(goldenChance) {
+function pickFruit(goldenChance, rottenWeight) {
   if (Math.random() < goldenChance) return FRUITS[4];
-  const pool = FRUITS.slice(0, 4);
+  const pool = FRUITS.slice(0, 4).map(f => ({...f}));
+  // Add rotten fruit to pool later in game
+  if (rottenWeight > 0) pool.push({...FRUITS[5], weight: rottenWeight});
   const totalW = pool.reduce((s,f) => s + f.weight, 0);
   let r = Math.random() * totalW;
   for (let f of pool) { r -= f.weight; if (r <= 0) return f; }
   return pool[0];
 }
+
+let lastShakenTree = -1, treeCombo = 0;
 
 // State
 let state = 'idle';
@@ -125,15 +136,13 @@ function initTrees() {
   const diff = getDiff(globalRep);
   trees = [];
   for (let i = 0; i < TREE_COUNT; i++) {
+    const isGolden = Math.random() < diff.goldenTreeChance;
     const fruits = [];
     for (let f = 0; f < diff.fruitsPerTree; f++) {
-      fruits.push({
-        fruit: pickFruit(diff.goldenChance),
-        ox: (Math.random() - 0.5) * 55,
-        oy: -15 - Math.random() * 55,
-      });
+      const fruit = isGolden ? FRUITS[3 + Math.floor(Math.random() * 2)] : pickFruit(diff.goldenChance, diff.rottenWeight);
+      fruits.push({ fruit, ox: (Math.random() - 0.5) * 55, oy: -15 - Math.random() * 55 });
     }
-    trees.push({ x: treeLeftX(i), fruits, shakeAmt: 0, shakePhase: 0, regrow: 0 });
+    trees.push({ x: treeLeftX(i), fruits, shakeAmt: 0, shakePhase: 0, regrow: 0, golden: isGolden });
   }
 }
 
@@ -141,7 +150,6 @@ function startNewRound() {
   initTrees();
   fallingFruits = [];
   const diff = getDiff(globalRep);
-  cursorX = 30; cursorDir = 1;
   cursorSpeed = diff.cursorSpeed;
   struck = false; repActive = false;
   state = 'play';
@@ -164,6 +172,15 @@ function shakeTree(idx) {
   if (tree.fruits.length === 0) {
     addFeedback('空了', tree.x + TREE_W/2, TREE_Y + 50, '#777');
     return false;
+  }
+
+  // Tree combo — same tree consecutive = bonus
+  if (idx === lastShakenTree) {
+    treeCombo++;
+    if (treeCombo >= 2) addFeedback(`连摇 ×${treeCombo}`, tree.x + TREE_W/2, TREE_Y + 30, '#ffaa33');
+  } else {
+    lastShakenTree = idx;
+    treeCombo = 1;
   }
 
   tree.shakeAmt = 14;
@@ -214,16 +231,26 @@ function checkSlotMatch() {
   const last3 = reelHistory.slice(-3);
   if (last3[0] === last3[1] && last3[1] === last3[2]) {
     const fruit = FRUITS.find(f => f.emoji === last3[0]);
-    const mult = fruit.emoji === '🌟' ? 20 : (fruit.value >= 25 ? 8 : 5);
-    const bonus = fruit.value * mult;
-    score += bonus;
-    flashAlpha = 0.25; flashColor = fruit.color;
-    bigText = `🎰 三连 ${fruit.emoji}${fruit.emoji}${fruit.emoji}  +${bonus}`;
-    bigTextColor = fruit.color; bigTextAlpha = 1.8;
-    spawnParticles(W/2, H*0.35, fruit.color, 30);
-    spawnParticles(W/2 - 60, H*0.35, '#ffd700', 15);
-    spawnParticles(W/2 + 60, H*0.35, '#ffd700', 15);
-    shake(10);
+    if (fruit.value < 0) {
+      // 3 rotten = big penalty!
+      const penalty = -50;
+      score = Math.max(0, score + penalty);
+      flashAlpha = 0.3; flashColor = '#444';
+      bigText = `💀 三烂! ${penalty}`;
+      bigTextColor = '#ff4444'; bigTextAlpha = 1.5;
+      shake(12);
+    } else {
+      const mult = fruit.emoji === '🌟' ? 20 : (fruit.value >= 25 ? 8 : 5);
+      const bonus = fruit.value * mult;
+      score += bonus;
+      flashAlpha = 0.25; flashColor = fruit.color;
+      bigText = `🎰 三连 ${fruit.emoji}${fruit.emoji}${fruit.emoji}  +${bonus}`;
+      bigTextColor = fruit.color; bigTextAlpha = 1.8;
+      spawnParticles(W/2, H*0.35, fruit.color, 30);
+      spawnParticles(W/2 - 60, H*0.35, '#ffd700', 15);
+      spawnParticles(W/2 + 60, H*0.35, '#ffd700', 15);
+      shake(10);
+    }
     reelHistory = [];
   }
 }
@@ -312,9 +339,18 @@ function update(){
     if (ff.y >= GROUND_Y) {
       ff.y = GROUND_Y;
       ff.landed = true;
-      // Score!
-      score += ff.fruit.value;
-      addScorePop(ff.fruit.value, ff.x, GROUND_Y - 20, ff.fruit.color);
+      const comboMult = treeCombo >= 2 ? 1 + (treeCombo - 1) * 0.2 : 1;
+      const pts = Math.round(ff.fruit.value * comboMult);
+      if (ff.fruit.value < 0) {
+        // Rotten!
+        score = Math.max(0, score + ff.fruit.value);
+        addScorePop(ff.fruit.value, ff.x, GROUND_Y - 20, '#666');
+        shake(4);
+        addFeedback('烂果!', ff.x, GROUND_Y - 40, '#666');
+      } else {
+        score += pts;
+        addScorePop(pts, ff.x, GROUND_Y - 20, ff.fruit.color);
+      }
       spawnParticles(ff.x, GROUND_Y, ff.fruit.color, 4);
       if (ff.fruit.value >= 100) {
         spawnParticles(ff.x, GROUND_Y - 10, '#ffd700', 10);
@@ -372,13 +408,27 @@ function drawTree(t, i) {
 
   // Canopy layers
   const canopyY = baseY - 130;
-  ctx.fillStyle = '#2a7a2a';
-  ctx.beginPath(); ctx.ellipse(cx + off, canopyY + 20, 50, 40, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#3a9a3a';
-  ctx.beginPath(); ctx.ellipse(cx - 15 + off, canopyY, 35, 30, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(cx + 18 + off, canopyY + 5, 30, 28, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#4aaa4a';
-  ctx.beginPath(); ctx.ellipse(cx + off, canopyY - 10, 22, 20, 0, 0, Math.PI*2); ctx.fill();
+  if (t.golden) {
+    ctx.fillStyle = '#8a7a20';
+    ctx.beginPath(); ctx.ellipse(cx + off, canopyY + 20, 50, 40, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#aaa030';
+    ctx.beginPath(); ctx.ellipse(cx - 15 + off, canopyY, 35, 30, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 18 + off, canopyY + 5, 30, 28, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ccbb40';
+    ctx.beginPath(); ctx.ellipse(cx + off, canopyY - 10, 22, 20, 0, 0, Math.PI*2); ctx.fill();
+    // Golden glow
+    ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 15;
+    ctx.beginPath(); ctx.ellipse(cx + off, canopyY + 10, 45, 35, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.shadowBlur = 0;
+  } else {
+    ctx.fillStyle = '#2a7a2a';
+    ctx.beginPath(); ctx.ellipse(cx + off, canopyY + 20, 50, 40, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#3a9a3a';
+    ctx.beginPath(); ctx.ellipse(cx - 15 + off, canopyY, 35, 30, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 18 + off, canopyY + 5, 30, 28, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#4aaa4a';
+    ctx.beginPath(); ctx.ellipse(cx + off, canopyY - 10, 22, 20, 0, 0, Math.PI*2); ctx.fill();
+  }
 
   // Fruits on tree
   for (let f of t.fruits) {
@@ -523,7 +573,7 @@ document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();
 canvas.addEventListener('click', handleInput);
 canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
 
-function resetGame(){globalRep=0;score=0;displayScore=0;reelHistory=[];reelDisplay=['','',''];updateHUD();startNewRound();}
+function resetGame(){globalRep=0;score=0;displayScore=0;reelHistory=[];reelDisplay=['','',''];cursorX=30;cursorDir=1;updateHUD();startNewRound();}
 
 document.getElementById('go-btn').addEventListener('click',()=>{
   document.getElementById('start-overlay').style.display='none';

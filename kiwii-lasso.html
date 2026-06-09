@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii Power — 套圈牧场</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a2a12;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  overflow: hidden; user-select: none;
+}
+canvas { border-radius: 12px; cursor: pointer; }
+#hud {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 12px; z-index: 10;
+}
+.hi {
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 7px 16px; border-radius: 14px; font-size: 15px; color: #ccc;
+}
+.hi span { font-weight: 600; }
+.hi .g { color: #7aff7a; }
+.hi .y { color: #ffd700; }
+#start-overlay {
+  position: fixed; inset: 0; background: rgba(8,14,6,0.96);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; gap: 16px;
+}
+#start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
+#start-overlay p { color: #aaa; font-size: 17px; max-width: 440px; text-align: center; line-height: 2.2; }
+#start-overlay strong { color: #ffd700; }
+#go-btn {
+  margin-top: 14px; padding: 14px 40px; font-size: 16px;
+  background: #8a5a2a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
+}
+#go-btn:active { transform: scale(0.95); }
+#btm { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 13px; z-index: 10; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay">
+  <h1>🤠 套圈牧场</h1>
+  <p>
+    动物跑过牛棚<br>
+    光标扫过时 <strong>空格 / 点击 = 甩绳!</strong><br><br>
+    🐔🐑🐖 普通 · 🐄🐴🦙 优秀<br>
+    🦬🐃 稀有 · 🦄🐉 传说<br><br>
+    有些是 <strong>❓ 神秘剪影</strong> — 套到才知道是啥!<br><br>
+    <span style="color:#888;font-size:14px;line-height:1.8">
+    ▸ 前期：动物慢、间隔大，连击容易攒<br>
+    ▸ 中期：出现变速动物 + 神秘剪影盲盒<br>
+    ▸ 后期：🦨🐍 坏动物混入、速度诈骗、连击 ×2.35
+    </span>
+  </p>
+  <button id="go-btn">开套</button>
+</div>
+
+<div id="hud">
+  <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
+  <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
+  <div class="hi">分 <span class="y" id="h-sc">0</span></div>
+  <div class="hi">连击 <span class="y" id="h-combo">0</span></div>
+</div>
+<div id="btm">等动物跑到绳下 → 空格/点击 = 甩绳!</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = Math.min(960, window.innerWidth - 20);
+const H = Math.min(640, window.innerHeight - 20);
+canvas.width = W; canvas.height = H;
+
+const TOTAL_MOVES = 4, REPS_PER_MOVE = 10;
+const TOTAL_REPS = TOTAL_MOVES * REPS_PER_MOVE;
+const LANE_Y = H * 0.52;
+const FENCE_Y = H * 0.72;
+
+const TIER_CONFIG = {
+  1: { glow: '#66cc44', label: '普通', border: '#66cc44', beamColor: 'rgba(100,200,60,', suspense: 18 },
+  2: { glow: '#6688ff', label: '优秀', border: '#6688ff', beamColor: 'rgba(80,120,255,', suspense: 28 },
+  3: { glow: '#cc66ff', label: '稀有!', border: '#cc66ff', beamColor: 'rgba(200,80,255,', suspense: 42 },
+  4: { glow: '#ffd700', label: '传说!!', border: '#ffd700', beamColor: 'rgba(255,210,0,', suspense: 60 },
+};
+
+const ANIMALS = [
+  { emoji: '🐔', name: '小鸡', weight: 20, pts: 8, tier: 1, speed: 0.5 },
+  { emoji: '🐰', name: '兔子', weight: 18, pts: 10, tier: 1, speed: 0.7 },
+  { emoji: '🐑', name: '绵羊', weight: 16, pts: 12, tier: 1, speed: 0.4 },
+  { emoji: '🐖', name: '小猪', weight: 14, pts: 14, tier: 1, speed: 0.45 },
+  { emoji: '🐄', name: '奶牛', weight: 10, pts: 22, tier: 2, speed: 0.35 },
+  { emoji: '🐴', name: '骏马', weight: 9, pts: 26, tier: 2, speed: 0.8 },
+  { emoji: '🦙', name: '羊驼', weight: 8, pts: 28, tier: 2, speed: 0.5 },
+  { emoji: '🐐', name: '山羊', weight: 8, pts: 24, tier: 2, speed: 0.6 },
+  { emoji: '🦬', name: '野牛', weight: 4, pts: 50, tier: 3, speed: 0.7 },
+  { emoji: '🐃', name: '金牛王', weight: 3, pts: 60, tier: 3, speed: 0.55 },
+  { emoji: '🦌', name: '神鹿', weight: 3, pts: 55, tier: 3, speed: 0.9 },
+  { emoji: '🦄', name: '独角兽', weight: 2, pts: 100, tier: 4, speed: 1.0 },
+  { emoji: '🐉', name: '金龙', weight: 1, pts: 150, tier: 4, speed: 0.75 },
+];
+
+// Bad animals — don't lasso these!
+const BAD_ANIMALS = [
+  { emoji: '🦨', name: '臭鼬', pts: -30, speed: 0.5 },
+  { emoji: '🐍', name: '毒蛇', pts: -25, speed: 0.6 },
+];
+
+const PERFECT_ZONE = 20; // pixels from center = perfect
+const GOOD_ZONE = 55; // pixels = regular hit
+
+function pickAnimal(rareBoost) {
+  const pool = ANIMALS.map(a => ({...a, w: a.weight}));
+  if (Math.random() < rareBoost) pool.filter(a => a.tier >= 3).forEach(a => a.w += 8);
+  const total = pool.reduce((s, a) => s + a.w, 0);
+  let r = Math.random() * total;
+  for (let a of pool) { r -= a.w; if (r <= 0) return a; }
+  return pool[0];
+}
+
+function getDiff(rep) {
+  const t = rep / (TOTAL_REPS - 1);
+  return {
+    animalCount: Math.floor(3 + t * 3),
+    blindChance: 0.3 + t * 0.15,
+    rareBoost: t * 0.2,
+    speedMult: 1 + t * 0.3,
+    badChance: Math.min(0.25, t * 0.35),   // bad animals appear more later
+    fakeChance: Math.min(0.4, t * 0.5),    // animals that change speed
+  };
+}
+
+// State
+let state = 'idle';
+let globalRep = 0, score = 0, displayScore = 0;
+let repActive = false, struck = false, repTimer = 0;
+let combo = 0, maxCombo = 0;
+const LASSO_X = W / 2; // fixed rope position
+
+let animals = []; // running animals {x, y, animal, speed, blind, caught, size}
+let particles = [], feedbacks = [], floaters = [];
+let shakeX = 0, shakeY = 0;
+let flashAlpha = 0, flashColor = '';
+let bigText = '', bigTextAlpha = 0, bigTextColor = '';
+let coinRain = [];
+
+// Lasso animation
+let lassoAnim = null; // { x, y, timer, hit, ringSize }
+
+// Gacha reveal
+let revealing = false;
+let revealState = null;
+
+// Collection
+let harvest = {};
+let harvestSeen = new Set();
+let harvestPops = [];
+const HARVEST_BAR_Y = H - 50;
+
+let rainbowBorder = 0;
+
+let spawnTimer = 0;
+const SPAWN_INTERVAL_MIN = 40;
+const SPAWN_INTERVAL_MAX = 90;
+let nextSpawnIn = 50;
+
+function spawnOneAnimal() {
+  const diff = getDiff(globalRep);
+  const isBad = Math.random() < diff.badChance;
+  const laneOffset = (Math.random() - 0.5) * 40;
+
+  if (isBad) {
+    const bad = BAD_ANIMALS[Math.floor(Math.random() * BAD_ANIMALS.length)];
+    animals.push({
+      x: W + 60,
+      y: LANE_Y + laneOffset,
+      animal: bad,
+      speed: bad.speed * diff.speedMult,
+      blind: false, bad: true, caught: false,
+      size: 34, bobPhase: Math.random() * Math.PI * 2,
+      faking: false, fakeTimer: 0,
+    });
+  } else {
+    const animal = pickAnimal(diff.rareBoost);
+    const blind = Math.random() < diff.blindChance;
+    const willFake = Math.random() < diff.fakeChance;
+    animals.push({
+      x: W + 60,
+      y: LANE_Y + laneOffset,
+      animal,
+      speed: animal.speed * diff.speedMult * (0.8 + Math.random() * 0.4),
+      blind, bad: false, caught: false,
+      size: 36 + (animal.tier - 1) * 4,
+      bobPhase: Math.random() * Math.PI * 2,
+      faking: willFake,
+      fakeTimer: 60 + Math.floor(Math.random() * 120),
+      baseSpeed: animal.speed * diff.speedMult,
+    });
+  }
+}
+
+function initAnimals() {
+  animals = [];
+  const diff = getDiff(globalRep);
+  for (let i = 0; i < 6; i++) {
+    const animal = pickAnimal(diff.rareBoost);
+    const blind = Math.random() < diff.blindChance;
+    animals.push({
+      x: W * 0.3 + i * (100 + Math.random() * 80),
+      y: LANE_Y + (Math.random() - 0.5) * 40,
+      animal,
+      speed: animal.speed * diff.speedMult * (0.8 + Math.random() * 0.4),
+      blind, bad: false, caught: false,
+      size: 36 + (animal.tier - 1) * 4,
+      bobPhase: Math.random() * Math.PI * 2,
+      faking: false, fakeTimer: 0,
+      baseSpeed: animal.speed * diff.speedMult,
+    });
+  }
+}
+
+function startNewRep() {
+  struck = false; repActive = true;
+  updateHUD();
+}
+
+function endRep() {
+  repActive = false;
+  globalRep++;
+  updateHUD();
+  if (globalRep >= TOTAL_REPS) { state = 'sessionDone'; return; }
+  // Short cooldown then ready for next throw
+  setTimeout(() => { if (!revealing) startNewRep(); }, 400);
+}
+
+function throwLasso() {
+  if (state !== 'play' || !repActive || struck || revealing) return;
+  struck = true;
+
+  lassoAnim = { x: LASSO_X, y: LANE_Y - 60, timer: 0, hit: false };
+
+  // Find closest animal within GOOD_ZONE
+  let caught = null;
+  let bestDist = GOOD_ZONE;
+  for (let a of animals) {
+    if (a.caught) continue;
+    const dist = Math.abs(a.x - LASSO_X);
+    if (dist < bestDist) {
+      bestDist = dist;
+      caught = a;
+    }
+  }
+
+  if (caught) {
+    caught.caught = true;
+    lassoAnim.hit = true;
+
+    // Bad animal check
+    if (caught.bad) {
+      combo = 0;
+      score = Math.max(0, score + caught.animal.pts);
+      shake(8);
+      flashAlpha = 0.2; flashColor = '#ff2200';
+      addFeedback(`${caught.animal.emoji} ${caught.animal.name}! ${caught.animal.pts}`, LASSO_X, LANE_Y - 40, '#ff4444');
+      bigText = `💀 不要套 ${caught.animal.emoji}!`; bigTextColor = '#ff4444'; bigTextAlpha = 1.2;
+      endRep();
+      return;
+    }
+
+    // Perfect or normal hit
+    const isPerfect = bestDist <= PERFECT_ZONE;
+    caught.isPerfect = isPerfect;
+    combo++;
+    if (combo > maxCombo) maxCombo = combo;
+
+    setTimeout(() => {
+      startReveal(caught);
+    }, 300);
+  } else {
+    // Miss — reset combo
+    combo = 0;
+    addFeedback('空了!', LASSO_X, LANE_Y - 30, '#888');
+    spawnDust(LASSO_X, LANE_Y + 20, 5);
+    shake(2);
+    endRep();
+  }
+}
+
+function startReveal(caught) {
+  const type = caught.animal;
+  const tc = TIER_CONFIG[type.tier];
+  revealing = true;
+  revealState = {
+    phase: 'lasso',
+    timer: 0,
+    maxTimer: tc.suspense,
+    x: caught.x, y: caught.y,
+    type,
+    tierConf: tc,
+    beamHeight: 0,
+    emojiScale: 0,
+    emojiY: caught.y,
+    glowAlpha: 0,
+    borderAlpha: 0,
+    revealed: false,
+    wasBlind: caught.blind,
+    isPerfect: caught.isPerfect || false,
+  };
+}
+
+function updateReveal() {
+  if (!revealState) return;
+  const r = revealState;
+  r.timer++;
+
+  switch(r.phase) {
+    case 'lasso':
+      // Ring tightening around the catch
+      r.glowAlpha = Math.min(0.5, r.timer / r.maxTimer);
+      if (r.timer % 5 === 0) {
+        particles.push({x: r.x + (Math.random()-0.5)*30, y: r.y, vx: (Math.random()-0.5)*2, vy: -1-Math.random()*2, life: 1, decay: 0.02, size: 2+Math.random()*3, color: r.tierConf.glow});
+      }
+      if (r.type.tier >= 3 && r.timer % 3 === 0) shake(1);
+      if (r.type.tier >= 4 && r.timer % 2 === 0) shake(1.5);
+      if (r.timer >= r.maxTimer) {
+        r.phase = 'beam'; r.timer = 0; r.maxTimer = r.type.tier >= 3 ? 22 : 12;
+      }
+      break;
+
+    case 'beam':
+      r.beamHeight = Math.min(H * 0.6, r.beamHeight + 22);
+      r.glowAlpha = 0.8;
+      shake(r.type.tier >= 3 ? 2.5 : 1);
+      if (r.timer % 2 === 0) {
+        for (let i = 0; i < 2; i++) particles.push({x: r.x+(Math.random()-0.5)*15, y: r.y-Math.random()*r.beamHeight, vx: (Math.random()-0.5)*3, vy: -2, life: 1, decay: 0.015, size: 3+Math.random()*3, color: r.tierConf.glow});
+      }
+      if (r.timer >= r.maxTimer) {
+        r.phase = 'reveal'; r.timer = 0; r.maxTimer = 40;
+        r.emojiY = r.y;
+        flashAlpha = r.type.tier >= 4 ? 0.5 : r.type.tier >= 3 ? 0.25 : r.type.tier >= 2 ? 0.12 : 0.05;
+        flashColor = r.tierConf.glow;
+        shake(r.type.tier * 3);
+      }
+      break;
+
+    case 'reveal':
+      r.emojiScale = Math.min(1, r.emojiScale + 0.055);
+      r.emojiY += (r.y - 50 - r.emojiY) * 0.1;
+      r.borderAlpha = Math.min(1, r.borderAlpha + 0.05);
+      r.beamHeight *= 0.93;
+      if (!r.revealed && r.emojiScale > 0.5) {
+        r.revealed = true;
+        doRevealEffects(r);
+      }
+      if (r.timer >= r.maxTimer) {
+        r.phase = 'celebrate'; r.timer = 0; r.maxTimer = r.type.tier >= 3 ? 55 : 30;
+      }
+      break;
+
+    case 'celebrate':
+      r.borderAlpha *= 0.97;
+      r.emojiScale = 1 + Math.sin(r.timer * 0.15) * 0.05;
+      if (r.type.tier >= 4 && r.timer % 3 === 0) {
+        const colors = ['#ff4444','#ff8800','#ffdd00','#44ff44','#4488ff','#cc44ff'];
+        spawnParticles(r.x+(Math.random()-0.5)*80, r.emojiY+(Math.random()-0.5)*40, colors[r.timer%colors.length], 2);
+      }
+      if (r.type.tier >= 3 && r.timer % 5 === 0) spawnParticles(r.x+(Math.random()-0.5)*50, r.emojiY+(Math.random()-0.5)*30, r.tierConf.glow, 2);
+      if (r.timer >= r.maxTimer) finishReveal(r);
+      break;
+  }
+}
+
+function doRevealEffects(r) {
+  const type = r.type;
+  const isPerfect = r.isPerfect;
+  const comboMult = 1 + Math.min(combo - 1, 9) * 0.15; // up to 2.35x at 10 combo
+  const perfectMult = isPerfect ? 2 : 1;
+  const finalPts = Math.round(type.pts * comboMult * perfectMult);
+  score += finalPts;
+
+  // Perfect feedback
+  if (isPerfect) {
+    feedbacks.push({text: '🎯 PERFECT!', x: r.x, y: r.emojiY - 75, alpha: 2.0, vy: -1.2, color: '#ffee00', isNew: false});
+    spawnParticles(r.x, r.emojiY, '#ffee00', 8);
+  }
+
+  // Combo feedback
+  if (combo >= 3) {
+    feedbacks.push({text: `${combo}x COMBO`, x: r.x + 50, y: r.emojiY - 55, alpha: 1.6, vy: -0.8, color: '#ff8844', isNew: false});
+  }
+
+  if (type.tier >= 4) {
+    rainbowBorder = 80;
+    bigText = `✦ ${type.emoji} ${type.name}!! +${finalPts} ✦`;
+    bigTextColor = '#ffd700'; bigTextAlpha = 2.5;
+    const colors = ['#ff4444','#ff8800','#ffdd00','#44ff44','#4488ff','#cc44ff'];
+    for (let i = 0; i < 30; i++) {
+      const a = i*Math.PI*2/30;
+      particles.push({x: r.x, y: r.emojiY, vx: Math.cos(a)*8, vy: Math.sin(a)*8-3, life: 1, decay: 0.006, size: 5+Math.random()*5, color: colors[i%colors.length]});
+    }
+    for (let i = 0; i < 15; i++) coinRain.push({x: Math.random()*W, y: -Math.random()*250, vy: 2+Math.random()*3, size: 16+Math.random()*12, alpha: 1, emoji: type.emoji});
+    shake(14);
+  } else if (type.tier >= 3) {
+    bigText = `${type.emoji} ${type.name}! +${finalPts}`;
+    bigTextColor = r.tierConf.glow; bigTextAlpha = 1.8;
+    spawnParticles(r.x, r.emojiY, r.tierConf.glow, 22);
+    spawnParticles(r.x, r.emojiY, '#ffffff', 8);
+    shake(7);
+  } else if (type.tier >= 2) {
+    addFeedback(`${type.emoji} ${type.name}! +${finalPts}`, r.x, r.emojiY - 50, r.tierConf.glow);
+    spawnParticles(r.x, r.emojiY, r.tierConf.glow, 12);
+    shake(3);
+  } else {
+    addFeedback(`${type.emoji} +${finalPts}`, r.x, r.emojiY - 40, '#88cc44');
+    spawnParticles(r.x, r.emojiY, '#88cc44', 6);
+  }
+
+  // Blind bonus text
+  if (r.wasBlind && type.tier >= 2) {
+    feedbacks.push({text: '盲盒惊喜!', x: r.x, y: r.emojiY - 90, alpha: 1.8, vy: -1, color: '#ffee44', isNew: false});
+  }
+
+  // NEW check
+  if (!harvestSeen.has(type.emoji)) {
+    harvestSeen.add(type.emoji);
+    feedbacks.push({text: '✦ NEW! ✦', x: r.x + 45, y: r.emojiY - 25, alpha: 2.0, vy: -0.5, color: '#ffee00', isNew: true});
+  }
+
+  // Harvest
+  harvest[type.emoji] = (harvest[type.emoji] || 0) + 1;
+  harvestPops.push({emoji: type.emoji, x: r.x, y: r.emojiY, targetX: getHarvestSlotX(type.emoji), targetY: HARVEST_BAR_Y, t: 0});
+}
+
+function finishReveal() {
+  revealing = false;
+  revealState = null;
+  globalRep++;
+  updateHUD();
+  if (globalRep >= TOTAL_REPS) { state = 'sessionDone'; return; }
+  setTimeout(() => startNewRep(), 250);
+}
+
+function getHarvestSlotX(emoji) {
+  const keys = Object.keys(harvest);
+  const idx = keys.indexOf(emoji);
+  return 40 + (idx >= 0 ? idx : keys.length - 1) * 44;
+}
+
+// Utils
+function spawnParticles(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,life:1,decay:0.01+Math.random()*0.008,size:3+Math.random()*5,color});}}
+function spawnDust(x,y,n){for(let i=0;i<n;i++){const a=-Math.PI/2+(Math.random()-0.5)*Math.PI*0.8,sp=1+Math.random()*3;particles.push({x:x+(Math.random()-0.5)*30,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,decay:0.015+Math.random()*0.01,size:3+Math.random()*5,color:'#aa8855'});}}
+function shake(n){shakeX+=(Math.random()-0.5)*n;shakeY+=(Math.random()-0.5)*n*0.5;}
+function addFeedback(t,x,y,c){feedbacks.push({text:t,x,y,alpha:1.8,vy:-1.5,color:c});}
+function updateHUD(){
+  const moveNum=Math.min(Math.floor(globalRep/REPS_PER_MOVE)+1,TOTAL_MOVES);
+  const repInMove=globalRep%REPS_PER_MOVE;
+  document.getElementById('h-mv').textContent=`${moveNum}/${TOTAL_MOVES}`;
+  document.getElementById('h-rp').textContent=`${repInMove}/${REPS_PER_MOVE}`;
+  document.getElementById('h-sc').textContent=Math.round(displayScore);
+  document.getElementById('h-combo').textContent=combo > 0 ? `${combo}x` : '0';
+}
+
+// Update
+function update(){
+  shakeX *= 0.82; shakeY *= 0.82;
+  if (flashAlpha > 0) flashAlpha -= 0.018;
+  if (bigTextAlpha > 0) bigTextAlpha -= 0.015;
+  if (rainbowBorder > 0) rainbowBorder--;
+
+  if (displayScore < score) {
+    displayScore += Math.max(1, (score - displayScore) * 0.1);
+    if (displayScore > score) displayScore = score;
+    updateHUD();
+  }
+
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.decay;});
+  particles=particles.filter(p=>p.life>0);
+  feedbacks.forEach(f=>{f.y+=f.vy;f.alpha-=0.014;});
+  feedbacks=feedbacks.filter(f=>f.alpha>0);
+  floaters.forEach(f=>{f.y+=f.vy;f.x+=f.vx||0;f.vy+=0.08;f.alpha-=0.012;f.rot+=(f.rotSpeed||0);});
+  floaters=floaters.filter(f=>f.alpha>0);
+  coinRain.forEach(c=>{c.y+=c.vy;c.alpha-=0.007;});
+  coinRain=coinRain.filter(c=>c.alpha>0&&c.y<H+50);
+  harvestPops.forEach(h=>{h.t+=0.035;h.x+=(h.targetX-h.x)*0.1;h.y+=(h.targetY-h.y)*0.1;});
+  harvestPops=harvestPops.filter(h=>h.t<1);
+
+  // Animals run — always moving
+  if (state === 'play') {
+    for (let a of animals) {
+      if (!a.caught) {
+        // Speed faking: sudden speed changes near the rope
+        if (a.faking && a.baseSpeed) {
+          const distToRope = Math.abs(a.x - LASSO_X);
+          if (distToRope < 200 && distToRope > 50) {
+            a.fakeTimer--;
+            if (a.fakeTimer <= 0) {
+              // Toggle between fast/slow
+              a.speed = a.speed > a.baseSpeed ? a.baseSpeed * 0.4 : a.baseSpeed * 1.8;
+              a.fakeTimer = 20 + Math.floor(Math.random() * 30);
+            }
+          }
+        }
+        a.x -= a.speed;
+        a.bobPhase += 0.08;
+      }
+    }
+    // Remove off-screen animals
+    animals = animals.filter(a => a.x > -80 || a.caught);
+    // Spawn new animals continuously
+    spawnTimer++;
+    if (spawnTimer >= nextSpawnIn) {
+      spawnTimer = 0;
+      nextSpawnIn = SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
+      spawnOneAnimal();
+    }
+  }
+
+  // Lasso animation
+  if (lassoAnim) {
+    lassoAnim.timer++;
+    lassoAnim.ringSize = Math.min(40, lassoAnim.ringSize + 4);
+    if (lassoAnim.timer > 25) lassoAnim = null;
+  }
+
+
+  if (revealing) updateReveal();
+}
+
+// === DRAW ===
+function drawBG() {
+  // Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, H * 0.4);
+  sky.addColorStop(0, '#1a3322'); sky.addColorStop(1, '#2a4a2a');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H * 0.4);
+  // Ground
+  const gnd = ctx.createLinearGradient(0, H*0.4, 0, H);
+  gnd.addColorStop(0, '#3a5a28'); gnd.addColorStop(0.3, '#2a4a1a'); gnd.addColorStop(1, '#1a3010');
+  ctx.fillStyle = gnd; ctx.fillRect(0, H*0.4, W, H*0.6);
+  // Fence
+  ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(0, FENCE_Y); ctx.lineTo(W, FENCE_Y); ctx.stroke();
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(0, FENCE_Y - 25); ctx.lineTo(W, FENCE_Y - 25); ctx.stroke();
+  // Fence posts
+  for (let px = 40; px < W; px += 120) {
+    ctx.fillStyle = '#7a5a2a'; ctx.fillRect(px - 4, FENCE_Y - 35, 8, 50);
+  }
+  // Dust path
+  ctx.fillStyle = 'rgba(140,110,60,0.12)';
+  ctx.beginPath();
+  ctx.ellipse(W/2, LANE_Y + 15, W*0.45, 25, 0, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawAnimals() {
+  for (let a of animals) {
+    if (a.caught) continue;
+    const bob = Math.sin(a.bobPhase) * 3;
+    ctx.save();
+    if (a.bad) {
+      // Bad animals — red glow warning
+      ctx.font = `${a.size}px serif`; ctx.textAlign = 'center';
+      ctx.shadowColor = '#ff3333'; ctx.shadowBlur = 8;
+      ctx.fillText(a.animal.emoji, a.x, a.y + bob);
+      ctx.shadowBlur = 0;
+      // Skull marker
+      ctx.font = '12px serif';
+      ctx.fillText('💀', a.x + 18, a.y - 18 + bob);
+    } else if (a.blind) {
+      ctx.font = `${a.size}px serif`; ctx.textAlign = 'center';
+      ctx.globalAlpha = 0.9;
+      ctx.filter = 'brightness(0.2)';
+      ctx.fillText(a.animal.emoji, a.x, a.y + bob);
+      ctx.filter = 'none';
+      ctx.globalAlpha = 1;
+      ctx.font = 'bold 20px -apple-system, sans-serif';
+      ctx.fillStyle = '#ffdd44';
+      ctx.fillText('?', a.x, a.y - 22 + bob);
+    } else {
+      ctx.font = `${a.size}px serif`; ctx.textAlign = 'center';
+      ctx.fillText(a.animal.emoji, a.x, a.y + bob);
+      if (a.animal.tier >= 3) {
+        ctx.shadowColor = TIER_CONFIG[a.animal.tier].glow;
+        ctx.shadowBlur = 12;
+        ctx.fillText(a.animal.emoji, a.x, a.y + bob);
+        ctx.shadowBlur = 0;
+      }
+    }
+    ctx.restore();
+    if (Math.random() < 0.06 && a.x < W && a.x > 0) {
+      particles.push({x: a.x + 15, y: a.y + 18, vx: 0.5+Math.random(), vy: -0.3, life: 0.6, decay: 0.02, size: 2+Math.random()*3, color: '#aa9966'});
+    }
+  }
+}
+
+function drawLasso() {
+  if (!lassoAnim) return;
+  const l = lassoAnim;
+  const throwDur = 10;
+  const progress = Math.min(1, l.timer / throwDur);
+  // Rope drops straight down
+  const ropeEndY = 45 + progress * (LANE_Y - 40);
+  ctx.save();
+  ctx.strokeStyle = '#cc9944'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(LASSO_X, 0); ctx.lineTo(LASSO_X, ropeEndY); ctx.stroke();
+  // Ring expands at landing
+  if (progress > 0.3) {
+    const ringProg = (progress - 0.3) / 0.7;
+    const ringSize = 12 + ringProg * 25;
+    ctx.strokeStyle = l.hit ? '#ffdd44' : '#cc9944';
+    ctx.lineWidth = l.hit ? 4 : 3;
+    ctx.beginPath(); ctx.ellipse(LASSO_X, ropeEndY + 8, ringSize, ringSize * 0.4, 0, 0, Math.PI*2); ctx.stroke();
+    if (l.hit) { ctx.shadowColor = '#ffdd44'; ctx.shadowBlur = 12; ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+function drawReveal() {
+  if (!revealState) return;
+  const r = revealState;
+  const tc = r.tierConf;
+
+  // Glow
+  if (r.glowAlpha > 0) {
+    ctx.save();
+    const grd = ctx.createRadialGradient(r.x, r.y, 0, r.x, r.y, 80);
+    grd.addColorStop(0, tc.beamColor + r.glowAlpha + ')');
+    grd.addColorStop(1, tc.beamColor + '0)');
+    ctx.fillStyle = grd; ctx.fillRect(r.x-80, r.y-80, 160, 160);
+    ctx.restore();
+  }
+
+  // Beam
+  if (r.beamHeight > 5) {
+    ctx.save();
+    const bW = r.type.tier >= 4 ? 36 : r.type.tier >= 3 ? 24 : 14;
+    const bGrd = ctx.createLinearGradient(r.x, r.y, r.x, r.y - r.beamHeight);
+    bGrd.addColorStop(0, tc.beamColor + '0.6)');
+    bGrd.addColorStop(0.5, tc.beamColor + '0.3)');
+    bGrd.addColorStop(1, tc.beamColor + '0)');
+    ctx.fillStyle = bGrd;
+    ctx.fillRect(r.x - bW/2, r.y - r.beamHeight, bW, r.beamHeight);
+    ctx.restore();
+  }
+
+  // Emoji reveal
+  if (r.phase === 'reveal' || r.phase === 'celebrate') {
+    ctx.save();
+    if (r.type.tier >= 2) {
+      ctx.beginPath(); ctx.arc(r.x, r.emojiY, 42*r.emojiScale, 0, Math.PI*2);
+      ctx.fillStyle = tc.beamColor + (0.2*r.borderAlpha) + ')'; ctx.fill();
+      ctx.strokeStyle = tc.border; ctx.lineWidth = 2.5; ctx.globalAlpha = r.borderAlpha; ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    const sz = 52 * r.emojiScale;
+    ctx.font = `${sz}px serif`; ctx.textAlign = 'center';
+    ctx.shadowColor = tc.glow; ctx.shadowBlur = r.type.tier >= 3 ? 25 : 10;
+    ctx.fillText(r.type.emoji, r.x, r.emojiY + sz*0.3);
+    ctx.shadowBlur = 0;
+    if (r.emojiScale > 0.8) {
+      ctx.font = 'bold 16px -apple-system, sans-serif';
+      ctx.fillStyle = tc.glow; ctx.globalAlpha = r.borderAlpha;
+      ctx.fillText(`${r.type.name}  +${r.type.pts}`, r.x, r.emojiY + 45);
+      if (tc.label) {
+        ctx.font = 'bold 13px -apple-system, sans-serif'; ctx.fillStyle = tc.border;
+        ctx.fillText(tc.label, r.x, r.emojiY - 38);
+      }
+    }
+    ctx.restore();
+  }
+}
+
+function drawRope() {
+  if (state !== 'play' || revealing) return;
+  ctx.save();
+  if (!lassoAnim) {
+    // Idle: rope coiled at top, ready to throw
+    ctx.strokeStyle = '#bb8833'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(LASSO_X, 0); ctx.lineTo(LASSO_X, 45); ctx.stroke();
+    // Coiled loop at ready position
+    ctx.strokeStyle = 'rgba(220,160,60,0.7)'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.ellipse(LASSO_X, 55, 18, 10, 0, 0, Math.PI*2); ctx.stroke();
+    // Perfect zone (inner bright ring)
+    ctx.strokeStyle = 'rgba(255,230,50,0.35)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(LASSO_X, LANE_Y + 5, PERFECT_ZONE, 8, 0, 0, Math.PI*2); ctx.stroke();
+    // Good zone (outer ring)
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = 'rgba(255,200,60,0.15)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(LASSO_X, LANE_Y + 5, GOOD_ZONE, 22, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function drawRainbowBorder() {
+  if (rainbowBorder <= 0) return;
+  ctx.save();
+  const alpha = Math.min(1, rainbowBorder / 30) * 0.6;
+  ctx.globalAlpha = alpha;
+  const t = performance.now() / 500;
+  const colors = ['#ff4444','#ff8800','#ffdd00','#44ff44','#4488ff','#cc44ff','#ff4444'];
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  for (let i = 0; i < colors.length; i++) grad.addColorStop(i/(colors.length-1), colors[(i+Math.floor(t))%(colors.length-1)]);
+  ctx.strokeStyle = grad; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.roundRect(3, 3, W-6, H-6, 12); ctx.stroke();
+  ctx.lineWidth = 12; ctx.globalAlpha = alpha * 0.3; ctx.stroke();
+  ctx.restore();
+}
+
+function drawHarvestBar() {
+  const entries = Object.entries(harvest);
+  if (entries.length === 0) return;
+  const panelW = Math.min(W - 40, entries.length * 44 + 30);
+  const panelX = 20, panelY = HARVEST_BAR_Y - 16;
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.beginPath(); ctx.roundRect(panelX, panelY, panelW, 40, 10); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,200,60,0.15)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.font = '9px -apple-system, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillText('牧场', panelX+6, panelY+10);
+  entries.forEach(([emoji, count], i) => {
+    const ix = panelX + 14 + i * 44, iy = panelY + 28;
+    ctx.font = '19px serif'; ctx.textAlign = 'center'; ctx.fillText(emoji, ix, iy);
+    ctx.font = 'bold 10px -apple-system, sans-serif'; ctx.fillStyle = '#ffd700'; ctx.textAlign = 'center';
+    ctx.fillText(`×${count}`, ix, iy + 12); ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  });
+  for (let h of harvestPops) {
+    ctx.save(); ctx.globalAlpha = 1-h.t;
+    ctx.font = '20px serif'; ctx.textAlign = 'center'; ctx.fillText(h.emoji, h.x, h.y);
+    ctx.restore();
+  }
+}
+
+function drawCoinRain() {
+  for (let c of coinRain) {
+    ctx.save(); ctx.globalAlpha = c.alpha;
+    ctx.font = `${c.size}px serif`; ctx.textAlign = 'center';
+    ctx.fillText(c.emoji || '🪙', c.x, c.y); ctx.restore();
+  }
+}
+
+function drawFlash(){if(flashAlpha<=0)return;ctx.save();ctx.globalAlpha=flashAlpha;ctx.fillStyle=flashColor;ctx.fillRect(0,0,W,H);ctx.restore();}
+function drawBigText(){
+  if(bigTextAlpha<=0)return;
+  ctx.save();ctx.globalAlpha=Math.min(1,bigTextAlpha);
+  const size=26+(2.5-Math.min(2.5,bigTextAlpha))*8;
+  ctx.font=`bold ${size}px -apple-system, sans-serif`;
+  ctx.textAlign='center';ctx.fillStyle=bigTextColor;ctx.shadowColor=bigTextColor;ctx.shadowBlur=25;
+  ctx.fillText(bigText,W/2,H*0.18);ctx.restore();
+}
+function drawProgress(){
+  const bW=200,bH=4,bx=W/2-bW/2,by=H-14;
+  ctx.fillStyle='rgba(255,255,255,0.06)';ctx.beginPath();ctx.roundRect(bx,by,bW,bH,2);ctx.fill();
+  ctx.fillStyle='#ffcc33';ctx.beginPath();ctx.roundRect(bx,by,bW*(globalRep/TOTAL_REPS),bH,2);ctx.fill();
+}
+
+function drawDone(){
+  ctx.save();ctx.fillStyle='rgba(0,0,0,0.9)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.font='28px -apple-system, sans-serif';ctx.fillStyle='#fff';ctx.fillText('套圈结束',W/2,H*0.14);
+  ctx.font='bold 32px -apple-system, sans-serif';ctx.fillStyle='#ffd700';ctx.fillText(`${Math.round(score)} 分`,W/2,H*0.22);
+  const grade=score>=800?'S':score>=500?'A':score>=300?'B':'C';
+  const gc=score>=800?'#ffd700':score>=500?'#7aff7a':score>=300?'#88aaff':'#aaa';
+  ctx.font='bold 52px -apple-system, sans-serif';ctx.fillStyle=gc;ctx.fillText(grade,W/2,H*0.33);
+  const entries = Object.entries(harvest);
+  if (entries.length > 0) {
+    ctx.font='15px -apple-system, sans-serif';ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.fillText(`套到 ${entries.reduce((s,e)=>s+e[1],0)} 只动物 · ${entries.length} 个品种`,W/2,H*0.42);
+    entries.sort((a,b)=>b[1]-a[1]);
+    const cols = Math.min(entries.length, 8);
+    const startX = W/2 - (cols*52)/2 + 26;
+    for (let i = 0; i < entries.length; i++) {
+      const row = Math.floor(i/8), col = i%8;
+      const ex = startX + col*52, ey = H*0.5 + row*56;
+      ctx.font='30px serif'; ctx.fillText(entries[i][0], ex, ey);
+      ctx.font='bold 12px -apple-system, sans-serif'; ctx.fillStyle='#ffd700';
+      ctx.fillText(`×${entries[i][1]}`, ex, ey+18); ctx.fillStyle='rgba(255,255,255,0.5)';
+    }
+  }
+  ctx.font='14px -apple-system, sans-serif';ctx.fillStyle='#888';ctx.fillText('点击重玩',W/2,H*0.92);ctx.restore();
+}
+
+function render(){
+  ctx.save(); ctx.translate(shakeX, shakeY);
+  drawBG();
+  drawRope();
+  drawAnimals();
+  drawLasso();
+  drawReveal();
+  ctx.restore();
+  drawCoinRain();
+  drawHarvestBar();
+  drawRainbowBorder();
+  drawFlash(); drawBigText(); drawProgress();
+  for(let p of particles){ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+shakeX,p.y+shakeY,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();}
+  for(let f of feedbacks){ctx.save();ctx.globalAlpha=Math.min(1,f.alpha);ctx.font=f.isNew?'bold 20px -apple-system, sans-serif':'bold 17px -apple-system, sans-serif';ctx.textAlign='center';ctx.fillStyle=f.color;if(f.isNew){ctx.shadowColor='#ffee00';ctx.shadowBlur=10;}ctx.fillText(f.text,f.x,f.y);ctx.restore();}
+  if(state==='sessionDone') drawDone();
+}
+
+function loop(){ update(); ctx.clearRect(0,0,W,H); render(); requestAnimationFrame(loop); }
+
+function handleInput(){ if(state==='sessionDone'){resetGame();return;} throwLasso(); }
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();handleInput();}});
+canvas.addEventListener('click', handleInput);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
+
+function resetGame(){globalRep=0;score=0;displayScore=0;combo=0;maxCombo=0;harvest={};harvestSeen=new Set();coinRain=[];floaters=[];harvestPops=[];revealing=false;revealState=null;animals=[];spawnTimer=0;updateHUD();initAnimals();startNewRep();}
+
+document.getElementById('go-btn').addEventListener('click',()=>{
+  document.getElementById('start-overlay').style.display='none';
+  state='play'; initAnimals(); startNewRep(); loop();
+});
+</script>
+</body>
+</html>
