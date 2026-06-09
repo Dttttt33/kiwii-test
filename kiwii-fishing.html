@@ -46,16 +46,17 @@ canvas { border-radius: 12px; cursor: crosshair; }
 <div id="start-overlay">
   <h1>🐟 捕鱼达人</h1>
   <p>
-    <strong style="color:#fff;font-size:15px">核心玩法：瞄准时机 + 目标选择 — 40 发子弹的策略</strong><br><br>
+    <strong style="color:#fff;font-size:15px">本质：瞄准精度 × 资源管理</strong><br>
+    <span style="color:#aaa;font-size:13px">40 发有限弹药，每一下发力都要选好目标 — 训练有限资源下的最优选择</span><br><br>
     炮台自动旋转瞄准<br>
     <strong>空格 / 点击 = 发射渔网!</strong><br><br>
     🐟🐠 普通 · 🐡🦐 优秀<br>
     🐙🦑 稀有 · 🐋🐉 传说<br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
     ▸ 前期：鱼慢、网大，练习瞄准节奏<br>
-    ▸ 中期：出现🌟金色鱼(×3) + 闪避鱼(会躲!)<br>
-    ▸ 后期：🪼水母/💣扣分、网变小、鱼加速、传说鱼出没<br>
-    ▸ 40 发子弹！打小鱼稳但低分，等大鱼赌但可能空
+    ▸ 中期：🌟金色鱼(×3) + 闪避鱼(会躲!)<br>
+    ▸ 后期：🪼水母扣分、网越来越小、鱼加速<br><br>
+    ▸ <span style="color:#aaa">扩展方向：不同武器(鱼叉/电网)、海域探索、钓鱼排行赛、boss 鱼</span>
     </span>
   </p>
   <button id="go-btn">开炮</button>
@@ -119,8 +120,8 @@ let spawnTimer = 0;
 function getDiff(rep) {
   const t = rep / (TOTAL_REPS - 1);
   return {
-    aimSpeed: 0.008 + t * 0.008,
-    fishSpeed: 0.7 + t * 0.6,
+    aimSpeed: 0.005 + t * 0.005,
+    fishSpeed: 0.5 + t * 0.5,
     spawnInterval: Math.max(20, 40 - t * 20),
     maxFish: Math.floor(8 + t * 7),
     badChance: Math.max(0, (t - 0.4) * 0.3),
@@ -591,7 +592,8 @@ function render() {
 
 function loop() { update(); render(); requestAnimationFrame(loop); }
 
-function handleInput() {
+function handleInput(e) {
+  if (!gameStarted) return;
   if (state === 'done') { resetGame(); return; }
   if (state === 'play' && globalRep < TOTAL_REPS) fire();
 }
@@ -609,11 +611,14 @@ function resetGame() {
   updateHUD();
 }
 
-document.getElementById('go-btn').addEventListener('click', () => {
+let gameStarted = false;
+document.getElementById('go-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
   document.getElementById('start-overlay').style.display = 'none';
   state = 'play';
   for (let i = 0; i < 6; i++) spawnFish(true);
   updateHUD();
+  gameStarted = true;
   loop();
 });
 </script>
