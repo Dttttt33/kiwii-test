@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii Power — 壳杯追踪</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0f1a0f;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  overflow: hidden; user-select: none;
+}
+canvas { border-radius: 12px; cursor: pointer; }
+#hud {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 12px; z-index: 10;
+}
+.hi {
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 5px 12px; border-radius: 14px; font-size: 12px; color: #ccc;
+}
+.hi span { font-weight: 600; }
+.hi .g { color: #7aff7a; }
+.hi .y { color: #ffd700; }
+#start-overlay {
+  position: fixed; inset: 0; background: rgba(8,12,8,0.96);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; gap: 14px;
+}
+#start-overlay h1 { color: #fff; font-size: 28px; font-weight: 300; }
+#start-overlay p { color: #aaa; font-size: 13px; max-width: 440px; text-align: center; line-height: 1.9; }
+#start-overlay strong { color: #7aff7a; }
+.diff-table { color: #888; font-size: 12px; text-align: left; margin-top: 8px; line-height: 2; }
+.diff-table span { color: #ffd700; }
+#go-btn {
+  margin-top: 14px; padding: 12px 36px; font-size: 15px;
+  background: #3a8a3a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
+}
+#go-btn:active { transform: scale(0.95); }
+#btm { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 11px; z-index: 10; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay">
+  <h1>壳杯追踪</h1>
+  <p>
+    种子埋入一个土堆 → 土堆开始<strong>互相交换位置</strong><br>
+    盯紧你的目标土堆！<br><br>
+    交换结束后光标扫过 → <strong>在目标位置按空格/点击</strong><br><br>
+    <strong>难度递增：</strong>
+  </p>
+  <div class="diff-table">
+    <span>翻土</span> — 换1次 · 慢<br>
+    <span>施肥</span> — 换2次 · 中速<br>
+    <span>浇水</span> — 换3次 · 快 · 有干扰土堆<br>
+    <span>收获</span> — 换4次 · 最快 · 双目标
+  </div>
+  <button id="go-btn">开始</button>
+</div>
+
+<div id="hud">
+  <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
+  <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
+  <div class="hi">分 <span class="y" id="h-sc">0</span></div>
+  <div class="hi">连击 <span class="y" id="h-cb">—</span></div>
+</div>
+<div id="btm">空格/点击 = 挖 · 不按 = 跳过</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = Math.min(960, window.innerWidth - 20);
+const H = Math.min(580, window.innerHeight - 20);
+canvas.width = W; canvas.height = H;
+
+const SLOT_COUNT = 5;
+const SLOT_W = 88, SLOT_H = 96;
+const SLOT_Y = H * 0.52;
+const SLOT_GAP = (W - SLOT_COUNT * SLOT_W) / (SLOT_COUNT + 1);
+const TOTAL_MOVES = 4, REPS_PER_MOVE = 10;
+const MOVE_NAMES = ['翻土', '施肥', '浇水', '收获'];
+const ITEMS = ['🌱','🥕','🎃','💎','🌟','🍄','🌺','🌽'];
+
+const DIFF = [
+  { swaps: 1, swapSpeed: 35, targets: 1, decoy: false },
+  { swaps: 2, swapSpeed: 28, targets: 1, decoy: false },
+  { swaps: 3, swapSpeed: 22, targets: 1, decoy: true },
+  { swaps: 4, swapSpeed: 18, targets: 2, decoy: true },
+];
+
+// State
+let state = 'idle';
+let moveIdx = 0, repIdx = 0, score = 0, combo = 0;
+let slots = [];
+let targetIndices = []; // which slots have the target
+let decoyIndex = -1;
+let targetItem = '🌱';
+
+// Cursor
+let cursorX = 0, cursorDir = 1, cursorSpeed = 1.8;
+let repActive = false, struck = false, repTimer = 0;
+
+// Animations
+let swapQueue = []; // [{a, b, progress, speed}]
+let currentSwap = null;
+let revealTimer = 0, revealDuration = 120;
+let particles = [], feedbacks = [];
+let shakeX = 0, shakeY = 0;
+let flashAlpha = 0, flashColor = '';
+let bigText = '', bigTextAlpha = 0, bigTextColor = '';
+let moveLabelAlpha = 0;
+let needNewRound = false;
+
+function slotCenterX(i) { return SLOT_GAP + i * (SLOT_W + SLOT_GAP) + SLOT_W / 2; }
+function slotLeftX(i) { return SLOT_GAP + i * (SLOT_W + SLOT_GAP); }
+
+function initSlots() {
+  slots = [];
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    slots.push({
+      visualX: slotLeftX(i),
+      item: '',
+      isTarget: false,
+      isDecoy: false,
+      dug: false,
+      revealed: false,
+      glow: 0,
+      shakeOff: 0,
+    });
+  }
+}
+
+function assignRound() {
+  const diff = DIFF[moveIdx];
+  targetItem = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+
+  // Reset
+  slots.forEach(s => { s.item = ''; s.isTarget = false; s.isDecoy = false; s.dug = false; s.revealed = false; });
+
+  // Pick target slots
+  const indices = Array.from({length: SLOT_COUNT}, (_,i) => i).sort(() => Math.random() - 0.5);
+  targetIndices = indices.slice(0, diff.targets);
+  targetIndices.forEach(i => { slots[i].isTarget = true; slots[i].item = targetItem; });
+
+  // Decoy
+  decoyIndex = -1;
+  if (diff.decoy) {
+    const rest = indices.filter(i => !targetIndices.includes(i));
+    decoyIndex = rest[0];
+    slots[decoyIndex].isDecoy = true;
+    slots[decoyIndex].item = '🐛';
+  }
+}
+
+function planSwaps() {
+  const diff = DIFF[moveIdx];
+  swapQueue = [];
+  for (let s = 0; s < diff.swaps; s++) {
+    // Pick two different slots to swap
+    let a, b;
+    do {
+      a = Math.floor(Math.random() * SLOT_COUNT);
+      b = Math.floor(Math.random() * SLOT_COUNT);
+    } while (a === b);
+    swapQueue.push({ a, b, progress: 0, speed: diff.swapSpeed });
+  }
+}
+
+function startSwapSequence() {
+  state = 'swapping';
+  doNextSwap();
+}
+
+function doNextSwap() {
+  if (swapQueue.length === 0) {
+    // Swaps done -> start rep
+    state = 'play';
+    startRep();
+    return;
+  }
+  currentSwap = swapQueue.shift();
+  currentSwap.progress = 0;
+}
+
+function initMove() {
+  const diff = DIFF[moveIdx];
+  initSlots();
+  assignRound();
+  cursorX = 30; cursorDir = 1;
+  cursorSpeed = 1.6 + moveIdx * 0.3;
+  repIdx = 0; struck = false; repActive = false; needNewRound = false;
+  revealTimer = 0;
+  revealDuration = 100 - moveIdx * 15;
+  state = 'reveal';
+  moveLabelAlpha = 1.3;
+  updateHUD();
+}
+
+function startRep() { repActive = true; struck = false; repTimer = 0; }
+
+function endRep() {
+  repActive = false;
+  repIdx++;
+  if (combo >= 2) cursorSpeed = (1.6 + moveIdx * 0.3) + combo * 0.08;
+  updateHUD();
+
+  if (repIdx >= REPS_PER_MOVE) {
+    state = 'moveDone';
+    setTimeout(() => nextMove(), 600);
+  } else if (needNewRound) {
+    needNewRound = false;
+    assignRound();
+    planSwaps();
+    revealTimer = 0;
+    revealDuration = Math.max(50, 100 - moveIdx * 15 - combo * 5);
+    state = 'reveal';
+  } else {
+    setTimeout(() => startRep(), 280);
+  }
+}
+
+function nextMove() {
+  moveIdx++;
+  if (moveIdx >= TOTAL_MOVES) { state = 'sessionDone'; }
+  else { initMove(); }
+}
+
+function strike() {
+  if (state !== 'play' || !repActive || struck) return;
+  struck = true;
+
+  let hitSlot = -1;
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    if (cursorX >= slots[i].visualX - 12 && cursorX <= slots[i].visualX + SLOT_W + 12) { hitSlot = i; break; }
+  }
+  if (hitSlot === -1) return;
+  if (slots[hitSlot].dug) { addFeedback('已挖', slots[hitSlot].visualX + SLOT_W/2, SLOT_Y - 20, '#666'); return; }
+
+  slots[hitSlot].dug = true;
+  slots[hitSlot].revealed = true;
+
+  if (slots[hitSlot].isTarget) {
+    combo++;
+    const pts = 25 + combo * 12;
+    score += pts;
+    flashAlpha = 0.45; flashColor = combo >= 3 ? '#ffd700' : '#7aff7a';
+    spawnParticles(slots[hitSlot].visualX + SLOT_W/2, SLOT_Y + 20, '#7aff7a', 22);
+    if (combo >= 2) spawnParticles(slots[hitSlot].visualX + SLOT_W/2, SLOT_Y, '#ffd700', 12);
+    shake(6 + combo * 2);
+    slots[hitSlot].glow = 1.5;
+    bigText = combo >= 3 ? `🔥 ×${combo} +${pts}` : `+${pts}`;
+    bigTextColor = combo >= 3 ? '#ffd700' : '#7aff7a';
+    bigTextAlpha = 1.3;
+    addFeedback(`🎯 +${pts}`, slots[hitSlot].visualX + SLOT_W/2, SLOT_Y - 40, '#7aff7a');
+
+    // Check if all targets hit
+    if (targetIndices.every(i => slots[i].dug) && repIdx < REPS_PER_MOVE - 1) {
+      needNewRound = true;
+    }
+  } else if (slots[hitSlot].isDecoy) {
+    combo = 0;
+    score = Math.max(0, score - 20);
+    flashAlpha = 0.4; flashColor = '#ff0000';
+    shake(18);
+    spawnParticles(slots[hitSlot].visualX + SLOT_W/2, SLOT_Y + 20, '#ff2222', 12);
+    slots[hitSlot].shakeOff = 16;
+    bigText = '💀 -20'; bigTextColor = '#ff4444'; bigTextAlpha = 1.2;
+    addFeedback('陷阱!', slots[hitSlot].visualX + SLOT_W/2, SLOT_Y - 40, '#ff4444');
+  } else {
+    combo = 0;
+    score = Math.max(0, score - 8);
+    shake(10);
+    flashAlpha = 0.2; flashColor = '#ff4400';
+    spawnParticles(slots[hitSlot].visualX + SLOT_W/2, SLOT_Y + 30, '#aa6622', 6);
+    slots[hitSlot].shakeOff = 10;
+    bigText = '-8'; bigTextColor = '#ff8844'; bigTextAlpha = 0.9;
+    addFeedback('✗', slots[hitSlot].visualX + SLOT_W/2, SLOT_Y - 40, '#ff8844');
+  }
+  updateHUD();
+}
+
+// Utility
+function spawnParticles(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random()*Math.PI*2, sp = 2+Math.random()*5;
+    particles.push({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp-3, life: 1, decay: 0.014+Math.random()*0.01, size: 3+Math.random()*4, color });
+  }
+}
+function shake(n) { shakeX = (Math.random()-0.5)*n; shakeY = (Math.random()-0.5)*n; }
+function addFeedback(t, x, y, c) { feedbacks.push({ text: t, x, y, alpha: 1.2, vy: -1.6, color: c }); }
+function updateHUD() {
+  document.getElementById('h-mv').textContent = `${moveIdx+1}/${TOTAL_MOVES}`;
+  document.getElementById('h-rp').textContent = `${repIdx}/${REPS_PER_MOVE}`;
+  document.getElementById('h-sc').textContent = score;
+  document.getElementById('h-cb').textContent = combo > 0 ? `×${combo}` : '—';
+}
+
+// Update
+function update() {
+  shakeX *= 0.8; shakeY *= 0.8;
+  if (flashAlpha > 0) flashAlpha -= 0.025;
+  if (bigTextAlpha > 0) bigTextAlpha -= 0.018;
+  if (moveLabelAlpha > 0) moveLabelAlpha -= 0.012;
+  for (let s of slots) {
+    if (s.shakeOff) { s.shakeOff *= -0.7; if (Math.abs(s.shakeOff) < 0.3) s.shakeOff = 0; }
+    if (s.glow > 0) s.glow *= 0.96;
+  }
+  particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= p.decay; });
+  particles = particles.filter(p => p.life > 0);
+  feedbacks.forEach(f => { f.y += f.vy; f.alpha -= 0.016; });
+  feedbacks = feedbacks.filter(f => f.alpha > 0);
+
+  // Reveal phase
+  if (state === 'reveal') {
+    revealTimer++;
+    if (revealTimer > revealDuration) {
+      planSwaps();
+      startSwapSequence();
+    }
+  }
+
+  // Swap animation
+  if (state === 'swapping' && currentSwap) {
+    currentSwap.progress++;
+    const t = currentSwap.progress / currentSwap.speed;
+    const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+    const a = currentSwap.a, b = currentSwap.b;
+    const aBaseX = slotLeftX(a), bBaseX = slotLeftX(b);
+
+    // Arc swap: slot a goes to b's position and vice versa via arc
+    const midY = -40 * (1 - Math.pow(2*ease - 1, 2)); // parabolic arc
+    slots[a].visualX = aBaseX + (bBaseX - aBaseX) * ease;
+    slots[b].visualX = bBaseX + (aBaseX - bBaseX) * ease;
+    // Store arc offset for drawing
+    slots[a]._arcY = midY;
+    slots[b]._arcY = -midY * 0.6;
+
+    if (currentSwap.progress >= currentSwap.speed) {
+      // Finalize swap
+      slots[a].visualX = bBaseX;
+      slots[b].visualX = aBaseX;
+      slots[a]._arcY = 0;
+      slots[b]._arcY = 0;
+
+      // Actually swap slots in array
+      const temp = slots[a];
+      slots[a] = slots[b];
+      slots[b] = temp;
+      slots[a].visualX = slotLeftX(a);
+      slots[b].visualX = slotLeftX(b);
+
+      // Update targetIndices
+      targetIndices = targetIndices.map(i => i === a ? b : i === b ? a : i);
+      if (decoyIndex === a) decoyIndex = b;
+      else if (decoyIndex === b) decoyIndex = a;
+
+      currentSwap = null;
+      // Brief pause between swaps
+      setTimeout(() => doNextSwap(), 150);
+    }
+  }
+
+  // Play phase
+  if (state === 'play' && repActive) {
+    cursorX += cursorSpeed * cursorDir;
+    if (cursorX > W - 25) cursorDir = -1;
+    if (cursorX < 25) cursorDir = 1;
+    repTimer++;
+    if (repTimer > (W - 50) / cursorSpeed) endRep();
+  }
+}
+
+// Draw
+function drawBG() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#162816'); g.addColorStop(0.4, '#1a2a14'); g.addColorStop(1, '#0f1a0a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const gy = H * 0.42;
+  const gg = ctx.createLinearGradient(0, gy, 0, H);
+  gg.addColorStop(0, '#3d2e1a'); gg.addColorStop(1, '#2a1f0a');
+  ctx.fillStyle = gg; ctx.fillRect(0, gy, W, H - gy);
+}
+
+function drawSlot(s, i) {
+  const x = s.visualX + (s.shakeOff || 0);
+  const y = SLOT_Y + (s._arcY || 0);
+
+  if (s.glow > 0) {
+    ctx.save(); ctx.shadowColor = '#7aff7a'; ctx.shadowBlur = 40 * s.glow;
+    ctx.fillStyle = `rgba(100,255,100,${s.glow*0.2})`;
+    ctx.beginPath(); ctx.roundRect(x-8, y-8, SLOT_W+16, SLOT_H+16, 16); ctx.fill(); ctx.restore();
+  }
+
+  if (s.dug) {
+    ctx.fillStyle = '#1f150a';
+    ctx.beginPath(); ctx.ellipse(x+SLOT_W/2, y+SLOT_H-16, SLOT_W/2-6, 20, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = 1.5; ctx.stroke();
+  } else {
+    const mg = ctx.createRadialGradient(x+SLOT_W/2, y+SLOT_H-26, 4, x+SLOT_W/2, y+SLOT_H-26, SLOT_W/2);
+    mg.addColorStop(0, '#7a5a30'); mg.addColorStop(1, '#3d2e1a');
+    ctx.fillStyle = mg;
+    ctx.beginPath(); ctx.moveTo(x+8, y+SLOT_H-8); ctx.quadraticCurveTo(x+SLOT_W/2, y+12, x+SLOT_W-8, y+SLOT_H-8); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#5a4020'; ctx.lineWidth = 1; ctx.stroke();
+    // Subtle mark on target during swap (fading)
+    if (state === 'swapping' && s.isTarget && currentSwap && currentSwap.progress < 8) {
+      ctx.save(); ctx.globalAlpha = Math.max(0, 1 - currentSwap.progress / 8);
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.roundRect(x-2, y-2, SLOT_W+4, SLOT_H+4, 12); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+    }
+  }
+
+  if (s.revealed && s.item) {
+    ctx.font = '32px serif'; ctx.textAlign = 'center';
+    ctx.fillText(s.item, x+SLOT_W/2, y+SLOT_H/2+8);
+  }
+}
+
+function drawReveal() {
+  if (state !== 'reveal') return;
+  const fadeIn = Math.min(1, revealTimer / 15);
+  const fadeOut = revealTimer > revealDuration - 25 ? Math.max(0, 1-(revealTimer-(revealDuration-25))/25) : 1;
+  const a = fadeIn * fadeOut;
+
+  ctx.save(); ctx.globalAlpha = a;
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    if (slots[i].isTarget) {
+      const sx = slots[i].visualX;
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3; ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.roundRect(sx-4, SLOT_Y-4, SLOT_W+8, SLOT_H+8, 12); ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = '36px serif'; ctx.textAlign = 'center';
+      ctx.fillText(slots[i].item, sx+SLOT_W/2, SLOT_Y-12+Math.sin(revealTimer*0.06)*3);
+    }
+    if (slots[i].isDecoy) {
+      const sx = slots[i].visualX;
+      ctx.strokeStyle = 'rgba(255,60,60,0.5)'; ctx.lineWidth = 2; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.roundRect(sx-3, SLOT_Y-3, SLOT_W+6, SLOT_H+6, 12); ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = '28px serif'; ctx.textAlign = 'center';
+      ctx.fillText('🐛', sx+SLOT_W/2, SLOT_Y-8);
+    }
+  }
+  ctx.restore();
+
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.font = 'bold 15px -apple-system, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd700';
+  ctx.fillText('盯紧目标!', W/2, 60);
+  ctx.restore();
+}
+
+function drawSwapIndicator() {
+  if (state !== 'swapping') return;
+  ctx.save();
+  ctx.font = '13px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,180,60,0.7)';
+  ctx.fillText(`交换中... (${swapQueue.length + 1}次剩余)`, W/2, 60);
+  ctx.restore();
+}
+
+function drawCursor() {
+  if (state !== 'play' || !repActive) return;
+  const y1 = SLOT_Y - 32, y2 = SLOT_Y + SLOT_H + 18;
+  const bg = ctx.createLinearGradient(cursorX, y1, cursorX, y2);
+  bg.addColorStop(0, 'rgba(74,200,74,0)'); bg.addColorStop(0.2, 'rgba(74,200,74,0.3)');
+  bg.addColorStop(0.8, 'rgba(74,200,74,0.3)'); bg.addColorStop(1, 'rgba(74,200,74,0)');
+  ctx.fillStyle = bg; ctx.fillRect(cursorX-3, y1, 6, y2-y1);
+  ctx.fillStyle = '#5aee5a';
+  ctx.beginPath(); ctx.moveTo(cursorX, y1+14); ctx.lineTo(cursorX-9, y1); ctx.lineTo(cursorX+9, y1); ctx.closePath(); ctx.fill();
+  ctx.save(); ctx.shadowColor = '#5aee5a'; ctx.shadowBlur = 10;
+  ctx.fillStyle = '#5aee5a'; ctx.beginPath(); ctx.arc(cursorX, y1-4, 3.5, 0, Math.PI*2); ctx.fill(); ctx.restore();
+}
+
+function drawFlash() {
+  if (flashAlpha <= 0) return;
+  ctx.save(); ctx.globalAlpha = flashAlpha; ctx.fillStyle = flashColor; ctx.fillRect(0, 0, W, H); ctx.restore();
+}
+function drawBigText() {
+  if (bigTextAlpha <= 0) return;
+  ctx.save(); ctx.globalAlpha = Math.min(1, bigTextAlpha);
+  ctx.font = `bold ${34 + (1.3-Math.min(1.3,bigTextAlpha))*8}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center'; ctx.fillStyle = bigTextColor;
+  ctx.shadowColor = bigTextColor; ctx.shadowBlur = 25;
+  ctx.fillText(bigText, W/2, H*0.28); ctx.restore();
+}
+function drawMoveLabel() {
+  if (moveLabelAlpha <= 0) return;
+  ctx.save(); ctx.globalAlpha = Math.min(1, moveLabelAlpha);
+  ctx.font = '20px -apple-system, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+  ctx.fillText(MOVE_NAMES[moveIdx], W/2, H*0.14);
+  ctx.font = '11px -apple-system, sans-serif'; ctx.fillStyle = '#888';
+  ctx.fillText(`动作 ${moveIdx+1}/${TOTAL_MOVES}`, W/2, H*0.14+22); ctx.restore();
+}
+function drawRepBar() {
+  if (state !== 'play' && state !== 'moveDone') return;
+  const bW = 160, bH = 4, bx = W/2-bW/2, by = H-28;
+  ctx.fillStyle = 'rgba(255,255,255,0.07)';
+  ctx.beginPath(); ctx.roundRect(bx, by, bW, bH, 2); ctx.fill();
+  ctx.fillStyle = '#5aee5a';
+  ctx.beginPath(); ctx.roundRect(bx, by, bW*(repIdx/REPS_PER_MOVE), bH, 2); ctx.fill();
+  for (let i = 0; i < REPS_PER_MOVE; i++) {
+    ctx.fillStyle = i < repIdx ? '#5aee5a' : 'rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.arc(bx+bW/REPS_PER_MOVE*(i+0.5), by+bH+7, 2, 0, Math.PI*2); ctx.fill();
+  }
+}
+function drawDone() {
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.font = '26px -apple-system, sans-serif'; ctx.fillStyle = '#fff';
+  ctx.fillText('Session 完成', W/2, H/2-45);
+  ctx.font = '22px -apple-system, sans-serif'; ctx.fillStyle = '#ffd700';
+  ctx.fillText(`总分: ${score}`, W/2, H/2-5);
+  const grade = score >= 350 ? 'S' : score >= 250 ? 'A' : score >= 150 ? 'B' : 'C';
+  const gc = score >= 350 ? '#ffd700' : score >= 250 ? '#7aff7a' : score >= 150 ? '#88aaff' : '#aaa';
+  ctx.font = 'bold 40px -apple-system, sans-serif'; ctx.fillStyle = gc;
+  ctx.fillText(grade, W/2, H/2+50);
+  ctx.font = '12px -apple-system, sans-serif'; ctx.fillStyle = '#888';
+  ctx.fillText('4动作 × 10reps = 40下 · 点击重玩', W/2, H/2+85); ctx.restore();
+}
+
+function render() {
+  ctx.save(); ctx.translate(shakeX, shakeY);
+  drawBG();
+  for (let i = 0; i < slots.length; i++) drawSlot(slots[i], i);
+  drawReveal(); drawSwapIndicator(); drawCursor();
+  ctx.restore();
+  drawFlash(); drawBigText(); drawMoveLabel(); drawRepBar();
+  for (let p of particles) {
+    ctx.save(); ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x+shakeX, p.y+shakeY, p.size*p.life, 0, Math.PI*2); ctx.fill(); ctx.restore();
+  }
+  for (let f of feedbacks) {
+    ctx.save(); ctx.globalAlpha = Math.min(1, f.alpha);
+    ctx.font = 'bold 17px -apple-system, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); ctx.restore();
+  }
+  if (state === 'sessionDone') drawDone();
+}
+
+function loop() { update(); ctx.clearRect(0, 0, W, H); render(); requestAnimationFrame(loop); }
+
+// Input
+function handleInput() {
+  if (state === 'sessionDone') { resetGame(); return; }
+  strike();
+}
+document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); handleInput(); } });
+canvas.addEventListener('click', handleInput);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); handleInput(); });
+
+function resetGame() { moveIdx = 0; score = 0; combo = 0; updateHUD(); initMove(); }
+
+document.getElementById('go-btn').addEventListener('click', () => {
+  document.getElementById('start-overlay').style.display = 'none';
+  initMove(); loop();
+});
+</script>
+</body>
+</html>
