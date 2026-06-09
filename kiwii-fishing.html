@@ -52,9 +52,9 @@ canvas { border-radius: 12px; cursor: pointer; }
     <strong>空格 / 点击 = 下网!</strong><br><br>
     🐟🐠 普通 · 🐡🦐 优秀 · 🐙🦑 稀有 · 🐋🐉 传说<br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 前期：大网(宽120)，鱼多且慢，练习时机<br>
-    ▸ 中期：网变小(宽80)，🌟金色鱼(×3)出现<br>
-    ▸ 后期：精准网(宽50)，🪼水母混入，一网多鱼是关键<br><br>
+    ▸ 前期：大网(~220px)，随机波动，鱼多且慢<br>
+    ▸ 中期：网缩小(~160px)，🌟金色鱼(×3)出现<br>
+    ▸ 后期：小网(~90px→40px)，🪼水母混入，精准判断是关键<br><br>
     ▸ <span style="color:#aaa">扩展方向：不同网具选择、鱼群AI聚散、海域探索、boss鱼</span>
     </span>
   </p>
@@ -110,10 +110,15 @@ function t() { return globalRep / (TOTAL_REPS - 1); }
 
 function getNetWidth() {
   const p = t();
-  if (p < 0.25) return 130;
-  if (p < 0.5) return 100;
-  if (p < 0.75) return 70;
-  return 50;
+  // Base shrinks dramatically: 220 → 160 → 90 → 40
+  let base;
+  if (p < 0.25) base = 220;
+  else if (p < 0.5) base = 160;
+  else if (p < 0.75) base = 90;
+  else base = 40;
+  // Random fluctuation ±25% so each cast feels different
+  const wobble = 0.75 + Math.random() * 0.5;
+  return Math.round(base * wobble);
 }
 function getNetLabel() {
   const p = t();
@@ -455,5 +460,4 @@ document.getElementById('go-btn').addEventListener('click', (e) => {
 });
 </script>
 </body>
-<!-- v1781023574 -->
 </html>

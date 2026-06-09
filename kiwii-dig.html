@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kiwii Power — 挖地寻宝</title>
+<title>Kiwii Power — 挖矿寻宝</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  background: #1a1408;
+  background: #0f0c04;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   min-height: 100vh;
   font-family: -apple-system, 'SF Pro Display', sans-serif;
@@ -26,16 +26,16 @@ canvas { border-radius: 12px; cursor: pointer; }
 .hi .g { color: #7aff7a; }
 .hi .y { color: #ffd700; }
 #start-overlay {
-  position: fixed; inset: 0; background: rgba(10,8,4,0.96);
+  position: fixed; inset: 0; background: rgba(6,4,2,0.96);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   z-index: 100; gap: 16px;
 }
 #start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
-#start-overlay p { color: #aaa; font-size: 17px; max-width: 440px; text-align: center; line-height: 2.2; }
+#start-overlay p { color: #aaa; font-size: 17px; max-width: 480px; text-align: center; line-height: 2.2; }
 #start-overlay strong { color: #ffd700; }
 #go-btn {
   margin-top: 14px; padding: 14px 40px; font-size: 16px;
-  background: #8a6a2a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
+  background: #6a4a1a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
 }
 #go-btn:active { transform: scale(0.95); }
 #btm { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 13px; z-index: 10; }
@@ -44,19 +44,19 @@ canvas { border-radius: 12px; cursor: pointer; }
 <body>
 
 <div id="start-overlay">
-  <h1>⛏️ 挖地寻宝</h1>
+  <h1>⛏️ 挖矿寻宝</h1>
   <p>
-    <strong style="color:#fff;font-size:15px">本质：连续精准 × 收集惊喜</strong><br>
-    <span style="color:#aaa;font-size:13px">连续发力不失误 = 越挖越深，稀有率飙升 — 奖励持续专注</span><br><br>
-    每块地里埋着不同的好东西<br>
-    光标扫过时 <strong>空格 / 点击 = 挖!</strong><br><br>
-    🥕🥔🌽 蔬菜 · 🍅🍓🍇🍑🫐 水果<br>
-    🍉🎃 大丰收 · 🌻🌸 花卉 · 💎🌈 传说<br><br>
+    <strong style="color:#fff;font-size:15px">本质：风险深度 × 换道决策</strong><br>
+    <span style="color:#aaa;font-size:13px">越挖越深 = 越稀有，但炸弹也越多 — 何时换列是核心策略</span><br><br>
+    光标在 5 条矿道上扫描<br>
+    <strong>空格 / 点击 = 在当前列往下挖一格!</strong><br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 前期：地表层，蔬菜为主，建立命中节奏<br>
-    ▸ 中期：连续命中 → 自动下潜，稀有率飙升<br>
-    ▸ 后期：💣炸弹(扣分+重置层数) — 高风险高收益<br><br>
-    ▸ <span style="color:#aaa">扩展方向：地图探索模式、稀有收藏图鉴、深度挑战赛排行榜</span>
+    ▸ 第 1-2 层（土层）：🥕🥔🌽 蔬菜，安全<br>
+    ▸ 第 3-4 层（石层）：🍓🍇🍑 水果 + 少量💣<br>
+    ▸ 第 5-6 层（深层）：🍉🎃🌻 大奖 + 更多💣<br>
+    ▸ 第 7+ 层（矿脉）：💎🌈 传说! 但💣概率 40%<br><br>
+    ▸ 挖到💣：该列炸毁重置到第 1 层，扣 30 分<br>
+    ▸ <span style="color:#aaa">策略：看到下层发紫光/金光就继续挖，看到红光就换列!</span>
     </span>
   </p>
   <button id="go-btn">开挖</button>
@@ -66,9 +66,8 @@ canvas { border-radius: 12px; cursor: pointer; }
   <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
   <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
   <div class="hi">分 <span class="y" id="h-sc">0</span></div>
-  <div class="hi">深度 <span class="g" id="h-depth">地表</span></div>
 </div>
-<div id="btm">空格/点击 = 挖光标下的地</div>
+<div id="btm">空格/点击 = 往下挖一格 · 不按 = 跳过该列</div>
 
 <canvas id="c"></canvas>
 
@@ -79,746 +78,379 @@ const W = Math.min(960, window.innerWidth - 20);
 const H = Math.min(640, window.innerHeight - 20);
 canvas.width = W; canvas.height = H;
 
-const SLOT_COUNT = 5;
-const SLOT_W = 120, SLOT_H = 130;
-const SLOT_Y = H * 0.32;
-const SLOT_GAP = (W - SLOT_COUNT * SLOT_W) / (SLOT_COUNT + 1);
-const TOTAL_MOVES = 4, REPS_PER_MOVE = 10;
-const TOTAL_REPS = TOTAL_MOVES * REPS_PER_MOVE;
+const COLS = 5;
+const COL_W = 100;
+const COL_GAP = (W - COLS * COL_W) / (COLS + 1);
+const GRID_TOP = 80;
+const CELL_H = 56;
+const VISIBLE_ROWS = 8;
+const TOTAL_REPS = 40;
 
-// Tier colors for gacha reveal
-const TIER_CONFIG = {
-  0: { bg: '#444444', glow: '#555', label: '', border: '#555', beamColor: 'rgba(150,150,150,', suspense: 15 },
-  1: { bg: '#4a8a3a', glow: '#66cc44', label: '普通', border: '#66cc44', beamColor: 'rgba(100,200,60,', suspense: 20 },
-  2: { bg: '#4466cc', glow: '#6688ff', label: '优秀', border: '#6688ff', beamColor: 'rgba(80,120,255,', suspense: 30 },
-  3: { bg: '#aa44dd', glow: '#cc66ff', label: '稀有!', border: '#cc66ff', beamColor: 'rgba(200,80,255,', suspense: 45 },
-  4: { bg: '#ffd700', glow: '#ffee66', label: '传说!!', border: '#ffd700', beamColor: 'rgba(255,210,0,', suspense: 65 },
+const TIER_COLORS = {
+  1: { glow: '#66aa44', bg: '#3a5a2a' },
+  2: { glow: '#4488dd', bg: '#2a3a5a' },
+  3: { glow: '#aa55ff', bg: '#3a2a5a' },
+  4: { glow: '#ffd700', bg: '#4a3a1a' },
+  '-1': { glow: '#ff2200', bg: '#4a1a1a' },
+  0: { glow: '#666', bg: '#2a2a2a' },
 };
 
-const DIG_TYPES = [
-  { emoji: '🥕', name: '胡萝卜', weight: 18, pts: 12, color: '#ff8833', tier: 1 },
-  { emoji: '🥔', name: '土豆', weight: 16, pts: 10, color: '#cca855', tier: 1 },
-  { emoji: '🌽', name: '玉米', weight: 14, pts: 14, color: '#ffcc00', tier: 1 },
-  { emoji: '🧅', name: '洋葱', weight: 12, pts: 11, color: '#dda866', tier: 1 },
-  { emoji: '🍅', name: '番茄', weight: 12, pts: 18, color: '#ff4444', tier: 2 },
-  { emoji: '🍓', name: '草莓', weight: 10, pts: 22, color: '#ff6688', tier: 2 },
-  { emoji: '🍇', name: '葡萄', weight: 9, pts: 25, color: '#9944dd', tier: 2 },
-  { emoji: '🍑', name: '水蜜桃', weight: 8, pts: 28, color: '#ffaa88', tier: 2 },
-  { emoji: '🫐', name: '蓝莓', weight: 8, pts: 24, color: '#4466dd', tier: 2 },
-  { emoji: '🍉', name: '大西瓜', weight: 5, pts: 50, color: '#44cc66', tier: 3 },
-  { emoji: '🎃', name: '金南瓜', weight: 4, pts: 60, color: '#ff8800', tier: 3 },
-  { emoji: '🌻', name: '向日葵', weight: 4, pts: 55, color: '#ffdd00', tier: 3 },
-  { emoji: '🌸', name: '樱花', weight: 3, pts: 45, color: '#ffaacc', tier: 3 },
-  { emoji: '💎', name: '彩虹种子', weight: 2, pts: 100, color: '#44ccff', tier: 4 },
-  { emoji: '🌈', name: '彩虹果', weight: 2, pts: 120, color: '#ff66ff', tier: 4 },
-  { emoji: '🪨', name: '石头', weight: 7, pts: 3, color: '#888888', tier: 0 },
-  { emoji: '🪱', name: '虫子', weight: 4, pts: -5, color: '#886644', tier: 0 },
-  { emoji: '💣', name: '炸弹', weight: 0, pts: -30, color: '#ff2200', tier: -1 },
+const LAYER_ITEMS = [
+  // Layer 0-1: soil — safe common stuff
+  [
+    { emoji: '🥕', pts: 8, tier: 1, w: 25 },
+    { emoji: '🥔', pts: 6, tier: 1, w: 25 },
+    { emoji: '🌽', pts: 10, tier: 1, w: 20 },
+    { emoji: '🧅', pts: 7, tier: 1, w: 20 },
+    { emoji: '🪨', pts: 2, tier: 0, w: 10 },
+  ],
+  // Layer 2-3: stone — good stuff + low bomb chance
+  [
+    { emoji: '🍅', pts: 16, tier: 2, w: 20 },
+    { emoji: '🍓', pts: 20, tier: 2, w: 18 },
+    { emoji: '🍇', pts: 22, tier: 2, w: 15 },
+    { emoji: '🍑', pts: 24, tier: 2, w: 12 },
+    { emoji: '🥕', pts: 8, tier: 1, w: 10 },
+    { emoji: '💣', pts: -30, tier: -1, w: 8 },
+  ],
+  // Layer 4-5: deep — rare + more bombs
+  [
+    { emoji: '🍉', pts: 40, tier: 3, w: 15 },
+    { emoji: '🎃', pts: 45, tier: 3, w: 12 },
+    { emoji: '🌻', pts: 38, tier: 3, w: 12 },
+    { emoji: '🍓', pts: 20, tier: 2, w: 10 },
+    { emoji: '💣', pts: -30, tier: -1, w: 18 },
+  ],
+  // Layer 6+: vein — legendary + high bomb
+  [
+    { emoji: '💎', pts: 80, tier: 4, w: 12 },
+    { emoji: '🌈', pts: 100, tier: 4, w: 8 },
+    { emoji: '🍉', pts: 40, tier: 3, w: 12 },
+    { emoji: '🌻', pts: 38, tier: 3, w: 10 },
+    { emoji: '💣', pts: -30, tier: -1, w: 25 },
+  ],
 ];
 
-// Depth layers — consecutive hits go deeper, misses reset
-const DEPTH_NAMES = ['地表', '浅层', '深层', '矿脉'];
-const DEPTH_COLORS = ['#7a5a30', '#5a4020', '#3a2a15', '#2a1a0a'];
-let depth = 0; // 0-3
-let digStreak = 0; // consecutive hits without missing
-
-function getDiff(rep) {
-  const t = rep / (TOTAL_REPS - 1);
-  return {
-    cursorSpeed: 1.4 + t * 0.9,
-    rareChance: t * 0.18,
-    bombChance: Math.max(0, (t - 0.4) * 0.2), // bombs after 40%
-  };
+function getLayerPool(depth) {
+  if (depth < 2) return LAYER_ITEMS[0];
+  if (depth < 4) return LAYER_ITEMS[1];
+  if (depth < 6) return LAYER_ITEMS[2];
+  return LAYER_ITEMS[3];
 }
 
-function pickDig(rareChance) {
-  const pool = DIG_TYPES.map(d => ({...d, w: d.weight}));
-  // Depth bonus — deeper = rarer stuff
-  if (depth >= 1) pool.filter(d => d.tier >= 2).forEach(d => d.w += depth * 5);
-  if (depth >= 2) pool.filter(d => d.tier >= 3).forEach(d => d.w += depth * 6);
-  if (depth >= 3) pool.filter(d => d.tier >= 4).forEach(d => d.w += 10);
-  // Rare chance boost
-  if (Math.random() < rareChance) pool.filter(d => d.tier >= 3).forEach(d => d.w += 10);
-  // Reduce bad stuff at depth
-  if (depth >= 2) pool.filter(d => d.tier === 0).forEach(d => d.w = Math.max(1, d.w - depth * 3));
-  const total = pool.reduce((s, d) => s + d.w, 0);
+function pickItem(depth) {
+  const pool = getLayerPool(depth);
+  const total = pool.reduce((s, i) => s + i.w, 0);
   let r = Math.random() * total;
-  for (let d of pool) { r -= d.w; if (r <= 0) return d; }
-  return pool[0];
+  for (const item of pool) { r -= item.w; if (r <= 0) return { ...item }; }
+  return { ...pool[0] };
 }
 
 // State
 let state = 'idle';
-let globalRep = 0, score = 0, displayScore = 0;
-let slots = [];
+let globalRep = 0, score = 0;
+let columns = []; // each col: { depth, cells: [{item, revealed}] }
 let cursorX = 0, cursorDir = 1, cursorSpeed = 1.5;
 let repActive = false, struck = false, repTimer = 0;
-let particles = [], feedbacks = [], floaters = [];
+let particles = [], feedbacks = [];
 let shakeX = 0, shakeY = 0;
 let flashAlpha = 0, flashColor = '';
-let bigText = '', bigTextAlpha = 0, bigTextColor = '';
-let coinRain = [];
+let frame = 0;
 
-// Gacha reveal state
-let revealing = false;
-let revealState = null; // { phase, timer, x, y, type, tier }
-// phases: 'crack' → 'beam' → 'reveal' → 'celebrate'
+function colX(i) { return COL_GAP + i * (COL_W + COL_GAP); }
 
-// Harvest collection
-let harvest = {};
-let harvestSeen = new Set();
-let harvestPops = [];
-const HARVEST_BAR_Y = H - 55;
-
-// Rainbow border
-let rainbowBorder = 0;
-
-function slotLeftX(i) { return SLOT_GAP + i * (SLOT_W + SLOT_GAP); }
-
-function initSlots() {
-  const diff = getDiff(globalRep);
-  slots = [];
-  for (let i = 0; i < SLOT_COUNT; i++) {
-    let content;
-    if (Math.random() < diff.bombChance && depth >= 1) {
-      content = DIG_TYPES.find(d => d.emoji === '💣');
-    } else {
-      content = pickDig(diff.rareChance);
+function initColumns() {
+  columns = [];
+  for (let i = 0; i < COLS; i++) {
+    const cells = [];
+    for (let d = 0; d < VISIBLE_ROWS + 2; d++) {
+      cells.push({ item: pickItem(d), revealed: false });
     }
-    // Hint glow: brighter = rarer, red tint = danger
-    let hintColor, hintStrength;
-    if (content.tier === -1) { hintColor = '#ff2200'; hintStrength = 0.6; }
-    else if (content.tier === 0) { hintColor = '#555555'; hintStrength = 0.1; }
-    else if (content.tier === 1) { hintColor = '#66aa44'; hintStrength = 0.2; }
-    else if (content.tier === 2) { hintColor = '#4488dd'; hintStrength = 0.4; }
-    else if (content.tier === 3) { hintColor = '#aa55ff'; hintStrength = 0.6; }
-    else { hintColor = '#ffd700'; hintStrength = 0.8; }
-    slots.push({ x: slotLeftX(i), content, dug: false, digAnim: 0, hintColor, hintStrength });
+    columns.push({ depth: 0, cells });
   }
 }
 
-function startNewRound() {
-  initSlots();
-  const diff = getDiff(globalRep);
-  cursorSpeed = diff.cursorSpeed;
-  struck = false; repActive = true; repTimer = 0;
-  updateHUD();
+function resetColumn(ci) {
+  const col = columns[ci];
+  col.depth = 0;
+  col.cells = [];
+  for (let d = 0; d < VISIBLE_ROWS + 2; d++) {
+    col.cells.push({ item: pickItem(d), revealed: false });
+  }
 }
 
-function endRep() {
-  repActive = false;
-  globalRep++;
+function digColumn(ci) {
+  const col = columns[ci];
+  const cell = col.cells[col.depth];
+  if (!cell) return;
+
+  cell.revealed = true;
+  const item = cell.item;
+  const cx = colX(ci) + COL_W / 2;
+  const cy = GRID_TOP + col.depth * CELL_H + CELL_H / 2;
+
+  if (item.tier === -1) {
+    // BOMB!
+    score = Math.max(0, score + item.pts);
+    flashAlpha = 0.4; flashColor = '#ff2200';
+    shakeX = (Math.random() - 0.5) * 16; shakeY = (Math.random() - 0.5) * 10;
+    spawnP(cx, cy, '#ff4400', 20);
+    spawnP(cx, cy, '#ffaa00', 12);
+    addFeedback(`💥 炸了! ${item.pts}`, cx, cy - 30, '#ff4444');
+    // Reset this column
+    setTimeout(() => resetColumn(ci), 400);
+  } else {
+    score += item.pts;
+    const tc = TIER_COLORS[item.tier] || TIER_COLORS[0];
+    spawnP(cx, cy, tc.glow, 6 + item.tier * 3);
+    if (item.tier >= 3) {
+      flashAlpha = 0.15; flashColor = tc.glow;
+      shakeX = (Math.random() - 0.5) * 5;
+      addFeedback(`${item.emoji} +${item.pts}!`, cx, cy - 30, tc.glow);
+    } else if (item.tier >= 2) {
+      addFeedback(`${item.emoji} +${item.pts}`, cx, cy - 30, tc.glow);
+    } else {
+      addFeedback(`+${item.pts}`, cx, cy - 20, '#aaa');
+    }
+    col.depth++;
+    // Generate more cells if needed
+    while (col.cells.length <= col.depth + VISIBLE_ROWS) {
+      col.cells.push({ item: pickItem(col.cells.length), revealed: false });
+    }
+  }
   updateHUD();
-  if (globalRep >= TOTAL_REPS) { state = 'sessionDone'; return; }
-  setTimeout(() => { if (!revealing) startNewRound(); }, 300);
 }
 
 function strike() {
-  if (state !== 'play' || !repActive || struck || revealing) return;
+  if (state !== 'play' || !repActive || struck) return;
   struck = true;
 
-  let hitSlot = -1;
-  for (let i = 0; i < SLOT_COUNT; i++) {
-    if (cursorX >= slots[i].x - 10 && cursorX <= slots[i].x + SLOT_W + 10) { hitSlot = i; break; }
+  // Which column is cursor over?
+  let hitCol = -1;
+  for (let i = 0; i < COLS; i++) {
+    const cx = colX(i);
+    if (cursorX >= cx - 10 && cursorX <= cx + COL_W + 10) { hitCol = i; break; }
   }
-  if (hitSlot === -1) {
-    // Miss — reset depth
-    digStreak = 0;
-    depth = 0;
-    addFeedback('空挖! 回到地表', SLOT_COUNT * SLOT_W / 2, SLOT_Y - 20, '#aa6633');
-    endRep(); return;
-  }
+  if (hitCol >= 0) digColumn(hitCol);
 
-  const slot = slots[hitSlot];
-  if (slot.dug) { addFeedback('已挖过', slot.x+SLOT_W/2, SLOT_Y-10, '#666'); endRep(); return; }
-
-  slot.dug = true;
-  const cx = slot.x + SLOT_W/2, cy = SLOT_Y + SLOT_H/2;
-  const type = slot.content;
-
-  // Bomb!
-  if (type.tier === -1) {
-    score = Math.max(0, score + type.pts);
-    digStreak = 0; depth = 0;
-    shake(15); flashAlpha = 0.35; flashColor = '#ff2200';
-    bigText = `💣 爆炸! ${type.pts} 回到地表`; bigTextColor = '#ff4444'; bigTextAlpha = 1.5;
-    spawnParticles(cx, cy, '#ff4400', 25);
-    spawnParticles(cx, cy, '#ffaa00', 15);
-    addFeedback('💥', cx, cy - 40, '#ff4400');
-    endRep(); return;
-  }
-
-  // Hit! Increase streak/depth
-  digStreak++;
-  if (digStreak >= 3 && depth < 3) {
-    depth = Math.min(3, Math.floor(digStreak / 3));
-    addFeedback(`⬇️ ${DEPTH_NAMES[depth]}!`, cx, cy - 60, '#ffcc33');
-  }
-
-  const tier = TIER_CONFIG[type.tier] || TIER_CONFIG[0];
-
-  // Start gacha reveal sequence!
-  revealing = true;
-  revealState = {
-    phase: 'crack',
-    timer: 0,
-    maxTimer: tier.suspense,
-    x: cx, y: cy,
-    type: type,
-    tierConf: tier,
-    beamHeight: 0,
-    emojiScale: 0,
-    emojiY: cy,
-    glowAlpha: 0,
-    borderAlpha: 0,
-    revealed: false,
-  };
-
-  // Initial dig effect
-  shake(4);
-  spawnDust(cx, cy + 30, 12);
   repActive = false;
-}
-
-// === GACHA REVEAL SEQUENCE ===
-function updateReveal() {
-  if (!revealState) return;
-  const r = revealState;
-  r.timer++;
-
-  switch(r.phase) {
-    case 'crack':
-      // Ground cracking, anticipation building
-      r.glowAlpha = Math.min(0.6, r.timer / r.maxTimer);
-      // Particles escaping from crack
-      if (r.timer % 4 === 0) {
-        const col = r.tierConf.beamColor + '0.8)';
-        particles.push({x: r.x + (Math.random()-0.5)*30, y: r.y+20, vx: (Math.random()-0.5)*2, vy: -1-Math.random()*2, life: 1, decay: 0.02, size: 2+Math.random()*3, color: col});
-      }
-      // Screen vibrates slightly for high tiers
-      if (r.type.tier >= 3 && r.timer % 3 === 0) shake(1);
-      if (r.type.tier >= 4 && r.timer % 2 === 0) shake(1.5);
-
-      if (r.timer >= r.maxTimer) {
-        r.phase = 'beam';
-        r.timer = 0;
-        r.maxTimer = r.type.tier >= 3 ? 25 : 15;
-      }
-      break;
-
-    case 'beam':
-      // Light beam shoots up!
-      r.beamHeight = Math.min(H * 0.7, r.beamHeight + 20);
-      r.glowAlpha = 0.8;
-      shake(r.type.tier >= 3 ? 3 : 1);
-      // Beam particles
-      if (r.timer % 2 === 0) {
-        for (let i = 0; i < 3; i++) {
-          particles.push({x: r.x + (Math.random()-0.5)*20, y: r.y - Math.random()*r.beamHeight, vx: (Math.random()-0.5)*3, vy: -2, life: 1, decay: 0.015, size: 3+Math.random()*4, color: r.tierConf.glow});
-        }
-      }
-      if (r.timer >= r.maxTimer) {
-        r.phase = 'reveal';
-        r.timer = 0;
-        r.maxTimer = 40;
-        r.emojiY = r.y + 20;
-        // Flash on reveal!
-        flashAlpha = r.type.tier >= 4 ? 0.5 : r.type.tier >= 3 ? 0.3 : r.type.tier >= 2 ? 0.15 : 0.05;
-        flashColor = r.tierConf.glow;
-        shake(r.type.tier * 3);
-      }
-      break;
-
-    case 'reveal':
-      // Item rises up with growing scale
-      r.emojiScale = Math.min(1, r.emojiScale + 0.06);
-      r.emojiY += (r.y - 40 - r.emojiY) * 0.12;
-      r.borderAlpha = Math.min(1, r.borderAlpha + 0.05);
-      r.beamHeight *= 0.95;
-
-      if (!r.revealed && r.emojiScale > 0.5) {
-        r.revealed = true;
-        doRevealEffects(r);
-      }
-
-      if (r.timer >= r.maxTimer) {
-        r.phase = 'celebrate';
-        r.timer = 0;
-        r.maxTimer = r.type.tier >= 3 ? 60 : 35;
-      }
-      break;
-
-    case 'celebrate':
-      // Celebration phase — particles continue, text shows
-      r.borderAlpha *= 0.97;
-      r.emojiScale = 1 + Math.sin(r.timer * 0.15) * 0.05;
-      // Tier 4: continuous rainbow particles
-      if (r.type.tier >= 4 && r.timer % 3 === 0) {
-        const colors = ['#ff4444','#ff8800','#ffdd00','#44ff44','#4488ff','#cc44ff'];
-        const c = colors[r.timer % colors.length];
-        spawnParticles(r.x + (Math.random()-0.5)*80, r.emojiY + (Math.random()-0.5)*40, c, 2);
-      }
-      // Tier 3: sparkles
-      if (r.type.tier >= 3 && r.timer % 5 === 0) {
-        spawnParticles(r.x + (Math.random()-0.5)*60, r.emojiY + (Math.random()-0.5)*30, r.tierConf.glow, 2);
-      }
-
-      if (r.timer >= r.maxTimer) {
-        finishReveal(r);
-      }
-      break;
-  }
-}
-
-function doRevealEffects(r) {
-  const type = r.type;
-  score += type.pts;
-
-  // Tier-based effects
-  if (type.tier >= 4) {
-    // LEGENDARY — full rainbow explosion
-    rainbowBorder = 80;
-    bigText = `✦ ${type.emoji} ${type.name}!! +${type.pts} ✦`;
-    bigTextColor = '#ffd700'; bigTextAlpha = 2.5;
-    const colors = ['#ff4444','#ff8800','#ffdd00','#44ff44','#4488ff','#cc44ff'];
-    for (let i = 0; i < 30; i++) {
-      const a = i * Math.PI*2/30;
-      particles.push({x: r.x, y: r.emojiY, vx: Math.cos(a)*8, vy: Math.sin(a)*8-3, life: 1, decay: 0.006, size: 5+Math.random()*5, color: colors[i%colors.length]});
-    }
-    // Emoji rain!
-    for (let i = 0; i < 20; i++) {
-      coinRain.push({x: Math.random()*W, y: -Math.random()*300, vy: 2+Math.random()*3, size: 18+Math.random()*14, alpha: 1, emoji: type.emoji});
-    }
-    shake(15);
-  } else if (type.tier >= 3) {
-    // RARE — big burst + screen shake
-    bigText = `${type.emoji} ${type.name}! +${type.pts}`;
-    bigTextColor = r.tierConf.glow; bigTextAlpha = 1.8;
-    spawnParticles(r.x, r.emojiY, r.tierConf.glow, 25);
-    spawnParticles(r.x, r.emojiY, '#ffffff', 10);
-    for (let i = 0; i < 8; i++) {
-      const a = i*Math.PI/4;
-      particles.push({x: r.x+Math.cos(a)*30, y: r.emojiY+Math.sin(a)*30, vx: Math.cos(a)*5, vy: Math.sin(a)*5-2, life: 1, decay: 0.01, size: 4, color: '#ffffff'});
-    }
-    shake(8);
-  } else if (type.tier >= 2) {
-    // GOOD — nice pop + sparkles
-    addFeedback(`${type.emoji} ${type.name}! +${type.pts}`, r.x, r.emojiY - 50, type.color);
-    spawnParticles(r.x, r.emojiY, type.color, 12);
-    spawnParticles(r.x, r.emojiY, '#ffffff', 4);
-    shake(3);
-  } else if (type.tier >= 1) {
-    // COMMON — small pop
-    addFeedback(`${type.emoji} +${type.pts}`, r.x, r.emojiY - 40, type.color);
-    spawnParticles(r.x, r.emojiY, type.color, 6);
-  } else {
-    // BAD
-    if (type.pts < 0) score = Math.max(0, score);
-    addFeedback(`${type.emoji} ${type.pts >= 0 ? '+'+type.pts : type.pts}`, r.x, r.emojiY - 40, '#888');
-    spawnDust(r.x, r.y, 6);
-  }
-
-  // NEW! check
-  if (type.tier > 0 && !harvestSeen.has(type.emoji)) {
-    harvestSeen.add(type.emoji);
-    feedbacks.push({text: '✦ NEW! ✦', x: r.x + 45, y: r.emojiY - 20, alpha: 2.0, vy: -0.5, color: '#ffee00', isNew: true});
-  }
-
-  // Add to harvest
-  if (type.tier > 0) {
-    harvest[type.emoji] = (harvest[type.emoji] || 0) + 1;
-    harvestPops.push({emoji: type.emoji, x: r.x, y: r.emojiY, targetX: getHarvestSlotX(type.emoji), targetY: HARVEST_BAR_Y, t: 0});
-  }
-}
-
-function finishReveal(r) {
-  revealing = false;
-  revealState = null;
   globalRep++;
   updateHUD();
-  if (globalRep >= TOTAL_REPS) { state = 'sessionDone'; return; }
-  setTimeout(() => startNewRound(), 250);
+  if (globalRep >= TOTAL_REPS) { state = 'done'; return; }
+  setTimeout(() => { repActive = true; struck = false; repTimer = 0; }, 300);
 }
 
-function getHarvestSlotX(emoji) {
-  const keys = Object.keys(harvest);
-  const idx = keys.indexOf(emoji);
-  return 40 + (idx >= 0 ? idx : keys.length - 1) * 46;
+function updateHUD() {
+  document.getElementById('h-mv').textContent = `${Math.min(Math.floor(globalRep / 10) + 1, 4)}/4`;
+  document.getElementById('h-rp').textContent = `${globalRep % 10}/10`;
+  document.getElementById('h-sc').textContent = score;
 }
 
-// Utils
-function spawnParticles(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,life:1,decay:0.01+Math.random()*0.008,size:3+Math.random()*5,color});}}
-function spawnDust(x,y,n){for(let i=0;i<n;i++){const a=-Math.PI/2+(Math.random()-0.5)*Math.PI*0.8,sp=1+Math.random()*3;particles.push({x:x+(Math.random()-0.5)*30,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,decay:0.012+Math.random()*0.008,size:4+Math.random()*6,color:Math.random()>0.5?'#8a7a5a':'#6a5a3a'});}}
-function shake(n){shakeX+=(Math.random()-0.5)*n;shakeY+=(Math.random()-0.5)*n*0.6;}
-function addFeedback(t,x,y,c){feedbacks.push({text:t,x,y,alpha:1.8,vy:-1.5,color:c});}
-function updateHUD(){
-  const moveNum=Math.min(Math.floor(globalRep/REPS_PER_MOVE)+1,TOTAL_MOVES);
-  const repInMove=globalRep%REPS_PER_MOVE;
-  document.getElementById('h-mv').textContent=`${moveNum}/${TOTAL_MOVES}`;
-  document.getElementById('h-rp').textContent=`${repInMove}/${REPS_PER_MOVE}`;
-  document.getElementById('h-sc').textContent=Math.round(displayScore);
-  document.getElementById('h-depth').textContent=DEPTH_NAMES[depth];
-}
-
-// Update
-function update(){
-  shakeX *= 0.82; shakeY *= 0.82;
-  if (flashAlpha > 0) flashAlpha -= 0.018;
-  if (bigTextAlpha > 0) bigTextAlpha -= 0.016;
-  if (rainbowBorder > 0) rainbowBorder--;
-
-  if (displayScore < score) {
-    displayScore += Math.max(1, (score - displayScore) * 0.1);
-    if (displayScore > score) displayScore = score;
-    updateHUD();
-  } else if (displayScore > score) {
-    displayScore += (score - displayScore) * 0.1;
-    if (displayScore < score) displayScore = score;
-    updateHUD();
+function spawnP(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = 1.5 + Math.random() * 4;
+    particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s - 2, life: 1, color, sz: 2 + Math.random() * 4 });
   }
+}
+function addFeedback(t, x, y, c) { feedbacks.push({ text: t, x, y, life: 1.5, color: c }); }
 
-  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.decay;});
-  particles=particles.filter(p=>p.life>0);
-  feedbacks.forEach(f=>{f.y+=f.vy;f.alpha-=0.015;});
-  feedbacks=feedbacks.filter(f=>f.alpha>0);
-  floaters.forEach(f=>{f.y+=f.vy;f.x+=f.vx||0;f.vy+=0.08;f.alpha-=0.012;f.rot+=(f.rotSpeed||0);});
-  floaters=floaters.filter(f=>f.alpha>0);
-  coinRain.forEach(c=>{c.y+=c.vy;c.alpha-=0.007;});
-  coinRain=coinRain.filter(c=>c.alpha>0&&c.y<H+50);
-  harvestPops.forEach(h=>{h.t+=0.035;h.x+=(h.targetX-h.x)*0.1;h.y+=(h.targetY-h.y)*0.1;});
-  harvestPops=harvestPops.filter(h=>h.t<1);
+function update() {
+  if (state !== 'play' && state !== 'done') return;
+  frame++;
+  shakeX *= 0.85; shakeY *= 0.85;
+  if (flashAlpha > 0) flashAlpha -= 0.02;
 
-  // Cursor
-  if (state === 'play' && repActive && !revealing) {
+  if (repActive && !struck) {
     cursorX += cursorSpeed * cursorDir;
-    if (cursorX > W - 25) cursorDir = -1;
-    if (cursorX < 25) cursorDir = 1;
+    if (cursorX > W - 30) { cursorX = W - 30; cursorDir = -1; }
+    if (cursorX < 30) { cursorX = 30; cursorDir = 1; }
     repTimer++;
-    if (repTimer > (W - 50) / cursorSpeed) { struck = true; endRep(); }
+    if (repTimer > (W - 60) / cursorSpeed) {
+      // Missed — no dig this rep
+      repActive = false;
+      globalRep++;
+      updateHUD();
+      if (globalRep >= TOTAL_REPS) { state = 'done'; return; }
+      setTimeout(() => { repActive = true; struck = false; repTimer = 0; }, 250);
+    }
   }
 
-  // Gacha reveal
-  if (revealing) updateReveal();
+  particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.018; });
+  particles = particles.filter(p => p.life > 0);
+  feedbacks.forEach(f => { f.y -= 1.2; f.life -= 0.013; });
+  feedbacks = feedbacks.filter(f => f.life > 0);
 }
 
-// === DRAW ===
-const DEPTH_BG = [
-  { top: '#3a3018', mid: '#2a2210', bot: '#1e1a0c', ground: 'rgba(90,70,30,0.15)', line: 'rgba(100,80,40,0.15)' },
-  { top: '#2a2a28', mid: '#1e1e1a', bot: '#141410', ground: 'rgba(60,55,40,0.2)', line: 'rgba(80,70,50,0.15)' },
-  { top: '#1a1a2a', mid: '#121220', bot: '#0a0a18', ground: 'rgba(40,40,70,0.2)', line: 'rgba(60,60,100,0.15)' },
-  { top: '#1a0a1a', mid: '#120812', bot: '#0a040a', ground: 'rgba(80,30,80,0.15)', line: 'rgba(100,40,100,0.12)' },
-];
-let bgTransition = 0;
-
-function drawBG(){
-  const bg = DEPTH_BG[depth];
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, bg.top); g.addColorStop(0.3, bg.mid); g.addColorStop(1, bg.bot);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = bg.ground;
-  ctx.fillRect(0, SLOT_Y + SLOT_H + 10, W, H);
-  ctx.strokeStyle = bg.line; ctx.lineWidth = 1;
-  for (let ly = SLOT_Y + SLOT_H + 40; ly < H; ly += 30) {
-    ctx.beginPath(); ctx.moveTo(0, ly); ctx.lineTo(W, ly); ctx.stroke();
-  }
-  // Depth indicator — always visible, prominent
-  const dColors = ['#aa8844', '#88aacc', '#aa88ff', '#ffaa44'];
+function render() {
+  ctx.clearRect(0, 0, W, H);
   ctx.save();
-  ctx.font = `bold ${depth >= 2 ? 20 : 16}px -apple-system, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = dColors[depth];
-  ctx.globalAlpha = 0.9;
-  ctx.fillText(`▼ ${DEPTH_NAMES[depth]}`, W/2, SLOT_Y - 20);
-  // Streak progress toward next layer
-  if (depth < 3) {
-    const barW = 160, barH = 6, bx = W/2 - barW/2, by = SLOT_Y - 10;
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.beginPath(); ctx.roundRect(bx, by, barW, barH, 3); ctx.fill();
-    ctx.fillStyle = dColors[depth];
-    const nextThresh = (depth + 1) * 3;
-    ctx.beginPath(); ctx.roundRect(bx, by, barW * Math.min(1, digStreak / nextThresh), barH, 3); ctx.fill();
-    ctx.font = '11px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText(`连击 ${digStreak}/${nextThresh} → ${DEPTH_NAMES[depth+1]}`, W/2, by + barH + 14);
-  } else {
-    ctx.font = '12px -apple-system, sans-serif';
-    ctx.fillStyle = '#ffd700';
-    ctx.fillText(`🔥 最深层! 连击 ${digStreak}`, W/2, SLOT_Y - 4);
-  }
-  ctx.restore();
-  // Hint legend
-  ctx.save();
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.fillText('光越亮 = 越好 · ⚠️ = 危险', W - 16, SLOT_Y - 20);
-  ctx.restore();
-}
+  ctx.translate(shakeX, shakeY);
 
-function drawSlot(s, i) {
-  const x = s.x, y = SLOT_Y;
-  if (!s.dug) {
-    const moundColors = [
-      { inner: '#7a5a30', outer: '#4a3218', grass: '#4a8a3a' },
-      { inner: '#6a6a5a', outer: '#3a3a30', grass: '#3a6a4a' },
-      { inner: '#4a4a6a', outer: '#2a2a40', grass: '#3a5a7a' },
-      { inner: '#6a3a6a', outer: '#3a1a3a', grass: '#8a4a8a' },
-    ];
-    const mc = moundColors[depth];
-    const mg = ctx.createRadialGradient(x+SLOT_W/2, y+SLOT_H-20, 5, x+SLOT_W/2, y+SLOT_H-20, SLOT_W/2);
-    mg.addColorStop(0, mc.inner); mg.addColorStop(1, mc.outer);
-    ctx.fillStyle = mg;
-    ctx.beginPath();
-    ctx.moveTo(x+10, y+SLOT_H);
-    ctx.quadraticCurveTo(x+SLOT_W/2, y+20, x+SLOT_W-10, y+SLOT_H);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = mc.grass; ctx.lineWidth = 2;
-    for (let g = 0; g < 4; g++) {
-      const gx = x + 20 + g * 25, gy = y + 35 + g * 5;
-      ctx.beginPath(); ctx.moveTo(gx, gy); ctx.quadraticCurveTo(gx+3, gy-14, gx+1, gy-20); ctx.stroke();
-    }
-    // Hint glow — tells you what's inside (color = quality)
-    if (s.hintStrength > 0) {
-      ctx.save();
-      const pulse = 0.7 + Math.sin(performance.now() * 0.003 + i * 1.5) * 0.3;
-      ctx.shadowColor = s.hintColor;
-      ctx.shadowBlur = 12 + s.hintStrength * 15;
-      ctx.fillStyle = s.hintColor;
-      ctx.globalAlpha = s.hintStrength * 0.35 * pulse;
-      ctx.beginPath();
-      ctx.arc(x + SLOT_W/2, y + SLOT_H * 0.55, 20 + s.hintStrength * 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-    // Tier hint icon
-    const tierIcons = { '-1': '⚠️', 0: '', 1: '·', 2: '✦', 3: '✦✦', 4: '★' };
-    const icon = tierIcons[s.content.tier] || '';
-    if (icon) {
-      ctx.font = s.content.tier >= 3 ? 'bold 14px sans-serif' : '12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = s.hintColor;
-      ctx.globalAlpha = 0.7;
-      ctx.fillText(icon, x + SLOT_W/2, y + 15);
-      ctx.globalAlpha = 1;
-    }
-  } else {
-    ctx.fillStyle = '#1a0f05';
-    ctx.beginPath(); ctx.ellipse(x+SLOT_W/2, y+SLOT_H-15, SLOT_W/2-10, 25, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = 2; ctx.stroke();
-  }
-}
+  // Background — underground gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#2a2010'); bg.addColorStop(0.3, '#1a1508'); bg.addColorStop(1, '#0a0804');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
-function drawReveal() {
-  if (!revealState) return;
-  const r = revealState;
-  const tc = r.tierConf;
+  // Draw columns
+  for (let i = 0; i < COLS; i++) {
+    const col = columns[i];
+    const x = colX(i);
 
-  // Glow under slot
-  if (r.glowAlpha > 0) {
-    ctx.save();
-    const grd = ctx.createRadialGradient(r.x, r.y+20, 0, r.x, r.y+20, 80);
-    grd.addColorStop(0, tc.beamColor + r.glowAlpha + ')');
-    grd.addColorStop(1, tc.beamColor + '0)');
-    ctx.fillStyle = grd; ctx.fillRect(r.x-80, r.y-60, 160, 160);
-    ctx.restore();
-  }
+    // Column background shaft
+    ctx.fillStyle = 'rgba(30,25,15,0.5)';
+    ctx.fillRect(x, GRID_TOP, COL_W, VISIBLE_ROWS * CELL_H);
+    ctx.strokeStyle = 'rgba(80,60,30,0.3)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x, GRID_TOP, COL_W, VISIBLE_ROWS * CELL_H);
 
-  // Light beam
-  if (r.beamHeight > 5) {
-    ctx.save();
-    const beamW = r.type.tier >= 4 ? 40 : r.type.tier >= 3 ? 28 : 16;
-    const bGrd = ctx.createLinearGradient(r.x, r.y, r.x, r.y - r.beamHeight);
-    bGrd.addColorStop(0, tc.beamColor + '0.7)');
-    bGrd.addColorStop(0.5, tc.beamColor + '0.4)');
-    bGrd.addColorStop(1, tc.beamColor + '0)');
-    ctx.fillStyle = bGrd;
-    ctx.fillRect(r.x - beamW/2, r.y - r.beamHeight, beamW, r.beamHeight);
-    // Beam edges glow
-    ctx.strokeStyle = tc.glow; ctx.lineWidth = 1; ctx.globalAlpha = 0.4;
-    ctx.beginPath(); ctx.moveTo(r.x - beamW/2, r.y); ctx.lineTo(r.x - beamW/4, r.y - r.beamHeight); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(r.x + beamW/2, r.y); ctx.lineTo(r.x + beamW/4, r.y - r.beamHeight); ctx.stroke();
-    ctx.restore();
-  }
+    // Draw cells
+    for (let d = 0; d < VISIBLE_ROWS; d++) {
+      const actualDepth = col.depth + d;
+      const cell = col.cells[actualDepth];
+      if (!cell) continue;
+      const cy = GRID_TOP + d * CELL_H;
 
-  // Emoji reveal
-  if (r.phase === 'reveal' || r.phase === 'celebrate') {
-    ctx.save();
-    // Background circle for tier
-    if (r.type.tier >= 2) {
-      ctx.beginPath();
-      ctx.arc(r.x, r.emojiY, 40 * r.emojiScale, 0, Math.PI*2);
-      ctx.fillStyle = tc.beamColor + (0.2 * r.borderAlpha) + ')';
-      ctx.fill();
-      ctx.strokeStyle = tc.border; ctx.lineWidth = 2; ctx.globalAlpha = r.borderAlpha;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    // The emoji itself
-    const size = 48 * r.emojiScale;
-    ctx.font = `${size}px serif`; ctx.textAlign = 'center';
-    // Shadow glow
-    ctx.shadowColor = tc.glow; ctx.shadowBlur = r.type.tier >= 3 ? 25 : 12;
-    ctx.fillText(r.type.emoji, r.x, r.emojiY + size * 0.3);
-    ctx.shadowBlur = 0;
-    // Name + pts
-    if (r.emojiScale > 0.8) {
-      ctx.font = 'bold 16px -apple-system, sans-serif';
-      ctx.fillStyle = tc.glow; ctx.globalAlpha = r.borderAlpha;
-      ctx.fillText(`${r.type.name}  +${r.type.pts}`, r.x, r.emojiY + 40);
-      // Tier label
-      if (tc.label) {
-        ctx.font = 'bold 13px -apple-system, sans-serif';
-        ctx.fillStyle = tc.border;
-        ctx.fillText(tc.label, r.x, r.emojiY - 35);
+      if (d === 0 && !cell.revealed) {
+        // Current dig target — highlighted
+        const tc = TIER_COLORS[cell.item.tier] || TIER_COLORS[0];
+        // Glow hint
+        const pulse = 0.6 + Math.sin(frame * 0.04 + i * 1.2) * 0.3;
+        ctx.fillStyle = tc.bg;
+        ctx.fillRect(x + 2, cy + 2, COL_W - 4, CELL_H - 4);
+        ctx.save();
+        ctx.shadowColor = tc.glow; ctx.shadowBlur = 10 * pulse;
+        ctx.strokeStyle = tc.glow; ctx.lineWidth = 2;
+        ctx.strokeRect(x + 2, cy + 2, COL_W - 4, CELL_H - 4);
+        ctx.restore();
+        // "?" with tier hint color
+        ctx.font = 'bold 22px serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = tc.glow;
+        ctx.globalAlpha = 0.7;
+        ctx.fillText('?', x + COL_W / 2, cy + CELL_H / 2 + 7);
+        ctx.globalAlpha = 1;
+        // Danger indicator for bombs
+        if (cell.item.tier === -1) {
+          ctx.font = '12px sans-serif';
+          ctx.fillStyle = '#ff4444';
+          ctx.fillText('⚠️', x + COL_W / 2, cy + 14);
+        }
+      } else if (d > 0 && !cell.revealed) {
+        // Future cells — dim hint only for next one
+        if (d === 1) {
+          const tc = TIER_COLORS[cell.item.tier] || TIER_COLORS[0];
+          ctx.fillStyle = 'rgba(20,15,10,0.8)';
+          ctx.fillRect(x + 2, cy + 2, COL_W - 4, CELL_H - 4);
+          ctx.save();
+          ctx.globalAlpha = 0.3;
+          ctx.shadowColor = tc.glow; ctx.shadowBlur = 6;
+          ctx.strokeStyle = tc.glow; ctx.lineWidth = 1;
+          ctx.strokeRect(x + 4, cy + 4, COL_W - 8, CELL_H - 8);
+          ctx.restore();
+        } else {
+          // Deeper: just dark
+          ctx.fillStyle = `rgba(15,10,5,${0.7 + d * 0.03})`;
+          ctx.fillRect(x + 2, cy + 2, COL_W - 4, CELL_H - 4);
+        }
       }
     }
-    ctx.restore();
+
+    // Depth label under column
+    ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+    const depthLabel = col.depth < 2 ? '土层' : col.depth < 4 ? '石层' : col.depth < 6 ? '深层' : '矿脉';
+    const depthColor = col.depth < 2 ? '#aa8844' : col.depth < 4 ? '#88aacc' : col.depth < 6 ? '#aa88ff' : '#ffd700';
+    ctx.fillStyle = depthColor;
+    ctx.fillText(`${depthLabel} (${col.depth})`, x + COL_W / 2, GRID_TOP + VISIBLE_ROWS * CELL_H + 16);
   }
-}
 
-function drawRainbowBorder() {
-  if (rainbowBorder <= 0) return;
-  ctx.save();
-  const alpha = Math.min(1, rainbowBorder / 30);
-  ctx.globalAlpha = alpha * 0.6;
-  const t = performance.now() / 500;
-  const colors = ['#ff4444','#ff8800','#ffdd00','#44ff44','#4488ff','#cc44ff','#ff4444'];
-  const grad = ctx.createLinearGradient(0, 0, W, H);
-  for (let i = 0; i < colors.length; i++) grad.addColorStop(i/(colors.length-1), colors[(i + Math.floor(t)) % (colors.length-1)]);
-  ctx.strokeStyle = grad; ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.roundRect(3, 3, W-6, H-6, 12); ctx.stroke();
-  // Inner glow
-  ctx.lineWidth = 12; ctx.globalAlpha = alpha * 0.2;
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawCursor(){
-  if (state !== 'play' || !repActive || revealing) return;
-  const y1 = SLOT_Y - 25, y2 = SLOT_Y + SLOT_H + 15;
-  const bg = ctx.createLinearGradient(cursorX, y1, cursorX, y2);
-  bg.addColorStop(0, 'rgba(255,200,60,0)');
-  bg.addColorStop(0.2, 'rgba(255,200,60,0.2)');
-  bg.addColorStop(0.8, 'rgba(255,200,60,0.2)');
-  bg.addColorStop(1, 'rgba(255,200,60,0)');
-  ctx.fillStyle = bg; ctx.fillRect(cursorX-3, y1, 6, y2-y1);
-  ctx.fillStyle = '#ffcc33';
-  ctx.beginPath(); ctx.moveTo(cursorX, y1+12); ctx.lineTo(cursorX-9, y1); ctx.lineTo(cursorX+9, y1); ctx.closePath(); ctx.fill();
-  ctx.save(); ctx.shadowColor='#ffcc33'; ctx.shadowBlur=8;
-  ctx.fillStyle='#ffcc33'; ctx.beginPath(); ctx.arc(cursorX, y1-3, 3.5, 0, Math.PI*2); ctx.fill(); ctx.restore();
-}
-
-function drawHarvestBar() {
-  const entries = Object.entries(harvest);
-  if (entries.length === 0) return;
-  const panelW = Math.min(W - 40, entries.length * 46 + 30);
-  const panelX = 20, panelY = HARVEST_BAR_Y - 18;
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.beginPath(); ctx.roundRect(panelX, panelY, panelW, 42, 10); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,200,60,0.15)'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.font = '9px -apple-system, sans-serif'; ctx.textAlign = 'left';
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  ctx.fillText('收获', panelX + 6, panelY + 10);
-  entries.forEach(([emoji, count], i) => {
-    const ix = panelX + 14 + i * 46, iy = panelY + 30;
-    ctx.font = '20px serif'; ctx.textAlign = 'center';
-    ctx.fillText(emoji, ix, iy);
-    ctx.font = 'bold 10px -apple-system, sans-serif';
-    ctx.fillStyle = '#ffd700'; ctx.textAlign = 'center';
-    ctx.fillText(`×${count}`, ix, iy + 13);
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  });
-  for (let h of harvestPops) {
-    ctx.save(); ctx.globalAlpha = 1-h.t;
-    ctx.font = '22px serif'; ctx.textAlign = 'center';
-    ctx.fillText(h.emoji, h.x, h.y);
-    ctx.restore();
-  }
-}
-
-function drawCoinRain() {
-  for (let c of coinRain) {
-    ctx.save(); ctx.globalAlpha = c.alpha;
-    ctx.font = `${c.size}px serif`; ctx.textAlign = 'center';
-    ctx.fillText(c.emoji || '🪙', c.x, c.y);
-    ctx.restore();
-  }
-}
-
-function drawFlash(){if(flashAlpha<=0)return;ctx.save();ctx.globalAlpha=flashAlpha;ctx.fillStyle=flashColor;ctx.fillRect(0,0,W,H);ctx.restore();}
-
-function drawBigText(){
-  if(bigTextAlpha<=0)return;
-  ctx.save();ctx.globalAlpha=Math.min(1,bigTextAlpha);
-  const size=26+(2.5-Math.min(2.5,bigTextAlpha))*8;
-  ctx.font=`bold ${size}px -apple-system, sans-serif`;
-  ctx.textAlign='center';ctx.fillStyle=bigTextColor;ctx.shadowColor=bigTextColor;ctx.shadowBlur=25;
-  ctx.fillText(bigText,W/2,H*0.15);ctx.restore();
-}
-
-function drawProgress(){
-  const bW=200,bH=4,bx=W/2-bW/2,by=H-16;
-  ctx.fillStyle='rgba(255,255,255,0.06)';ctx.beginPath();ctx.roundRect(bx,by,bW,bH,2);ctx.fill();
-  ctx.fillStyle='#ffcc33';ctx.beginPath();ctx.roundRect(bx,by,bW*(globalRep/TOTAL_REPS),bH,2);ctx.fill();
-}
-
-function drawDone(){
-  ctx.save();ctx.fillStyle='rgba(0,0,0,0.9)';ctx.fillRect(0,0,W,H);
-  ctx.textAlign='center';
-  ctx.font='28px -apple-system, sans-serif';ctx.fillStyle='#fff';ctx.fillText('挖掘结束',W/2,H*0.14);
-  ctx.font='bold 32px -apple-system, sans-serif';ctx.fillStyle='#ffd700';ctx.fillText(`${Math.round(score)} 分`,W/2,H*0.22);
-  const grade=score>=800?'S':score>=500?'A':score>=300?'B':'C';
-  const gc=score>=800?'#ffd700':score>=500?'#7aff7a':score>=300?'#88aaff':'#aaa';
-  ctx.font='bold 52px -apple-system, sans-serif';ctx.fillStyle=gc;ctx.fillText(grade,W/2,H*0.33);
-  const entries = Object.entries(harvest);
-  if (entries.length > 0) {
-    ctx.font='15px -apple-system, sans-serif';ctx.fillStyle='rgba(255,255,255,0.5)';
-    ctx.fillText(`收获了 ${entries.reduce((s,e)=>s+e[1],0)} 个好东西 · ${entries.length} 个品种`,W/2,H*0.42);
-    entries.sort((a,b)=>b[1]-a[1]);
-    const cols = Math.min(entries.length, 9);
-    const startX = W/2 - (cols * 50) / 2 + 25;
-    for (let i = 0; i < entries.length; i++) {
-      const row = Math.floor(i / 9), col = i % 9;
-      const ex = startX + col * 50, ey = H*0.5 + row * 56;
-      ctx.font='30px serif'; ctx.fillText(entries[i][0], ex, ey);
-      ctx.font='bold 12px -apple-system, sans-serif'; ctx.fillStyle='#ffd700';
-      ctx.fillText(`×${entries[i][1]}`, ex, ey+18);
-      ctx.fillStyle='rgba(255,255,255,0.5)';
+  // Cursor
+  if (repActive && !struck) {
+    // Highlight column
+    for (let i = 0; i < COLS; i++) {
+      const cx = colX(i);
+      if (cursorX >= cx - 10 && cursorX <= cx + COL_W + 10) {
+        ctx.strokeStyle = 'rgba(255,220,60,0.5)'; ctx.lineWidth = 3;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(cx - 4, GRID_TOP - 4, COL_W + 8, VISIBLE_ROWS * CELL_H + 8);
+        ctx.setLineDash([]);
+        // Arrow
+        ctx.fillStyle = '#ffcc33';
+        const ax = cx + COL_W / 2;
+        ctx.beginPath(); ctx.moveTo(ax, GRID_TOP - 15); ctx.lineTo(ax - 8, GRID_TOP - 25); ctx.lineTo(ax + 8, GRID_TOP - 25); ctx.closePath(); ctx.fill();
+        break;
+      }
     }
+    // Cursor line
+    ctx.strokeStyle = 'rgba(255,210,60,0.3)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cursorX, GRID_TOP - 30); ctx.lineTo(cursorX, GRID_TOP + VISIBLE_ROWS * CELL_H + 5); ctx.stroke();
   }
-  ctx.font='14px -apple-system, sans-serif';ctx.fillStyle='#888';ctx.fillText('点击重玩',W/2,H*0.92);ctx.restore();
-}
 
-function render(){
-  ctx.save(); ctx.translate(shakeX, shakeY);
-  drawBG();
-  for (let i = 0; i < slots.length; i++) drawSlot(slots[i], i);
-  drawCursor();
-  drawReveal();
   ctx.restore();
-  drawCoinRain();
-  drawHarvestBar();
-  drawRainbowBorder();
-  drawFlash(); drawBigText(); drawProgress();
-  for(let p of particles){ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+shakeX,p.y+shakeY,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();}
-  for(let f of feedbacks){ctx.save();ctx.globalAlpha=Math.min(1,f.alpha);ctx.font=f.isNew?'bold 20px -apple-system, sans-serif':'bold 17px -apple-system, sans-serif';ctx.textAlign='center';ctx.fillStyle=f.color;if(f.isNew){ctx.shadowColor='#ffee00';ctx.shadowBlur=10;}ctx.fillText(f.text,f.x,f.y);ctx.restore();}
-  if(state==='sessionDone') drawDone();
+
+  // Flash
+  if (flashAlpha > 0) {
+    ctx.globalAlpha = flashAlpha; ctx.fillStyle = flashColor; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+  }
+
+  // Particles
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x + shakeX, p.y + shakeY, Math.max(0.5, p.sz * p.life), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Feedbacks
+  for (const f of feedbacks) {
+    ctx.globalAlpha = Math.min(1, Math.max(0, f.life));
+    ctx.font = 'bold 18px -apple-system, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // Progress bar
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(W/2 - 100, H - 10, 200, 4);
+  ctx.fillStyle = '#ffd700';
+  ctx.fillRect(W/2 - 100, H - 10, 200 * (globalRep / TOTAL_REPS), 4);
+
+  // Done
+  if (state === 'done') {
+    ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.font = '26px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('矿井结束', W/2, H/2 - 50);
+    ctx.font = '22px sans-serif'; ctx.fillStyle = '#ffd700'; ctx.fillText(`总分: ${score}`, W/2, H/2 - 10);
+    const maxDepth = Math.max(...columns.map(c => c.depth));
+    ctx.font = '15px sans-serif'; ctx.fillStyle = '#aaa'; ctx.fillText(`最深: ${maxDepth} 层`, W/2, H/2 + 20);
+    const grade = score >= 500 ? 'S' : score >= 350 ? 'A' : score >= 200 ? 'B' : 'C';
+    const gc = score >= 500 ? '#ffd700' : score >= 350 ? '#7aff7a' : score >= 200 ? '#88aaff' : '#aaa';
+    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = gc; ctx.fillText(grade, W/2, H/2 + 70);
+    ctx.font = '13px sans-serif'; ctx.fillStyle = '#888'; ctx.fillText('点击重玩', W/2, H/2 + 100);
+  }
 }
 
-function loop(){ update(); ctx.clearRect(0,0,W,H); render(); requestAnimationFrame(loop); }
+function loop() { update(); render(); requestAnimationFrame(loop); }
 
-function handleInput(){ if(state==='sessionDone'){resetGame();return;} strike(); }
-document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();handleInput();}});
+function handleInput() {
+  if (state === 'done') {
+    globalRep = 0; score = 0; cursorX = W/2; cursorDir = 1;
+    initColumns(); particles = []; feedbacks = [];
+    state = 'play'; repActive = true; struck = false; repTimer = 0;
+    updateHUD(); return;
+  }
+  strike();
+}
+
+document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); handleInput(); } });
 canvas.addEventListener('click', handleInput);
-canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
+canvas.addEventListener('touchstart', e => { e.preventDefault(); handleInput(); });
 
-function resetGame(){globalRep=0;score=0;displayScore=0;depth=0;digStreak=0;harvest={};harvestSeen=new Set();coinRain=[];floaters=[];harvestPops=[];revealing=false;revealState=null;cursorX=30;cursorDir=1;updateHUD();startNewRound();}
-
-document.getElementById('go-btn').addEventListener('click',()=>{
-  document.getElementById('start-overlay').style.display='none';
-  state='play'; startNewRound(); loop();
+document.getElementById('go-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('start-overlay').style.display = 'none';
+  state = 'play';
+  initColumns();
+  repActive = true; struck = false; repTimer = 0;
+  updateHUD();
+  loop();
 });
 </script>
 </body>
-<!-- v1781023574 -->
 </html>
