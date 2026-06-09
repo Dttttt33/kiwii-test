@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii Power — 农事节拍</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0f1a0f;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  overflow: hidden; user-select: none;
+}
+canvas { border-radius: 12px; cursor: pointer; }
+#hud {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 12px; z-index: 10;
+}
+.hi {
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 7px 16px; border-radius: 14px; font-size: 15px; color: #ccc;
+}
+.hi span { font-weight: 600; }
+.hi .g { color: #7aff7a; }
+.hi .y { color: #ffd700; }
+#start-overlay {
+  position: fixed; inset: 0; background: rgba(8,12,8,0.96);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; gap: 16px;
+}
+#start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
+#start-overlay p { color: #aaa; font-size: 17px; max-width: 440px; text-align: center; line-height: 2.2; }
+#start-overlay strong { color: #7aff7a; }
+.phase-label { color: #ffd700; font-weight: 600; }
+#go-btn {
+  margin-top: 14px; padding: 14px 40px; font-size: 16px;
+  background: #3a8a3a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
+}
+#go-btn:active { transform: scale(0.95); }
+#btm { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 13px; z-index: 10; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay">
+  <h1>🌾 农事节拍</h1>
+  <p>
+    节拍从右边滚过来<br>
+    到达左侧 <strong>判定圈</strong> 时按 <strong>空格 / 点击</strong><br><br>
+    <span class="phase-label">🌱 向心</span> · <span class="phase-label">💧 Hold</span> · <span class="phase-label">🌾 离心</span><br><br>
+    跟上节奏，田里就丰收
+  </p>
+  <button id="go-btn">开始</button>
+</div>
+
+<div id="hud">
+  <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
+  <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
+  <div class="hi">分 <span class="y" id="h-sc">0</span></div>
+  <div class="hi">连击 <span class="y" id="h-cb">—</span></div>
+</div>
+<div id="btm">空格/点击 = 击打</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = Math.min(960, window.innerWidth - 20);
+const H = Math.min(640, window.innerHeight - 20);
+canvas.width = W; canvas.height = H;
+
+const TOTAL_MOVES = 4, REPS_PER_MOVE = 10;
+const TOTAL_REPS = TOTAL_MOVES * REPS_PER_MOVE;
+
+// Note types — the movement phases
+const NOTE_TYPES = [
+  {emoji: '🌱', name: '向心', color: '#55dd55', ringColor: '#44cc44'},
+  {emoji: '💧', name: 'Hold', color: '#55aaff', ringColor: '#4499ee'},
+  {emoji: '🌾', name: '离心', color: '#ffaa44', ringColor: '#ee9933'},
+];
+
+// QTE lane config
+const LANE_Y = H * 0.32;
+const LANE_H = 80;
+const HIT_X = 130; // judgment circle position
+const HIT_R = 36; // judgment circle radius
+
+function getDiff(rep) {
+  const t = rep / (TOTAL_REPS - 1);
+  return {
+    speed: 3.0 + t * 2.5,          // scroll speed
+    noteSpacing: 180 - t * 60,      // px between notes (tighter = harder)
+    perfectWindow: 18,              // px distance
+    greatWindow: 34,
+    goodWindow: 55,
+  };
+}
+
+// State
+let state = 'idle';
+let globalRep = 0, score = 0, combo = 0;
+let notes = []; // {x, type, hit, missed, result, alpha, scale}
+let repActive = false;
+let notesPerRep = 3; // one rep = concentric + hold + eccentric
+let repNoteIdx = 0;
+let spawnTimer = 0;
+
+// Field
+let fieldGrowth = 0;
+let fieldPlants = [];
+
+let particles = [], feedbacks = [];
+let shakeX = 0, shakeY = 0;
+let flashAlpha = 0, flashColor = '';
+let bigText = '', bigTextAlpha = 0, bigTextColor = '';
+let hitRingPulse = 0, hitRingColor = '';
+let drumHit = 0; // visual drum animation
+
+function initField() {
+  fieldPlants = [];
+  for (let i = 0; i < 10; i++) {
+    fieldPlants.push({
+      x: 60 + i * ((W - 120) / 9),
+      y: H * 0.78 + (Math.random() - 0.5) * 20,
+      growth: 0,
+    });
+  }
+}
+
+function startNewRep() {
+  repActive = true;
+  repNoteIdx = 0;
+  spawnTimer = 0;
+  // Spawn 3 notes (one per phase) staggered
+  const diff = getDiff(globalRep);
+  const startX = W + 50;
+  for (let i = 0; i < 3; i++) {
+    notes.push({
+      x: startX + i * diff.noteSpacing,
+      type: NOTE_TYPES[i],
+      typeIdx: i,
+      hit: false,
+      missed: false,
+      result: null,
+      alpha: 1,
+      scale: 1,
+    });
+  }
+  updateHUD();
+}
+
+function endRep() {
+  repActive = false;
+  globalRep++;
+  updateHUD();
+  if (globalRep >= TOTAL_REPS) { state = 'sessionDone'; return; }
+  setTimeout(() => startNewRep(), 350);
+}
+
+function judgeHit() {
+  if (state !== 'play') return;
+
+  // Find the first unhit, unmissed note
+  let target = null;
+  for (let n of notes) {
+    if (!n.hit && !n.missed) { target = n; break; }
+  }
+
+  if (!target) return;
+
+  const dist = Math.abs(target.x - HIT_X);
+  const diff = getDiff(globalRep);
+
+  let pts, label, color;
+  if (dist <= diff.perfectWindow) {
+    pts = 30; label = 'Perfect!'; color = '#ffd700';
+    combo++;
+    hitRingPulse = 1.2; hitRingColor = '#ffd700';
+    drumHit = 1.0;
+    spawnParticles(HIT_X, LANE_Y + LANE_H/2, '#ffd700', 14);
+    flashAlpha = 0.06; flashColor = '#ffd700';
+    const p = fieldPlants[Math.floor(Math.random()*fieldPlants.length)];
+    p.growth = Math.min(1, p.growth + 0.1);
+    fieldGrowth = Math.min(1, fieldGrowth + 0.02);
+    target.scale = 1.4;
+  } else if (dist <= diff.greatWindow) {
+    pts = 20; label = 'Great'; color = '#7aff7a';
+    combo++;
+    hitRingPulse = 0.8; hitRingColor = '#7aff7a';
+    drumHit = 0.7;
+    spawnParticles(HIT_X, LANE_Y + LANE_H/2, '#7aff7a', 7);
+    const p = fieldPlants[Math.floor(Math.random()*fieldPlants.length)];
+    p.growth = Math.min(1, p.growth + 0.05);
+    fieldGrowth = Math.min(1, fieldGrowth + 0.012);
+    target.scale = 1.2;
+  } else if (dist <= diff.goodWindow) {
+    pts = 10; label = 'Good'; color = '#88cc88';
+    combo++;
+    hitRingPulse = 0.4; hitRingColor = '#88cc88';
+    drumHit = 0.4;
+    target.scale = 1.1;
+  } else {
+    // Too early
+    pts = 0; label = 'Miss'; color = '#cc5544';
+    combo = 0;
+    hitRingPulse = 0.3; hitRingColor = '#cc5544';
+    drumHit = 0.2;
+    shake(3);
+  }
+
+  if (combo > 4) pts += combo * 2;
+  score += pts;
+  target.hit = true;
+  target.result = label;
+
+  addFeedback(`${label}${pts > 0 ? ' +'+pts : ''}`, HIT_X + 70, LANE_Y + LANE_H/2 - 15, color);
+
+  // Check if all notes for this rep are resolved
+  const activeNotes = notes.filter(n => !n.hit && !n.missed);
+  if (activeNotes.length === 0 && repActive) {
+    // Full cycle bonus
+    const perfects = notes.filter(n => n.result === 'Perfect!').length;
+    if (perfects === 3 && combo >= 3) {
+      const bonus = 30 + combo * 3;
+      score += bonus;
+      bigText = `🌾 完美节拍! +${bonus}`; bigTextColor = '#ffd700'; bigTextAlpha = 1.1;
+      spawnParticles(W/2, LANE_Y + LANE_H + 20, '#ffd700', 18);
+    }
+    setTimeout(() => endRep(), 200);
+  }
+
+  updateHUD();
+}
+
+// Utils
+function spawnParticles(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,life:1,decay:0.013+Math.random()*0.008,size:3+Math.random()*4,color});}}
+function shake(n){shakeX+=(Math.random()-0.5)*n;shakeY+=(Math.random()-0.5)*n*0.4;}
+function addFeedback(t,x,y,c){feedbacks.push({text:t,x,y,alpha:1.4,vy:-1.3,color:c});}
+function updateHUD(){
+  const moveNum=Math.min(Math.floor(globalRep/REPS_PER_MOVE)+1,TOTAL_MOVES);
+  const repInMove=globalRep%REPS_PER_MOVE;
+  document.getElementById('h-mv').textContent=`${moveNum}/${TOTAL_MOVES}`;
+  document.getElementById('h-rp').textContent=`${repInMove}/${REPS_PER_MOVE}`;
+  document.getElementById('h-sc').textContent=score;
+  document.getElementById('h-cb').textContent=combo>0?`×${combo}`:'—';
+}
+
+// Update
+function update(){
+  shakeX *= 0.85; shakeY *= 0.85;
+  if (flashAlpha > 0) flashAlpha -= 0.008;
+  if (bigTextAlpha > 0) bigTextAlpha -= 0.013;
+  if (hitRingPulse > 0) hitRingPulse *= 0.9;
+  if (drumHit > 0) drumHit *= 0.88;
+
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.life-=p.decay;});
+  particles=particles.filter(p=>p.life>0);
+  feedbacks.forEach(f=>{f.y+=f.vy;f.alpha-=0.013;});
+  feedbacks=feedbacks.filter(f=>f.alpha>0);
+
+  if (state !== 'play') return;
+
+  const diff = getDiff(globalRep);
+
+  // Move notes left
+  for (let n of notes) {
+    if (n.hit) {
+      n.alpha -= 0.05;
+      n.scale += 0.02;
+      continue;
+    }
+    if (n.missed) { n.alpha -= 0.04; continue; }
+    n.x -= diff.speed;
+
+    // Missed — went too far past
+    if (n.x < HIT_X - diff.goodWindow - 30) {
+      n.missed = true;
+      n.result = 'Miss';
+      combo = 0;
+      addFeedback('Miss', HIT_X, LANE_Y - 15, '#cc5544');
+      shake(2);
+      updateHUD();
+
+      // Check if rep done
+      const active = notes.filter(nn => !nn.hit && !nn.missed);
+      if (active.length === 0 && repActive) {
+        setTimeout(() => endRep(), 200);
+      }
+    }
+  }
+  notes = notes.filter(n => n.alpha > 0);
+}
+
+// Draw
+function drawBG(){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#141e14'); g.addColorStop(0.4, '#1a2a1a'); g.addColorStop(1, '#0f1a0f');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+
+function drawLane() {
+  // The QTE track — taiko-style horizontal lane
+  const ly = LANE_Y, lh = LANE_H;
+
+  // Lane background
+  ctx.fillStyle = 'rgba(30,20,10,0.6)';
+  ctx.beginPath(); ctx.roundRect(30, ly, W - 60, lh, 14); ctx.fill();
+
+  // Lane lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(50, ly + lh/2); ctx.lineTo(W - 50, ly + lh/2); ctx.stroke();
+
+  // Judgment circle (the "drum")
+  ctx.save();
+  // Outer glow
+  if (hitRingPulse > 0) {
+    ctx.shadowColor = hitRingColor; ctx.shadowBlur = 30 * hitRingPulse;
+  }
+  // Circle
+  const drumScale = 1 + drumHit * 0.15;
+  ctx.strokeStyle = hitRingPulse > 0.2 ? hitRingColor : 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(HIT_X, ly + lh/2, HIT_R * drumScale, 0, Math.PI*2); ctx.stroke();
+  // Inner
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(HIT_X, ly + lh/2, HIT_R * 0.6 * drumScale, 0, Math.PI*2); ctx.stroke();
+  ctx.restore();
+
+  // "Hit here" label
+  ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillText('⬇︎ 击打', HIT_X, ly - 8);
+}
+
+function drawNotes() {
+  const ly = LANE_Y, lh = LANE_H;
+  for (let n of notes) {
+    ctx.save();
+    ctx.globalAlpha = n.alpha;
+    const ny = ly + lh/2;
+    const s = n.scale || 1;
+
+    if (!n.hit && !n.missed) {
+      // Approaching note — colored circle with emoji
+      // Outer ring
+      ctx.strokeStyle = n.type.ringColor; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(n.x, ny, 28 * s, 0, Math.PI*2); ctx.stroke();
+      // Fill
+      ctx.fillStyle = n.type.color + '22';
+      ctx.beginPath(); ctx.arc(n.x, ny, 26 * s, 0, Math.PI*2); ctx.fill();
+      // Emoji
+      ctx.font = `${26*s}px serif`; ctx.textAlign = 'center';
+      ctx.fillText(n.type.emoji, n.x, ny + 9*s);
+      // Phase label
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.fillStyle = n.type.color;
+      ctx.fillText(n.type.name, n.x, ny + 28*s);
+    } else if (n.hit) {
+      // Expanding hit effect
+      ctx.font = `${26*s}px serif`; ctx.textAlign = 'center';
+      ctx.fillText(n.type.emoji, n.x, ny + 9*s);
+    }
+    ctx.restore();
+  }
+}
+
+function drawField() {
+  const baseY = H * 0.78;
+  // Soil
+  ctx.fillStyle = 'rgba(40,55,20,0.3)';
+  ctx.beginPath(); ctx.roundRect(50, baseY - 20, W - 100, 55, 10); ctx.fill();
+
+  const plantEmojis = ['🌱','🌿','🌾','🌻'];
+  for (let p of fieldPlants) {
+    const stage = Math.min(3, Math.floor(p.growth * 4));
+    const size = 12 + p.growth * 18;
+    ctx.font = `${size}px serif`; ctx.textAlign = 'center';
+    ctx.fillText(plantEmojis[stage], p.x, p.y);
+  }
+
+  // Growth bar
+  const barW = 140, barH = 5, bx = W - barW - 30, by = baseY + 40;
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.beginPath(); ctx.roundRect(bx, by, barW, barH, 2); ctx.fill();
+  ctx.fillStyle = '#7aff7a';
+  ctx.beginPath(); ctx.roundRect(bx, by, barW * fieldGrowth, barH, 2); ctx.fill();
+  ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillText(`丰收 ${Math.round(fieldGrowth*100)}%`, bx - 8, by + 5);
+}
+
+function drawNextUp() {
+  // Show upcoming sequence preview
+  const upcoming = notes.filter(n => !n.hit && !n.missed);
+  if (upcoming.length === 0) return;
+  const px = W - 140, py = LANE_Y - 30;
+  ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillText('接下来', px, py);
+  for (let i = 0; i < Math.min(3, upcoming.length); i++) {
+    ctx.font = '18px serif';
+    ctx.globalAlpha = 1 - i * 0.3;
+    ctx.fillText(upcoming[i].type.emoji, px + i * 28, py + 20);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawProgress(){
+  const bW=200,bH=4,bx=W/2-bW/2,by=H-18;
+  ctx.fillStyle='rgba(255,255,255,0.06)';ctx.beginPath();ctx.roundRect(bx,by,bW,bH,2);ctx.fill();
+  ctx.fillStyle='#7aff7a';ctx.beginPath();ctx.roundRect(bx,by,bW*(globalRep/TOTAL_REPS),bH,2);ctx.fill();
+}
+
+function drawFlash(){if(flashAlpha<=0)return;ctx.save();ctx.globalAlpha=flashAlpha;ctx.fillStyle=flashColor;ctx.fillRect(0,0,W,H);ctx.restore();}
+function drawBigText(){
+  if(bigTextAlpha<=0)return;
+  ctx.save();ctx.globalAlpha=Math.min(1,bigTextAlpha);
+  ctx.font='bold 24px -apple-system, sans-serif';
+  ctx.textAlign='center';ctx.fillStyle=bigTextColor;ctx.shadowColor=bigTextColor;ctx.shadowBlur=12;
+  ctx.fillText(bigText,W/2,H*0.6);ctx.restore();
+}
+
+function drawDone(){
+  ctx.save();ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.font='28px -apple-system, sans-serif';ctx.fillStyle='#fff';ctx.fillText('Session 完成',W/2,H/2-60);
+  ctx.font='bold 28px -apple-system, sans-serif';ctx.fillStyle='#ffd700';ctx.fillText(`${score} 分`,W/2,H/2-20);
+  ctx.font='16px -apple-system, sans-serif';ctx.fillStyle='#aaa';
+  ctx.fillText(`丰收度 ${Math.round(fieldGrowth*100)}%`,W/2,H/2+10);
+  const grade=score>=800?'S':score>=500?'A':score>=300?'B':'C';
+  const gc=score>=800?'#ffd700':score>=500?'#7aff7a':score>=300?'#88aaff':'#aaa';
+  ctx.font='bold 48px -apple-system, sans-serif';ctx.fillStyle=gc;ctx.fillText(grade,W/2,H/2+70);
+  ctx.font='14px -apple-system, sans-serif';ctx.fillStyle='#888';ctx.fillText('点击重玩',W/2,H/2+100);ctx.restore();
+}
+
+function render(){
+  ctx.save(); ctx.translate(shakeX, shakeY);
+  drawBG();
+  drawField();
+  drawLane();
+  drawNotes();
+  ctx.restore();
+  drawNextUp();
+  drawFlash(); drawBigText(); drawProgress();
+  for(let p of particles){ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+shakeX,p.y+shakeY,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();}
+  for(let f of feedbacks){ctx.save();ctx.globalAlpha=Math.min(1,f.alpha);ctx.font='bold 18px -apple-system, sans-serif';ctx.textAlign='center';ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);ctx.restore();}
+  if(state==='sessionDone') drawDone();
+}
+
+function loop(){ update(); ctx.clearRect(0,0,W,H); render(); requestAnimationFrame(loop); }
+
+function handleInput(){ if(state==='sessionDone'){resetGame();return;} judgeHit(); }
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();handleInput();}});
+canvas.addEventListener('click', handleInput);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
+
+function resetGame(){globalRep=0;score=0;combo=0;fieldGrowth=0;notes=[];initField();updateHUD();startNewRep();}
+
+document.getElementById('go-btn').addEventListener('click',()=>{
+  document.getElementById('start-overlay').style.display='none';
+  state = 'play'; initField(); startNewRep(); loop();
+});
+</script>
+</body>
+</html>

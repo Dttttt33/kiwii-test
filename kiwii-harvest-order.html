@@ -85,17 +85,17 @@ const CROPS = [
   {emoji:'🍠', growMult: 1.5},   // very fast, barely catches big before rot
 ];
 
-// Growth phases: 0→0.25 small, 0.25→0.55 medium, 0.55→0.8 big/perfect, 0.8→1.0 rotten, then reset
-const PHASE_SMALL = 0.25;
-const PHASE_MED = 0.55;
-const PHASE_BIG = 0.8;
+// Growth phases: small→medium→big stays long, rotten is brief
+const PHASE_SMALL = 0.2;
+const PHASE_MED = 0.45;
+const PHASE_BIG = 0.92;
 
 function getDiff(rep) {
   const t = rep / (TOTAL_REPS - 1);
   return {
     cropTypes: Math.min(2 + Math.floor(t * 2), 4),
-    orderSize: Math.min(2 + Math.floor(t * 2.5), 5), // starts at 2, not 3
-    growSpeed: 0.0010 + t * 0.0010,       // leisurely: 0.001→0.002
+    orderSize: Math.min(1 + Math.floor(t * 3), 5), // starts at 1, ramps to 5
+    growSpeed: 0.0007 + t * 0.0008,       // very slow: 0.0007→0.0015
     cursorSpeed: 1.5 + t * 0.8,
     birdChance: Math.max(0, t - 0.3) * 0.012, // birds come even later
     birdSpeed: 1.2 + t * 1.2,
@@ -105,8 +105,11 @@ function getDiff(rep) {
 // State
 let state = 'idle';
 let globalRep = 0, score = 0, combo = 0, ordersCompleted = 0;
+let orderCombo = 0; // consecutive Good+ orders
+let basket = {}; // {emoji: count} — stored crops not yet matched to order
 let slots = [];
 let order = [];
+let orderSlideIn = []; // per-item slide progress (0→1)
 let cursorX = 0, cursorDir = 1, cursorSpeed = 1.5;
 let repActive = false, struck = false, repTimer = 0;
 let birds = []; // {x, targetSlot, speed, eaten}
@@ -123,16 +126,52 @@ function generateOrder() {
   const diff = getDiff(globalRep);
   const available = CROPS.slice(0, diff.cropTypes);
   order = [];
-  let remaining = diff.orderSize;
-  while (remaining > 0) {
+  // Each order item is 1 crop, total items = orderSize
+  for (let i = 0; i < diff.orderSize; i++) {
     const crop = available[Math.floor(Math.random() * available.length)];
-    const emoji = crop.emoji;
-    const existing = order.find(o => o.crop === emoji);
-    if (existing && existing.needed < 3) { existing.needed++; }
-    else if (!existing) { order.push({ crop: emoji, needed: 1, collected: 0, perfect: 0 }); }
-    else { continue; }
-    remaining--;
+    order.push({ crop: crop.emoji, needed: 1, collected: 0, perfect: 0 });
   }
+  // Each item slides in with staggered delay
+  orderSlideIn = order.map((_, i) => -i * 0.35);
+  // Auto-fill from basket
+  for (let o of order) {
+    if (o.collected >= o.needed) continue;
+    const inBasket = basket[o.crop] || 0;
+    if (inBasket > 0) {
+      o.collected++;
+      basket[o.crop]--;
+      if (basket[o.crop] <= 0) delete basket[o.crop];
+    }
+  }
+  // Check if already complete from basket
+  if (order.every(o => o.collected >= o.needed)) {
+    completeOrder();
+  }
+}
+
+function completeOrder() {
+  ordersCompleted++;
+  const total = order.reduce((s,o) => s + o.needed, 0);
+  const perfects = order.reduce((s,o) => s + o.perfect, 0);
+  const ratio = perfects / total;
+  let grade, gradeColor, bonus;
+  if (ratio >= 0.8) { grade = 'Perfect!'; gradeColor = '#ffd700'; bonus = 60; }
+  else if (ratio >= 0.4) { grade = 'Good'; gradeColor = '#7aff7a'; bonus = 40; }
+  else { grade = 'OK'; gradeColor = '#aabbcc'; bonus = 25; }
+  // Combo for consecutive Good+
+  if (ratio >= 0.4) {
+    orderCombo++;
+    bonus += orderCombo * 10;
+  } else {
+    orderCombo = 0;
+  }
+  score += bonus;
+  flashAlpha = 0.15; flashColor = gradeColor;
+  const comboStr = orderCombo > 1 ? ` ×${orderCombo}` : '';
+  bigText = `${grade}${comboStr} +${bonus}`; bigTextColor = gradeColor; bigTextAlpha = 1.2;
+  spawnParticles(W/2, 90, gradeColor, 12);
+  orderPulse = 0.7;
+  setTimeout(() => generateOrder(), 500);
 }
 
 function initSlots() {
@@ -259,22 +298,18 @@ function strike() {
 
   if (isPerfect) {
     combo++;
-    score += pts + combo * 5;
-    flashAlpha = 0.25; flashColor = '#7aff7a';
-    spawnParticles(slot.x+SLOT_W/2, SLOT_Y+40, '#7aff7a', 16);
-    spawnParticles(slot.x+SLOT_W/2, SLOT_Y+20, '#ffd700', 8);
-    shake(4+combo);
-    slot.glow = 1.2;
-    addFeedback(`🌟 大! +${pts+combo*5}`, slot.x+SLOT_W/2, SLOT_Y-15, '#7aff7a');
+    score += pts + combo * 3;
+    spawnParticles(slot.x+SLOT_W/2, SLOT_Y+40, '#7aff7a', 8);
+    slot.glow = 0.8;
+    addFeedback(`✦ +${pts+combo*3}`, slot.x+SLOT_W/2, SLOT_Y-15, '#7aff7a');
   } else if (phase === 'medium') {
     combo = 0;
     score += pts;
-    spawnParticles(slot.x+SLOT_W/2, SLOT_Y+40, '#aacc44', 6);
-    addFeedback(`中 +${pts}`, slot.x+SLOT_W/2, SLOT_Y-15, '#aacc44');
+    addFeedback(`+${pts}`, slot.x+SLOT_W/2, SLOT_Y-15, '#aacc44');
   } else {
     combo = 0;
     score += pts;
-    addFeedback(`小 +${pts}`, slot.x+SLOT_W/2, SLOT_Y-15, '#88aa55');
+    addFeedback(`+${pts}`, slot.x+SLOT_W/2, SLOT_Y-15, '#88aa55');
   }
 
   // Check order
@@ -287,17 +322,13 @@ function strike() {
 
     // Order complete?
     if (order.every(o => o.collected >= o.needed)) {
-      ordersCompleted++;
-      const perfects = order.reduce((s,o) => s+o.perfect, 0);
-      const bonus = 50 + perfects * 15;
-      score += bonus;
-      flashAlpha = 0.4; flashColor = '#ffd700';
-      bigText = `📦 交单! +${bonus}`; bigTextColor = '#ffd700'; bigTextAlpha = 1.3;
-      spawnParticles(W/2, 90, '#ffd700', 20);
-      shake(6);
-      orderPulse = 1;
-      generateOrder(); // new order immediately
+      completeOrder();
     }
+  } else {
+    // No match — goes to basket
+    const emoji = slot.crop.emoji;
+    basket[emoji] = (basket[emoji] || 0) + 1;
+    addFeedback('🧺', slot.x+SLOT_W/2, SLOT_Y-40, '#cc9944');
   }
 
   regrow(hitSlot, 800);
@@ -372,8 +403,8 @@ function update(){
         const s=slots[b.targetSlot];
         if(!s.harvested&&!s.stolen){
           s.stolen=true;
-          addFeedback('🐦 偷走了!', s.x+SLOT_W/2, SLOT_Y-10, '#ff6644');
-          s.shakeOff=12;
+          addFeedback('🐦 偷走了', s.x+SLOT_W/2, SLOT_Y-10, '#cc8855');
+          s.shakeOff=5;
           regrow(b.targetSlot, 1000);
         }
         b.done=true;
@@ -382,6 +413,12 @@ function update(){
     b.wingPhase+=0.15;
   }
   birds=birds.filter(b=>!b.done);
+
+  // Animate order slide-in
+  for (let i = 0; i < orderSlideIn.length; i++) {
+    if (orderSlideIn[i] < 1) orderSlideIn[i] += 0.035;
+    if (orderSlideIn[i] > 1) orderSlideIn[i] = 1;
+  }
 
   if(state==='showOrder'){
     showOrderTimer--;
@@ -418,32 +455,78 @@ function drawBG(){
 }
 
 function drawOrder(){
-  const oy=88, cardW=Math.min(460,W-40), cardH=80, ox=W/2;
-  ctx.save();
-  if(orderPulse>0){ctx.shadowColor='#ffd700';ctx.shadowBlur=25*orderPulse;}
-  ctx.fillStyle='rgba(8,8,16,0.88)';
-  ctx.beginPath();ctx.roundRect(ox-cardW/2,oy-cardH/2,cardW,cardH,16);ctx.fill();
-  ctx.strokeStyle=orderPulse>0?`rgba(255,215,0,${0.3+orderPulse*0.5})`:'rgba(255,255,255,0.12)';
-  ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+  const oy=82, ox=W/2;
+  // White card per order item, each slides in from right
+  const cardItemW = 70, cardItemH = 74, gap = 10;
+  const totalW = order.length * (cardItemW + gap) - gap;
+  const startX = ox - totalW / 2;
 
-  ctx.font='bold 15px -apple-system, sans-serif';ctx.textAlign='center';
-  ctx.fillStyle='rgba(255,215,0,0.8)';ctx.fillText('📦 订单',ox,oy-22);
+  // Order combo indicator
+  if (orderCombo > 1) {
+    ctx.font='bold 13px -apple-system, sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='rgba(255,180,0,0.7)';ctx.fillText(`连续交单 ×${orderCombo}`,ox,oy-30);
+  }
 
-  const spacing=Math.min(80,(cardW-50)/order.length);
-  let startX=ox-(order.length-1)*spacing/2;
-  for(let i=0;i<order.length;i++){
-    const o=order[i],ix=startX+i*spacing,done=o.collected>=o.needed;
-    ctx.save();ctx.globalAlpha=done?0.35:1;
-    ctx.font='38px serif';ctx.textAlign='center';ctx.fillText(o.crop,ix,oy+10);
-    ctx.font='bold 16px -apple-system, sans-serif';
-    ctx.fillStyle=done?'#7aff7a':(o.collected>0?'#ffcc44':'#fff');
-    ctx.fillText(`${o.collected}/${o.needed}`,ix,oy+32);
+  for (let i = 0; i < order.length; i++) {
+    const o = order[i];
+    const done = o.collected >= o.needed;
+    // Slide animation
+    const slide = Math.max(0, Math.min(1, orderSlideIn[i] || 0));
+    const ease = 1 - Math.pow(1 - slide, 3);
+    const offsetX = (1 - ease) * 140;
+    const alpha = ease;
+    if (alpha <= 0) continue;
+
+    const cx = startX + i * (cardItemW + gap) + offsetX;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // White card background
+    ctx.fillStyle = done ? 'rgba(200,240,200,0.92)' : 'rgba(255,255,255,0.95)';
+    ctx.shadowColor = 'rgba(0,0,0,0.08)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    ctx.beginPath(); ctx.roundRect(cx, oy - cardItemH/2, cardItemW, cardItemH, 12); ctx.fill();
+    ctx.shadowBlur = 0;
+    // Border
+    ctx.strokeStyle = done ? 'rgba(100,200,100,0.5)' : 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 1.5; ctx.stroke();
+    // Checkmark if done
+    if (done) {
+      ctx.font = '16px -apple-system, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#4a9a4a'; ctx.fillText('✓', cx + cardItemW/2, oy - cardItemH/2 + 14);
+    }
+    // Emoji
+    ctx.font = '32px serif'; ctx.textAlign = 'center';
+    ctx.globalAlpha = alpha * (done ? 0.4 : 1);
+    ctx.fillText(o.crop, cx + cardItemW/2, oy + 8);
+    // Count
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 14px -apple-system, sans-serif';
+    ctx.fillStyle = done ? '#4a9a4a' : (o.collected > 0 ? '#cc8800' : '#555');
+    ctx.fillText(`${o.collected}/${o.needed}`, cx + cardItemW/2, oy + 28);
     ctx.restore();
   }
 
-  const repsLeft=REPS_PER_MOVE-(globalRep%REPS_PER_MOVE);
-  ctx.font='13px -apple-system, sans-serif';ctx.textAlign='center';
-  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.fillText(`剩 ${repsLeft} 下`,ox,oy+48);
+  const repsLeft = REPS_PER_MOVE - (globalRep % REPS_PER_MOVE);
+  ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillText(`剩 ${repsLeft} 下`, ox, oy + 48);
+
+  // Draw basket — bottom-left corner of canvas
+  const bItems = Object.entries(basket);
+  if (bItems.length > 0) {
+    const bx = 24, by2 = H - 60;
+    ctx.fillStyle='rgba(20,15,8,0.75)';
+    ctx.beginPath();ctx.roundRect(bx-8, by2-18, bItems.length*44+40, 56, 10);ctx.fill();
+    ctx.strokeStyle='rgba(180,140,60,0.4)';ctx.lineWidth=1;ctx.stroke();
+    ctx.font='14px -apple-system, sans-serif';ctx.textAlign='left';
+    ctx.fillStyle='rgba(220,180,80,0.9)';ctx.fillText('🧺 筐',bx,by2);
+    for (let i = 0; i < bItems.length; i++) {
+      const [emoji, count] = bItems[i];
+      const ix = bx + 38 + i * 44;
+      ctx.font='24px serif';ctx.textAlign='center';ctx.fillText(emoji, ix, by2 + 22);
+      ctx.font='bold 12px -apple-system, sans-serif';ctx.fillStyle='#fff';
+      ctx.fillText(`×${count}`, ix, by2 + 36);
+      ctx.fillStyle='rgba(220,180,80,0.9)';
+    }
+  }
 }
 
 function drawSlot(s,i){
@@ -578,7 +661,7 @@ document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();
 canvas.addEventListener('click',handleInput);
 canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
 
-function resetGame(){globalRep=0;score=0;combo=0;ordersCompleted=0;updateHUD();startNewRound();}
+function resetGame(){globalRep=0;score=0;combo=0;ordersCompleted=0;orderCombo=0;basket={};updateHUD();startNewRound();}
 
 document.getElementById('go-btn').addEventListener('click',()=>{
   document.getElementById('start-overlay').style.display='none';

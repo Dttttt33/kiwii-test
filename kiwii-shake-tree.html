@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii Power — 摇果树</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a2a12;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  overflow: hidden; user-select: none;
+}
+canvas { border-radius: 12px; cursor: pointer; }
+#hud {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 12px; z-index: 10;
+}
+.hi {
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 7px 16px; border-radius: 14px; font-size: 15px; color: #ccc;
+}
+.hi span { font-weight: 600; }
+.hi .g { color: #7aff7a; }
+.hi .y { color: #ffd700; }
+#start-overlay {
+  position: fixed; inset: 0; background: rgba(8,12,8,0.96);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; gap: 16px;
+}
+#start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
+#start-overlay p { color: #aaa; font-size: 17px; max-width: 400px; text-align: center; line-height: 2.2; }
+#start-overlay strong { color: #ffd700; }
+#go-btn {
+  margin-top: 14px; padding: 14px 40px; font-size: 16px;
+  background: #8a6a2a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
+}
+#go-btn:active { transform: scale(0.95); }
+#btm { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 13px; z-index: 10; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay">
+  <h1>🌳 摇果树</h1>
+  <p>
+    光标扫过果树<br>
+    <strong>空格 / 点击 = 摇！</strong><br><br>
+    果子掉下来就是分<br>
+    连续摇出同色 = 🎰 大奖
+  </p>
+  <button id="go-btn">开始摇</button>
+</div>
+
+<div id="hud">
+  <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
+  <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
+  <div class="hi">分 <span class="y" id="h-sc">0</span></div>
+</div>
+<div id="btm">空格/点击 = 摇光标下的树</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = Math.min(960, window.innerWidth - 20);
+const H = Math.min(640, window.innerHeight - 20);
+canvas.width = W; canvas.height = H;
+
+const TREE_COUNT = 5;
+const TREE_W = 120;
+const TREE_GAP = (W - TREE_COUNT * TREE_W) / (TREE_COUNT + 1);
+const TREE_Y = H * 0.25;
+const GROUND_Y = H * 0.72;
+const TOTAL_MOVES = 4, REPS_PER_MOVE = 10;
+const TOTAL_REPS = TOTAL_MOVES * REPS_PER_MOVE;
+
+const FRUITS = [
+  {emoji:'🍎', value: 10, color:'#ff6655', weight: 35},
+  {emoji:'🍊', value: 15, color:'#ff9933', weight: 28},
+  {emoji:'🍇', value: 25, color:'#aa55dd', weight: 20},
+  {emoji:'🍋', value: 40, color:'#eedd22', weight: 12},
+  {emoji:'🌟', value: 150, color:'#ffd700', weight: 5},
+];
+
+function getDiff(rep) {
+  const t = rep / (TOTAL_REPS - 1);
+  return {
+    fruitsPerTree: Math.round(3 + t * 2),
+    cursorSpeed: 1.3 + t * 0.8,
+    goldenChance: 0.03 + t * 0.07,
+    dropCount: Math.min(1 + Math.floor(t * 2), 4),
+  };
+}
+
+function pickFruit(goldenChance) {
+  if (Math.random() < goldenChance) return FRUITS[4];
+  const pool = FRUITS.slice(0, 4);
+  const totalW = pool.reduce((s,f) => s + f.weight, 0);
+  let r = Math.random() * totalW;
+  for (let f of pool) { r -= f.weight; if (r <= 0) return f; }
+  return pool[0];
+}
+
+// State
+let state = 'idle';
+let globalRep = 0, score = 0, displayScore = 0;
+let trees = [];
+let fallingFruits = []; // {x, y, vy, vx, fruit, alpha, landed}
+let cursorX = 0, cursorDir = 1, cursorSpeed = 1.5;
+let repActive = false, struck = false, repTimer = 0;
+let particles = [], feedbacks = [], scorePops = [];
+let shakeX = 0, shakeY = 0;
+let flashAlpha = 0, flashColor = '';
+let bigText = '', bigTextAlpha = 0, bigTextColor = '';
+let reelHistory = []; // last fruits for slot matching
+let reelDisplay = ['','','']; // shown in the "reel" UI
+
+function treeLeftX(i) { return TREE_GAP + i * (TREE_W + TREE_GAP); }
+
+function initTrees() {
+  const diff = getDiff(globalRep);
+  trees = [];
+  for (let i = 0; i < TREE_COUNT; i++) {
+    const fruits = [];
+    for (let f = 0; f < diff.fruitsPerTree; f++) {
+      fruits.push({
+        fruit: pickFruit(diff.goldenChance),
+        ox: (Math.random() - 0.5) * 55,
+        oy: -15 - Math.random() * 55,
+      });
+    }
+    trees.push({ x: treeLeftX(i), fruits, shakeAmt: 0, shakePhase: 0, regrow: 0 });
+  }
+}
+
+function startNewRound() {
+  initTrees();
+  fallingFruits = [];
+  const diff = getDiff(globalRep);
+  cursorX = 30; cursorDir = 1;
+  cursorSpeed = diff.cursorSpeed;
+  struck = false; repActive = false;
+  state = 'play';
+  startRep();
+  updateHUD();
+}
+
+function startRep() { repActive = true; struck = false; repTimer = 0; }
+
+function endRep() {
+  repActive = false;
+  globalRep++;
+  updateHUD();
+  if (globalRep >= TOTAL_REPS) { state = 'sessionDone'; return; }
+  setTimeout(() => startRep(), 280);
+}
+
+function shakeTree(idx) {
+  const tree = trees[idx];
+  if (tree.fruits.length === 0) {
+    addFeedback('空了', tree.x + TREE_W/2, TREE_Y + 50, '#777');
+    return false;
+  }
+
+  tree.shakeAmt = 14;
+  tree.shakePhase = 0;
+
+  const diff = getDiff(globalRep);
+  const dropCount = Math.min(tree.fruits.length, diff.dropCount);
+  const dropped = [];
+
+  for (let d = 0; d < dropCount; d++) {
+    const fi = Math.floor(Math.random() * tree.fruits.length);
+    const f = tree.fruits.splice(fi, 1)[0];
+    dropped.push(f.fruit);
+
+    const startX = tree.x + TREE_W/2 + f.ox;
+    const startY = TREE_Y + 55 + f.oy;
+    fallingFruits.push({
+      x: startX, y: startY,
+      vx: (Math.random() - 0.5) * 4,
+      vy: 0,
+      fruit: f.fruit,
+      alpha: 1,
+      landed: false,
+      bounce: 0,
+    });
+  }
+
+  // Reel / slot matching
+  for (let f of dropped) {
+    reelHistory.push(f.emoji);
+    if (reelHistory.length > 20) reelHistory.shift();
+  }
+  // Update reel display (last 3)
+  const last3 = reelHistory.slice(-3);
+  reelDisplay = [last3[0]||'', last3[1]||'', last3[2]||''];
+  checkSlotMatch();
+
+  // Regrow if empty
+  if (tree.fruits.length === 0) {
+    tree.regrow = 120 + Math.floor(Math.random() * 60);
+  }
+
+  return true;
+}
+
+function checkSlotMatch() {
+  if (reelHistory.length < 3) return;
+  const last3 = reelHistory.slice(-3);
+  if (last3[0] === last3[1] && last3[1] === last3[2]) {
+    const fruit = FRUITS.find(f => f.emoji === last3[0]);
+    const mult = fruit.emoji === '🌟' ? 20 : (fruit.value >= 25 ? 8 : 5);
+    const bonus = fruit.value * mult;
+    score += bonus;
+    flashAlpha = 0.25; flashColor = fruit.color;
+    bigText = `🎰 三连 ${fruit.emoji}${fruit.emoji}${fruit.emoji}  +${bonus}`;
+    bigTextColor = fruit.color; bigTextAlpha = 1.8;
+    spawnParticles(W/2, H*0.35, fruit.color, 30);
+    spawnParticles(W/2 - 60, H*0.35, '#ffd700', 15);
+    spawnParticles(W/2 + 60, H*0.35, '#ffd700', 15);
+    shake(10);
+    reelHistory = [];
+  }
+}
+
+function strike() {
+  if (state !== 'play' || !repActive || struck) return;
+  struck = true;
+
+  let hitTree = -1;
+  for (let i = 0; i < TREE_COUNT; i++) {
+    const tx = trees[i].x;
+    if (cursorX >= tx - 10 && cursorX <= tx + TREE_W + 10) { hitTree = i; break; }
+  }
+  if (hitTree === -1) { endRep(); return; }
+
+  shakeTree(hitTree);
+  shake(3);
+  endRep();
+}
+
+// Utils
+function spawnParticles(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,life:1,decay:0.01+Math.random()*0.008,size:3+Math.random()*5,color});}}
+function shake(n){shakeX+=(Math.random()-0.5)*n;shakeY+=(Math.random()-0.5)*n*0.5;}
+function addFeedback(t,x,y,c){feedbacks.push({text:t,x,y,alpha:1.3,vy:-1.2,color:c});}
+function addScorePop(val,x,y,color){scorePops.push({text:`+${val}`,x,y,alpha:1.5,vy:-2.5,scale:1,color});}
+function updateHUD(){
+  const moveNum=Math.min(Math.floor(globalRep/REPS_PER_MOVE)+1,TOTAL_MOVES);
+  const repInMove=globalRep%REPS_PER_MOVE;
+  document.getElementById('h-mv').textContent=`${moveNum}/${TOTAL_MOVES}`;
+  document.getElementById('h-rp').textContent=`${repInMove}/${REPS_PER_MOVE}`;
+  document.getElementById('h-sc').textContent=Math.round(displayScore);
+}
+
+// Update
+function update(){
+  shakeX *= 0.85; shakeY *= 0.85;
+  if (flashAlpha > 0) flashAlpha -= 0.012;
+  if (bigTextAlpha > 0) bigTextAlpha -= 0.015;
+
+  // Score rolls up
+  if (displayScore < score) {
+    const gap = score - displayScore;
+    displayScore += Math.max(1, gap * 0.1);
+    if (displayScore > score) displayScore = score;
+    updateHUD();
+  }
+
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.decay;});
+  particles=particles.filter(p=>p.life>0);
+  feedbacks.forEach(f=>{f.y+=f.vy;f.alpha-=0.012;});
+  feedbacks=feedbacks.filter(f=>f.alpha>0);
+  scorePops.forEach(s=>{s.y+=s.vy;s.vy*=0.96;s.alpha-=0.018;s.scale+=0.01;});
+  scorePops=scorePops.filter(s=>s.alpha>0);
+
+  // Trees
+  for (let t of trees) {
+    if (t.shakeAmt > 0) {
+      t.shakePhase += 0.5;
+      t.shakeAmt *= 0.88;
+      if (t.shakeAmt < 0.2) t.shakeAmt = 0;
+    }
+    if (t.fruits.length === 0 && t.regrow > 0) {
+      t.regrow--;
+      if (t.regrow <= 0) {
+        const diff = getDiff(globalRep);
+        for (let f = 0; f < diff.fruitsPerTree; f++) {
+          t.fruits.push({
+            fruit: pickFruit(diff.goldenChance),
+            ox: (Math.random() - 0.5) * 55,
+            oy: -15 - Math.random() * 55,
+          });
+        }
+      }
+    }
+  }
+
+  // Falling fruits
+  for (let ff of fallingFruits) {
+    if (ff.landed) { ff.alpha -= 0.015; continue; }
+    ff.vy += 0.4;
+    ff.x += ff.vx;
+    ff.y += ff.vy;
+    ff.vx *= 0.99;
+
+    // Hit ground
+    if (ff.y >= GROUND_Y) {
+      ff.y = GROUND_Y;
+      ff.landed = true;
+      // Score!
+      score += ff.fruit.value;
+      addScorePop(ff.fruit.value, ff.x, GROUND_Y - 20, ff.fruit.color);
+      spawnParticles(ff.x, GROUND_Y, ff.fruit.color, 4);
+      if (ff.fruit.value >= 100) {
+        spawnParticles(ff.x, GROUND_Y - 10, '#ffd700', 10);
+        shake(4);
+        addFeedback(`🌟 ${ff.fruit.value}!`, ff.x, GROUND_Y - 50, '#ffd700');
+      }
+    }
+  }
+  fallingFruits = fallingFruits.filter(ff => ff.alpha > 0);
+
+  // Cursor
+  if (state === 'play' && repActive) {
+    cursorX += cursorSpeed * cursorDir;
+    if (cursorX > W - 25) cursorDir = -1;
+    if (cursorX < 25) cursorDir = 1;
+    repTimer++;
+    if (repTimer > (W - 50) / cursorSpeed) endRep();
+  }
+}
+
+// Draw
+function drawBG(){
+  const g = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+  g.addColorStop(0, '#1e3a28'); g.addColorStop(1, '#2a4a2a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H * 0.55);
+  // Ground
+  const gg = ctx.createLinearGradient(0, H*0.55, 0, H);
+  gg.addColorStop(0, '#3a5520'); gg.addColorStop(0.5, '#2a4018'); gg.addColorStop(1, '#1a2a0a');
+  ctx.fillStyle = gg; ctx.fillRect(0, H*0.55, W, H*0.45);
+  // Ground line
+  ctx.strokeStyle = 'rgba(100,160,60,0.3)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, GROUND_Y + 5); ctx.lineTo(W, GROUND_Y + 5); ctx.stroke();
+}
+
+function drawTree(t, i) {
+  const cx = t.x + TREE_W/2;
+  const baseY = GROUND_Y;
+  const off = t.shakeAmt * Math.sin(t.shakePhase);
+
+  ctx.save();
+
+  // Trunk
+  ctx.fillStyle = '#6a4420';
+  ctx.beginPath();
+  ctx.moveTo(cx - 12 + off*0.3, baseY);
+  ctx.lineTo(cx - 8 + off*0.6, baseY - 90);
+  ctx.lineTo(cx + 8 + off*0.6, baseY - 90);
+  ctx.lineTo(cx + 12 + off*0.3, baseY);
+  ctx.fill();
+
+  // Branches
+  ctx.fillStyle = '#5a3a18';
+  ctx.fillRect(cx - 30 + off*0.7, baseY - 85, 8, -15);
+  ctx.fillRect(cx + 22 + off*0.7, baseY - 80, 8, -12);
+
+  // Canopy layers
+  const canopyY = baseY - 130;
+  ctx.fillStyle = '#2a7a2a';
+  ctx.beginPath(); ctx.ellipse(cx + off, canopyY + 20, 50, 40, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#3a9a3a';
+  ctx.beginPath(); ctx.ellipse(cx - 15 + off, canopyY, 35, 30, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + 18 + off, canopyY + 5, 30, 28, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#4aaa4a';
+  ctx.beginPath(); ctx.ellipse(cx + off, canopyY - 10, 22, 20, 0, 0, Math.PI*2); ctx.fill();
+
+  // Fruits on tree
+  for (let f of t.fruits) {
+    const fx = cx + f.ox + off * 0.8;
+    const fy = canopyY + 25 + f.oy;
+    ctx.font = '22px serif'; ctx.textAlign = 'center';
+    ctx.fillText(f.fruit.emoji, fx, fy);
+  }
+
+  ctx.restore();
+
+  // Count badge
+  if (t.fruits.length > 0) {
+    ctx.font = 'bold 13px -apple-system, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText(`${t.fruits.length}`, cx, baseY + 16);
+  } else if (t.regrow > 0) {
+    const pct = 1 - t.regrow / 180;
+    ctx.fillStyle = 'rgba(100,200,100,0.3)';
+    ctx.fillRect(cx - 20, baseY + 10, 40 * pct, 4);
+  }
+}
+
+function drawFallingFruits() {
+  for (let ff of fallingFruits) {
+    ctx.save(); ctx.globalAlpha = ff.alpha;
+    const size = ff.landed ? 18 : 24;
+    ctx.font = `${size}px serif`; ctx.textAlign = 'center';
+    ctx.fillText(ff.fruit.emoji, ff.x, ff.y);
+    ctx.restore();
+  }
+}
+
+function drawCursor(){
+  if (state !== 'play' || !repActive) return;
+  const y1 = TREE_Y - 10, y2 = GROUND_Y + 10;
+  const bg = ctx.createLinearGradient(cursorX, y1, cursorX, y2);
+  bg.addColorStop(0, 'rgba(255,210,60,0)');
+  bg.addColorStop(0.15, 'rgba(255,210,60,0.2)');
+  bg.addColorStop(0.85, 'rgba(255,210,60,0.2)');
+  bg.addColorStop(1, 'rgba(255,210,60,0)');
+  ctx.fillStyle = bg; ctx.fillRect(cursorX - 3, y1, 6, y2 - y1);
+  // Arrow
+  ctx.fillStyle = '#ffcc33';
+  ctx.beginPath(); ctx.moveTo(cursorX, y1 + 10); ctx.lineTo(cursorX - 8, y1); ctx.lineTo(cursorX + 8, y1); ctx.closePath(); ctx.fill();
+  // Dot
+  ctx.save(); ctx.shadowColor = '#ffcc33'; ctx.shadowBlur = 8;
+  ctx.fillStyle = '#ffcc33'; ctx.beginPath(); ctx.arc(cursorX, y1 - 3, 3, 0, Math.PI*2); ctx.fill(); ctx.restore();
+
+  // Highlight which tree cursor is over
+  for (let i = 0; i < TREE_COUNT; i++) {
+    const tx = trees[i].x;
+    if (cursorX >= tx - 10 && cursorX <= tx + TREE_W + 10) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,210,60,0.25)'; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.roundRect(tx - 5, TREE_Y - 10, TREE_W + 10, GROUND_Y - TREE_Y + 20, 12); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+      break;
+    }
+  }
+}
+
+function drawReel() {
+  // Slot reel display — top right
+  const rx = W - 130, ry = 60;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath(); ctx.roundRect(rx, ry, 115, 42, 10); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,200,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.font = '10px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,200,0,0.6)'; ctx.fillText('🎰 连线', rx + 57, ry + 12);
+  for (let i = 0; i < 3; i++) {
+    const emoji = reelDisplay[i] || '·';
+    ctx.font = '22px serif'; ctx.textAlign = 'center';
+    ctx.globalAlpha = reelDisplay[i] ? 1 : 0.2;
+    ctx.fillText(emoji, rx + 20 + i * 38, ry + 34);
+    ctx.globalAlpha = 1;
+  }
+  // Separators
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(rx+38, ry+18); ctx.lineTo(rx+38, ry+40); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx+76, ry+18); ctx.lineTo(rx+76, ry+40); ctx.stroke();
+}
+
+function drawScorePops() {
+  for (let s of scorePops) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, s.alpha);
+    ctx.font = `bold ${16 * s.scale}px -apple-system, sans-serif`;
+    ctx.textAlign = 'center'; ctx.fillStyle = s.color;
+    ctx.shadowColor = s.color; ctx.shadowBlur = 6;
+    ctx.fillText(s.text, s.x, s.y);
+    ctx.restore();
+  }
+}
+
+function drawProgress(){
+  const bW=200,bH=4,bx=W/2-bW/2,by=H-18;
+  ctx.fillStyle='rgba(255,255,255,0.06)';ctx.beginPath();ctx.roundRect(bx,by,bW,bH,2);ctx.fill();
+  ctx.fillStyle='#ffcc33';ctx.beginPath();ctx.roundRect(bx,by,bW*(globalRep/TOTAL_REPS),bH,2);ctx.fill();
+}
+
+function drawFlash(){if(flashAlpha<=0)return;ctx.save();ctx.globalAlpha=flashAlpha;ctx.fillStyle=flashColor;ctx.fillRect(0,0,W,H);ctx.restore();}
+function drawBigText(){
+  if(bigTextAlpha<=0)return;
+  ctx.save();ctx.globalAlpha=Math.min(1,bigTextAlpha);
+  const size = 26 + (1.8 - Math.min(1.8, bigTextAlpha)) * 5;
+  ctx.font=`bold ${size}px -apple-system, sans-serif`;
+  ctx.textAlign='center';ctx.fillStyle=bigTextColor;ctx.shadowColor=bigTextColor;ctx.shadowBlur=18;
+  ctx.fillText(bigText, W/2, H*0.48);ctx.restore();
+}
+
+function drawDone(){
+  ctx.save();ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.font='28px -apple-system, sans-serif';ctx.fillStyle='#fff';ctx.fillText('Session 完成',W/2,H/2-55);
+  ctx.font='bold 32px -apple-system, sans-serif';ctx.fillStyle='#ffd700';ctx.fillText(`${Math.round(score)} 分`,W/2,H/2-5);
+  const grade=score>=1200?'S':score>=700?'A':score>=400?'B':'C';
+  const gc=score>=1200?'#ffd700':score>=700?'#7aff7a':score>=400?'#88aaff':'#aaa';
+  ctx.font='bold 48px -apple-system, sans-serif';ctx.fillStyle=gc;ctx.fillText(grade,W/2,H/2+60);
+  ctx.font='14px -apple-system, sans-serif';ctx.fillStyle='#888';ctx.fillText('点击重玩',W/2,H/2+95);ctx.restore();
+}
+
+function render(){
+  ctx.save(); ctx.translate(shakeX, shakeY);
+  drawBG();
+  drawFallingFruits();
+  for (let i = 0; i < trees.length; i++) drawTree(trees[i], i);
+  drawCursor();
+  ctx.restore();
+  drawReel();
+  drawScorePops();
+  drawFlash(); drawBigText(); drawProgress();
+  for(let p of particles){ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+shakeX,p.y+shakeY,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();}
+  for(let f of feedbacks){ctx.save();ctx.globalAlpha=Math.min(1,f.alpha);ctx.font='bold 16px -apple-system, sans-serif';ctx.textAlign='center';ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);ctx.restore();}
+  if(state==='sessionDone') drawDone();
+}
+
+function loop(){ update(); ctx.clearRect(0,0,W,H); render(); requestAnimationFrame(loop); }
+
+function handleInput(){ if(state==='sessionDone'){resetGame();return;} strike(); }
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();handleInput();}});
+canvas.addEventListener('click', handleInput);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
+
+function resetGame(){globalRep=0;score=0;displayScore=0;reelHistory=[];reelDisplay=['','',''];updateHUD();startNewRound();}
+
+document.getElementById('go-btn').addEventListener('click',()=>{
+  document.getElementById('start-overlay').style.display='none';
+  startNewRound(); loop();
+});
+</script>
+</body>
+</html>
