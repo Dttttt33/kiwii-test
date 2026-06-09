@@ -321,11 +321,11 @@ function update() {
   });
 
   for (const net of nets) {
-    if (!net.active && !net.hit) { net.life--; continue; }
-    if (net.active) { net.x += net.vx; net.y += net.vy; net.life--; }
+    if (net.active) { net.x += net.vx; net.y += net.vy; }
+    net.life--;
     if (net.life <= 0) net.active = false;
   }
-  nets = nets.filter(n => n.life > -20);
+  nets = nets.filter(n => n.life > -30);
 
   checkNetCollisions();
 
@@ -486,35 +486,40 @@ function drawCannon() {
 
 function drawNets() {
   for (const net of nets) {
-    if (net.life <= -20) continue;
+    if (net.life <= -30) continue;
     ctx.save();
-    const alpha = net.active ? 1 : Math.max(0, 1 + net.life / 20);
-    ctx.globalAlpha = alpha;
     ctx.translate(net.x, net.y);
 
     if (net.hit) {
-      ctx.fillStyle = '#ffd700';
-      ctx.shadowColor = '#ffd700';
-      ctx.shadowBlur = 15;
-      ctx.beginPath();
-      ctx.arc(0, 0, 20 - net.life * 0.5, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      // Net mesh
+      const age = 90 - net.life;
+      const r = Math.min(35, 10 + age * 1.5);
+      const a = Math.max(0, 1 - age / 25);
+      if (a > 0) {
+        ctx.globalAlpha = a;
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (net.active) {
+      ctx.globalAlpha = 1;
       ctx.strokeStyle = 'rgba(77,201,246,0.8)';
       ctx.lineWidth = 1.5;
+      const nr = net.radius * 0.6;
       ctx.beginPath();
-      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.arc(0, 0, nr, 0, Math.PI * 2);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(-12, -12); ctx.lineTo(12, 12);
-      ctx.moveTo(12, -12); ctx.lineTo(-12, 12);
-      ctx.moveTo(0, -16); ctx.lineTo(0, 16);
-      ctx.moveTo(-16, 0); ctx.lineTo(16, 0);
+      ctx.moveTo(-nr*0.7, -nr*0.7); ctx.lineTo(nr*0.7, nr*0.7);
+      ctx.moveTo(nr*0.7, -nr*0.7); ctx.lineTo(-nr*0.7, nr*0.7);
+      ctx.moveTo(0, -nr); ctx.lineTo(0, nr);
+      ctx.moveTo(-nr, 0); ctx.lineTo(nr, 0);
       ctx.stroke();
       ctx.fillStyle = 'rgba(77,201,246,0.1)';
       ctx.beginPath();
-      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.arc(0, 0, nr, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
