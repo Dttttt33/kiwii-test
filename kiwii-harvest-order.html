@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwii Power — 抢收交单</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0f1a0f;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  overflow: hidden; user-select: none;
+}
+canvas { border-radius: 12px; cursor: pointer; }
+#hud {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 12px; z-index: 10;
+}
+.hi {
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 7px 16px; border-radius: 14px; font-size: 15px; color: #ccc;
+}
+.hi span { font-weight: 600; }
+.hi .g { color: #7aff7a; }
+.hi .y { color: #ffd700; }
+#start-overlay {
+  position: fixed; inset: 0; background: rgba(8,12,8,0.96);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; gap: 16px;
+}
+#start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
+#start-overlay p { color: #aaa; font-size: 17px; max-width: 440px; text-align: center; line-height: 2.1; }
+#start-overlay strong { color: #7aff7a; }
+#go-btn {
+  margin-top: 14px; padding: 14px 40px; font-size: 16px;
+  background: #3a8a3a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
+}
+#go-btn:active { transform: scale(0.95); }
+#btm { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 13px; z-index: 10; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay">
+  <h1>抢收交单</h1>
+  <p>
+    果子在长大：小 → 中 → <strong>大(完美)</strong> → 烂掉<br>
+    飞鸟会来偷！在它叼走之前收获<br><br>
+    凑齐上方订单 → 交单得大分<br><br>
+    <strong>空格 / 点击 = 收获</strong>
+  </p>
+  <button id="go-btn">开始</button>
+</div>
+
+<div id="hud">
+  <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
+  <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
+  <div class="hi">分 <span class="y" id="h-sc">0</span></div>
+</div>
+<div id="btm">空格/点击 = 收获光标位置的果子</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = Math.min(960, window.innerWidth - 20);
+const H = Math.min(620, window.innerHeight - 20);
+canvas.width = W; canvas.height = H;
+
+const SLOT_COUNT = 5;
+const SLOT_W = 105, SLOT_H = 150;
+const SLOT_Y = H * 0.42;
+const SLOT_GAP = (W - SLOT_COUNT * SLOT_W) / (SLOT_COUNT + 1);
+const TOTAL_MOVES = 4, REPS_PER_MOVE = 10;
+const TOTAL_REPS = TOTAL_MOVES * REPS_PER_MOVE;
+// Each crop has different growth patterns: growMult affects how long it stays in each phase
+const CROPS = [
+  {emoji:'🥕', growMult: 1.0},   // normal
+  {emoji:'🎃', growMult: 0.7},   // slow grower, stays big longer
+  {emoji:'🌽', growMult: 1.3},   // fast, short big window
+  {emoji:'🍇', growMult: 0.8},   // medium-slow
+  {emoji:'🍠', growMult: 1.5},   // very fast, barely catches big before rot
+];
+
+// Growth phases: 0→0.25 small, 0.25→0.55 medium, 0.55→0.8 big/perfect, 0.8→1.0 rotten, then reset
+const PHASE_SMALL = 0.25;
+const PHASE_MED = 0.55;
+const PHASE_BIG = 0.8;
+
+function getDiff(rep) {
+  const t = rep / (TOTAL_REPS - 1);
+  return {
+    cropTypes: Math.min(2 + Math.floor(t * 2), 4),
+    orderSize: Math.min(2 + Math.floor(t * 2.5), 5), // starts at 2, not 3
+    growSpeed: 0.0010 + t * 0.0010,       // leisurely: 0.001→0.002
+    cursorSpeed: 1.5 + t * 0.8,
+    birdChance: Math.max(0, t - 0.3) * 0.012, // birds come even later
+    birdSpeed: 1.2 + t * 1.2,
+  };
+}
+
+// State
+let state = 'idle';
+let globalRep = 0, score = 0, combo = 0, ordersCompleted = 0;
+let slots = [];
+let order = [];
+let cursorX = 0, cursorDir = 1, cursorSpeed = 1.5;
+let repActive = false, struck = false, repTimer = 0;
+let birds = []; // {x, targetSlot, speed, eaten}
+let particles = [], feedbacks = [];
+let shakeX = 0, shakeY = 0;
+let flashAlpha = 0, flashColor = '';
+let bigText = '', bigTextAlpha = 0, bigTextColor = '';
+let orderPulse = 0;
+let showOrderTimer = 0;
+
+function slotLeftX(i) { return SLOT_GAP + i * (SLOT_W + SLOT_GAP); }
+
+function generateOrder() {
+  const diff = getDiff(globalRep);
+  const available = CROPS.slice(0, diff.cropTypes);
+  order = [];
+  let remaining = diff.orderSize;
+  while (remaining > 0) {
+    const crop = available[Math.floor(Math.random() * available.length)];
+    const emoji = crop.emoji;
+    const existing = order.find(o => o.crop === emoji);
+    if (existing && existing.needed < 3) { existing.needed++; }
+    else if (!existing) { order.push({ crop: emoji, needed: 1, collected: 0, perfect: 0 }); }
+    else { continue; }
+    remaining--;
+  }
+}
+
+function initSlots() {
+  const diff = getDiff(globalRep);
+  const available = CROPS.slice(0, diff.cropTypes);
+  slots = [];
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    const c = available[Math.floor(Math.random() * available.length)];
+    slots.push({
+      x: slotLeftX(i),
+      crop: c,
+      growth: i * 0.12,
+      harvested: false,
+      stolen: false,
+      glow: 0,
+      shakeOff: 0,
+    });
+  }
+}
+
+function startNewRound() {
+  initSlots();
+  generateOrder();
+  birds = [];
+  const diff = getDiff(globalRep);
+  cursorX = 30; cursorDir = 1;
+  cursorSpeed = diff.cursorSpeed;
+  struck = false; repActive = false;
+  showOrderTimer = 80;
+  state = 'showOrder';
+  updateHUD();
+}
+
+function startRep() { repActive = true; struck = false; repTimer = 0; }
+
+function endRep(harvested) {
+  repActive = false;
+  globalRep++;
+  updateHUD();
+
+  if (globalRep >= TOTAL_REPS) { state = 'sessionDone'; return; }
+
+  const repInMove = globalRep % REPS_PER_MOVE;
+  if (repInMove === 0 && globalRep > 0) {
+    // End of move
+    const filled = order.reduce((s,o) => s + Math.min(o.collected, o.needed), 0);
+    const total = order.reduce((s,o) => s + o.needed, 0);
+    if (filled < total) {
+      bigText = '动作结束'; bigTextColor = '#aaa'; bigTextAlpha = 0.8;
+    }
+    state = 'moveDone';
+    setTimeout(() => startNewRound(), 700);
+  } else {
+    setTimeout(() => startRep(), 280);
+  }
+}
+
+function getPhase(growth) {
+  if (growth < PHASE_SMALL) return 'small';
+  if (growth < PHASE_MED) return 'medium';
+  if (growth < PHASE_BIG) return 'big';
+  return 'rotten';
+}
+
+function getPhaseScore(phase) {
+  if (phase === 'big') return 20;
+  if (phase === 'medium') return 10;
+  if (phase === 'small') return 4;
+  return 0;
+}
+
+function trySpawnBird() {
+  const diff = getDiff(globalRep);
+  if (Math.random() < diff.birdChance) {
+    // Pick a slot that has a ripe or big crop
+    const candidates = slots.filter((s,i) => !s.harvested && !s.stolen && s.growth >= PHASE_SMALL);
+    if (candidates.length === 0) return;
+    const target = candidates[Math.floor(Math.random() * candidates.length)];
+    const targetIdx = slots.indexOf(target);
+    const fromRight = Math.random() > 0.5;
+    birds.push({
+      x: fromRight ? W + 30 : -30,
+      y: SLOT_Y - 20 + Math.random() * 30,
+      targetSlot: targetIdx,
+      targetX: target.x + SLOT_W/2,
+      speed: diff.birdSpeed,
+      dir: fromRight ? -1 : 1,
+      eating: false,
+      eatTimer: 0,
+      done: false,
+      wingPhase: Math.random() * Math.PI * 2,
+    });
+  }
+}
+
+function strike() {
+  if (state !== 'play' || !repActive || struck) return;
+  struck = true;
+
+  let hitSlot = -1;
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    if (cursorX >= slots[i].x - 12 && cursorX <= slots[i].x + SLOT_W + 12) { hitSlot = i; break; }
+  }
+  if (hitSlot === -1) return;
+
+  const slot = slots[hitSlot];
+  if (slot.harvested || slot.stolen) {
+    addFeedback('空的', slot.x+SLOT_W/2, SLOT_Y-10, '#666');
+    return;
+  }
+
+  const phase = getPhase(slot.growth);
+  if (phase === 'rotten') {
+    addFeedback('烂了...', slot.x+SLOT_W/2, SLOT_Y-10, '#885533');
+    slot.harvested = true;
+    regrow(hitSlot, 600);
+    endRep(true);
+    return;
+  }
+
+  const pts = getPhaseScore(phase);
+  const isPerfect = phase === 'big';
+  slot.harvested = true;
+
+  if (isPerfect) {
+    combo++;
+    score += pts + combo * 5;
+    flashAlpha = 0.25; flashColor = '#7aff7a';
+    spawnParticles(slot.x+SLOT_W/2, SLOT_Y+40, '#7aff7a', 16);
+    spawnParticles(slot.x+SLOT_W/2, SLOT_Y+20, '#ffd700', 8);
+    shake(4+combo);
+    slot.glow = 1.2;
+    addFeedback(`🌟 大! +${pts+combo*5}`, slot.x+SLOT_W/2, SLOT_Y-15, '#7aff7a');
+  } else if (phase === 'medium') {
+    combo = 0;
+    score += pts;
+    spawnParticles(slot.x+SLOT_W/2, SLOT_Y+40, '#aacc44', 6);
+    addFeedback(`中 +${pts}`, slot.x+SLOT_W/2, SLOT_Y-15, '#aacc44');
+  } else {
+    combo = 0;
+    score += pts;
+    addFeedback(`小 +${pts}`, slot.x+SLOT_W/2, SLOT_Y-15, '#88aa55');
+  }
+
+  // Check order
+  const orderItem = order.find(o => o.crop === slot.crop.emoji && o.collected < o.needed);
+  if (orderItem) {
+    orderItem.collected++;
+    if (isPerfect) orderItem.perfect++;
+    orderPulse = 0.5;
+    addFeedback('📦', slot.x+SLOT_W/2, SLOT_Y-40, '#ffd700');
+
+    // Order complete?
+    if (order.every(o => o.collected >= o.needed)) {
+      ordersCompleted++;
+      const perfects = order.reduce((s,o) => s+o.perfect, 0);
+      const bonus = 50 + perfects * 15;
+      score += bonus;
+      flashAlpha = 0.4; flashColor = '#ffd700';
+      bigText = `📦 交单! +${bonus}`; bigTextColor = '#ffd700'; bigTextAlpha = 1.3;
+      spawnParticles(W/2, 90, '#ffd700', 20);
+      shake(6);
+      orderPulse = 1;
+      generateOrder(); // new order immediately
+    }
+  }
+
+  regrow(hitSlot, 800);
+  updateHUD();
+  endRep(true);
+}
+
+function regrow(idx, delay) {
+  setTimeout(() => {
+    const diff = getDiff(globalRep);
+    const available = CROPS.slice(0, diff.cropTypes);
+    slots[idx].crop = available[Math.floor(Math.random() * available.length)];
+    slots[idx].growth = 0.05 + Math.random() * 0.1; // slight random start
+    slots[idx].harvested = false;
+    slots[idx].stolen = false;
+  }, delay);
+}
+
+// Util
+function spawnParticles(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,life:1,decay:0.015+Math.random()*0.01,size:3+Math.random()*4,color});}}
+function shake(n){shakeX=(Math.random()-0.5)*n;shakeY=(Math.random()-0.5)*n;}
+function addFeedback(t,x,y,c){feedbacks.push({text:t,x,y,alpha:1.3,vy:-1.4,color:c});}
+function updateHUD(){
+  const moveNum=Math.min(Math.floor(globalRep/REPS_PER_MOVE)+1,TOTAL_MOVES);
+  const repInMove=globalRep%REPS_PER_MOVE;
+  document.getElementById('h-mv').textContent=`${moveNum}/${TOTAL_MOVES}`;
+  document.getElementById('h-rp').textContent=`${repInMove}/${REPS_PER_MOVE}`;
+  document.getElementById('h-sc').textContent=score;
+}
+
+// Update
+function update(){
+  shakeX*=0.8;shakeY*=0.8;
+  if(flashAlpha>0)flashAlpha-=0.02;
+  if(bigTextAlpha>0)bigTextAlpha-=0.014;
+  if(orderPulse>0)orderPulse*=0.95;
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.life-=p.decay;});
+  particles=particles.filter(p=>p.life>0);
+  feedbacks.forEach(f=>{f.y+=f.vy;f.alpha-=0.014;});
+  feedbacks=feedbacks.filter(f=>f.alpha>0);
+
+  // Growth
+  if(state==='play'||state==='showOrder'){
+    const diff=getDiff(globalRep);
+    for(let s of slots){
+      if(!s.harvested&&!s.stolen){
+        s.growth+=diff.growSpeed * s.crop.growMult;
+        if(s.growth>1.15)s.growth=0;
+      }
+      if(s.glow>0)s.glow*=0.94;
+      if(s.shakeOff){s.shakeOff*=-0.7;if(Math.abs(s.shakeOff)<0.3)s.shakeOff=0;}
+    }
+    // Birds
+    if(state==='play') trySpawnBird();
+  }
+
+  // Bird movement
+  for(let b of birds){
+    if(b.done)continue;
+    if(!b.eating){
+      // Fly toward target
+      const dx=b.targetX-b.x;
+      if(Math.abs(dx)<8){
+        b.eating=true;b.eatTimer=0;
+      } else {
+        b.x+=Math.sign(dx)*b.speed;
+      }
+    } else {
+      b.eatTimer++;
+      if(b.eatTimer>40){
+        // Steal the crop
+        const s=slots[b.targetSlot];
+        if(!s.harvested&&!s.stolen){
+          s.stolen=true;
+          addFeedback('🐦 偷走了!', s.x+SLOT_W/2, SLOT_Y-10, '#ff6644');
+          s.shakeOff=12;
+          regrow(b.targetSlot, 1000);
+        }
+        b.done=true;
+      }
+    }
+    b.wingPhase+=0.15;
+  }
+  birds=birds.filter(b=>!b.done);
+
+  if(state==='showOrder'){
+    showOrderTimer--;
+    if(showOrderTimer<=0){state='play';startRep();}
+  }
+
+  if(state==='play'&&repActive){
+    cursorX+=cursorSpeed*cursorDir;
+    if(cursorX>W-25)cursorDir=-1;
+    if(cursorX<25)cursorDir=1;
+    repTimer++;
+    if(repTimer>(W-50)/cursorSpeed)endRep(false);
+  }
+}
+
+// Draw
+function drawBG(){
+  const g=ctx.createLinearGradient(0,0,0,H*0.38);
+  g.addColorStop(0,'#2a4830');g.addColorStop(1,'#1e3a1e');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H*0.38);
+  // Sun hint
+  ctx.fillStyle='rgba(255,220,100,0.04)';
+  ctx.beginPath();ctx.arc(W*0.8,40,80,0,Math.PI*2);ctx.fill();
+  // Ground
+  const gy=H*0.36;
+  const gg=ctx.createLinearGradient(0,gy,0,H);
+  gg.addColorStop(0,'#4a3a1e');gg.addColorStop(0.4,'#3d2e1a');gg.addColorStop(1,'#2a1f0a');
+  ctx.fillStyle=gg;ctx.fillRect(0,gy,W,H-gy);
+  // Hills
+  ctx.fillStyle='#1e3018';
+  ctx.beginPath();ctx.moveTo(0,gy);
+  ctx.quadraticCurveTo(W*0.25,gy-30,W*0.5,gy-5);
+  ctx.quadraticCurveTo(W*0.75,gy-25,W,gy);ctx.lineTo(W,gy);ctx.closePath();ctx.fill();
+}
+
+function drawOrder(){
+  const oy=88, cardW=Math.min(460,W-40), cardH=80, ox=W/2;
+  ctx.save();
+  if(orderPulse>0){ctx.shadowColor='#ffd700';ctx.shadowBlur=25*orderPulse;}
+  ctx.fillStyle='rgba(8,8,16,0.88)';
+  ctx.beginPath();ctx.roundRect(ox-cardW/2,oy-cardH/2,cardW,cardH,16);ctx.fill();
+  ctx.strokeStyle=orderPulse>0?`rgba(255,215,0,${0.3+orderPulse*0.5})`:'rgba(255,255,255,0.12)';
+  ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+
+  ctx.font='bold 15px -apple-system, sans-serif';ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,215,0,0.8)';ctx.fillText('📦 订单',ox,oy-22);
+
+  const spacing=Math.min(80,(cardW-50)/order.length);
+  let startX=ox-(order.length-1)*spacing/2;
+  for(let i=0;i<order.length;i++){
+    const o=order[i],ix=startX+i*spacing,done=o.collected>=o.needed;
+    ctx.save();ctx.globalAlpha=done?0.35:1;
+    ctx.font='38px serif';ctx.textAlign='center';ctx.fillText(o.crop,ix,oy+10);
+    ctx.font='bold 16px -apple-system, sans-serif';
+    ctx.fillStyle=done?'#7aff7a':(o.collected>0?'#ffcc44':'#fff');
+    ctx.fillText(`${o.collected}/${o.needed}`,ix,oy+32);
+    ctx.restore();
+  }
+
+  const repsLeft=REPS_PER_MOVE-(globalRep%REPS_PER_MOVE);
+  ctx.font='13px -apple-system, sans-serif';ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.fillText(`剩 ${repsLeft} 下`,ox,oy+48);
+}
+
+function drawSlot(s,i){
+  const x=s.x+(s.shakeOff||0),y=SLOT_Y;
+  const phase=getPhase(s.growth);
+
+  if(s.glow>0){
+    ctx.save();ctx.shadowColor='#7aff7a';ctx.shadowBlur=35*s.glow;
+    ctx.fillStyle=`rgba(100,255,100,${s.glow*0.15})`;
+    ctx.beginPath();ctx.roundRect(x-6,y-6,SLOT_W+12,SLOT_H+12,14);ctx.fill();ctx.restore();
+  }
+
+  // Soil bed
+  ctx.fillStyle='#3a2a16';
+  ctx.beginPath();ctx.roundRect(x+5,y+SLOT_H-32,SLOT_W-10,32,10);ctx.fill();
+  ctx.strokeStyle='#5a4020';ctx.lineWidth=1;ctx.stroke();
+
+  if(s.harvested||s.stolen){
+    ctx.strokeStyle='rgba(80,60,30,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.roundRect(x+15,y+SLOT_H-25,SLOT_W-30,18,5);ctx.stroke();ctx.setLineDash([]);
+    if(s.stolen){ctx.font='14px serif';ctx.textAlign='center';ctx.fillText('💨',x+SLOT_W/2,y+SLOT_H/2);}
+  } else {
+    // Crop at growth stage — just size and subtle glow, no pressure ring
+    let scale,labelColor;
+    if(phase==='small'){scale=0.5;labelColor='#5a9a4a';}
+    else if(phase==='medium'){scale=0.75;labelColor='#bbbb33';}
+    else if(phase==='big'){scale=1.0;labelColor='#ffd700';}
+    else{scale=0.55;labelColor='#6a4422';}
+
+    const cropY=y+SLOT_H-45-scale*50;
+
+    // Soft glow for big/perfect
+    if(phase==='big'){
+      const pulse=0.4+Math.sin(performance.now()*0.005)*0.25;
+      ctx.save();
+      ctx.shadowColor='#ffd700';ctx.shadowBlur=14*pulse;
+      ctx.fillStyle=`rgba(255,215,0,${pulse*0.08})`;
+      ctx.beginPath();ctx.arc(x+SLOT_W/2,cropY+12,35,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+
+    // Emoji — size = phase
+    const fs=22+scale*20;
+    ctx.font=`${fs}px serif`;ctx.textAlign='center';
+    if(phase==='rotten'){ctx.globalAlpha=0.3;}
+    ctx.fillText(s.crop.emoji,x+SLOT_W/2,cropY+18);
+    ctx.globalAlpha=1;
+
+    // Simple label
+    ctx.font='bold 12px -apple-system, sans-serif';ctx.textAlign='center';ctx.fillStyle=labelColor;
+    const labels={small:'小',medium:'中',big:'大!',rotten:'烂了'};
+    ctx.fillText(labels[phase],x+SLOT_W/2,y+SLOT_H+8);
+  }
+}
+
+function drawBirds(){
+  for(let b of birds){
+    if(b.done)continue;
+    const wingY=Math.sin(b.wingPhase)*6;
+    ctx.save();ctx.translate(b.x,b.y+wingY);
+    // Body
+    ctx.font='28px serif';ctx.textAlign='center';
+    ctx.fillText('🐦',0,0);
+    // Warning on target
+    if(!b.eating){
+      const s=slots[b.targetSlot];
+      ctx.save();ctx.globalAlpha=0.5+Math.sin(performance.now()*0.01)*0.3;
+      ctx.strokeStyle='#ff4444';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.roundRect(s.x-3-b.x,SLOT_Y-3-b.y-wingY,SLOT_W+6,SLOT_H+6,10);ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
+    }
+    ctx.restore();
+  }
+}
+
+function drawCursor(){
+  if(state!=='play'||!repActive)return;
+  const y1=SLOT_Y-15,y2=SLOT_Y+SLOT_H+15;
+  const bg=ctx.createLinearGradient(cursorX,y1,cursorX,y2);
+  bg.addColorStop(0,'rgba(74,200,74,0)');bg.addColorStop(0.15,'rgba(74,200,74,0.25)');
+  bg.addColorStop(0.85,'rgba(74,200,74,0.25)');bg.addColorStop(1,'rgba(74,200,74,0)');
+  ctx.fillStyle=bg;ctx.fillRect(cursorX-3,y1,6,y2-y1);
+  ctx.fillStyle='#5aee5a';
+  ctx.beginPath();ctx.moveTo(cursorX,y1+12);ctx.lineTo(cursorX-9,y1);ctx.lineTo(cursorX+9,y1);ctx.closePath();ctx.fill();
+  ctx.save();ctx.shadowColor='#5aee5a';ctx.shadowBlur=10;
+  ctx.fillStyle='#5aee5a';ctx.beginPath();ctx.arc(cursorX,y1-4,4,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+
+function drawProgress(){
+  const bW=200,bH=4,bx=W/2-bW/2,by=H-18;
+  ctx.fillStyle='rgba(255,255,255,0.06)';ctx.beginPath();ctx.roundRect(bx,by,bW,bH,2);ctx.fill();
+  ctx.fillStyle='#5aee5a';ctx.beginPath();ctx.roundRect(bx,by,bW*(globalRep/TOTAL_REPS),bH,2);ctx.fill();
+}
+
+function drawFlash(){if(flashAlpha<=0)return;ctx.save();ctx.globalAlpha=flashAlpha;ctx.fillStyle=flashColor;ctx.fillRect(0,0,W,H);ctx.restore();}
+function drawBigText(){
+  if(bigTextAlpha<=0)return;
+  ctx.save();ctx.globalAlpha=Math.min(1,bigTextAlpha);
+  ctx.font=`bold ${30+(1.3-Math.min(1.3,bigTextAlpha))*6}px -apple-system, sans-serif`;
+  ctx.textAlign='center';ctx.fillStyle=bigTextColor;ctx.shadowColor=bigTextColor;ctx.shadowBlur=18;
+  ctx.fillText(bigText,W/2,H*0.2);ctx.restore();
+}
+function drawDone(){
+  ctx.save();ctx.fillStyle='rgba(0,0,0,0.82)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.font='28px -apple-system, sans-serif';ctx.fillStyle='#fff';ctx.fillText('Session 完成',W/2,H/2-55);
+  ctx.font='24px -apple-system, sans-serif';ctx.fillStyle='#ffd700';ctx.fillText(`总分: ${score}`,W/2,H/2-10);
+  ctx.font='16px -apple-system, sans-serif';ctx.fillStyle='#aaa';ctx.fillText(`完成 ${ordersCompleted} 单`,W/2,H/2+20);
+  const grade=score>=500?'S':score>=350?'A':score>=200?'B':'C';
+  const gc=score>=500?'#ffd700':score>=350?'#7aff7a':score>=200?'#88aaff':'#aaa';
+  ctx.font='bold 44px -apple-system, sans-serif';ctx.fillStyle=gc;ctx.fillText(grade,W/2,H/2+75);
+  ctx.font='14px -apple-system, sans-serif';ctx.fillStyle='#888';ctx.fillText('点击重玩',W/2,H/2+105);ctx.restore();
+}
+
+function render(){
+  ctx.save();ctx.translate(shakeX,shakeY);
+  drawBG();
+  for(let i=0;i<slots.length;i++)drawSlot(slots[i],i);
+  drawBirds();
+  drawCursor();
+  ctx.restore();
+  drawOrder();drawFlash();drawBigText();drawProgress();
+  for(let p of particles){ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+shakeX,p.y+shakeY,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();}
+  for(let f of feedbacks){ctx.save();ctx.globalAlpha=Math.min(1,f.alpha);ctx.font='bold 20px -apple-system, sans-serif';ctx.textAlign='center';ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);ctx.restore();}
+  if(state==='sessionDone')drawDone();
+}
+
+function loop(){update();ctx.clearRect(0,0,W,H);render();requestAnimationFrame(loop);}
+
+function handleInput(){if(state==='sessionDone'){resetGame();return;}strike();}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();handleInput();}});
+canvas.addEventListener('click',handleInput);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();});
+
+function resetGame(){globalRep=0;score=0;combo=0;ordersCompleted=0;updateHUD();startNewRound();}
+
+document.getElementById('go-btn').addEventListener('click',()=>{
+  document.getElementById('start-overlay').style.display='none';
+  startNewRound();loop();
+});
+</script>
+</body>
+</html>
