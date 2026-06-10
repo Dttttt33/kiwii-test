@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kiwii Power — 种子消消乐</title>
+<title>Kiwii Power — 种地收获</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -44,32 +44,32 @@ canvas { border-radius: 12px; cursor: pointer; }
 <body>
 
 <div id="start-overlay">
-  <h1>🌱 种子消消乐</h1>
+  <h1>🌾 种地收获</h1>
   <p>
-    <strong style="color:#fff;font-size:15px">本质：分类决策 × 模式识别</strong><br>
-    <span style="color:#aaa;font-size:13px">把同类放一起 → 凑3消除 — 训练快速分类和空间规划</span><br><br>
-    每次出现一个随机种子/水果<br>
-    光标扫描 5 列，<strong>空格/点击 = 放进当前列!</strong><br><br>
+    <strong style="color:#fff;font-size:15px">本质：分类决策 × 田地规划</strong><br>
+    <span style="color:#aaa;font-size:13px">5 块田，把同类作物种一起 → 3连成熟收获! 训练快速归类和空间管理</span><br><br>
+    每次拿到一颗随机种子<br>
+    光标扫描 5 块田，<strong>空格/点击 = 种进当前田!</strong><br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 同列连续 3 个相同 → 消除! +30~80分<br>
-    ▸ 列满(7格)溢出 → 该列清空，扣 20 分<br>
-    ▸ 连续消除 combo → 分数翻倍!<br><br>
-    ▸ 前期：3 种种子，容易凑<br>
-    ▸ 中期：5 种，需要规划列的用途<br>
-    ▸ 后期：6 种 + 💀毒种子(放哪炸哪列顶部2个)<br><br>
-    ▸ <span style="color:#aaa">扩展方向：特殊道具、炸弹消行、彩虹万能种子、PvP对战</span>
+    ▸ 同田连续 3 株相同 → 成熟收获! +30~80分<br>
+    ▸ 田满(7株)杂草丛生 → 清田重来，扣 20 分<br>
+    ▸ 连续收获 combo → 分数翻倍!<br><br>
+    ▸ 前期：3 种作物(🌽🥕🍇)，容易归类<br>
+    ▸ 中期：5 种，需要规划每块田种什么<br>
+    ▸ 后期：6 种 + 🐛害虫(放哪吃哪田顶部2株)<br><br>
+    ▸ <span style="color:#aaa">扩展方向：季节轮作、肥料加速、彩虹种子、虫害防治</span>
     </span>
   </p>
-  <button id="go-btn">开始</button>
+  <button id="go-btn">开种</button>
 </div>
 
 <div id="hud">
   <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
   <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
   <div class="hi">分 <span class="y" id="h-sc">0</span></div>
-  <div class="hi">连消 <span class="g" id="h-combo">0</span></div>
+  <div class="hi">连收 <span class="g" id="h-combo">0</span></div>
 </div>
-<div id="btm">空格/点击 = 放入当前列 · 3连相同消除!</div>
+<div id="btm">空格/点击 = 种进当前田 · 同田3连 = 成熟收获!</div>
 
 <canvas id="c"></canvas>
 
@@ -96,7 +96,7 @@ const ALL_SEEDS = [
   { emoji: '🥬', color: '#44cc66' },
   { emoji: '🍑', color: '#ffaa88' },
 ];
-const SKULL = { emoji: '💀', color: '#888' };
+const SKULL = { emoji: '🐛', color: '#888' };
 
 let state = 'idle';
 let globalRep = 0, score = 0, comboCount = 0;
@@ -143,18 +143,18 @@ function placeSeed(ci) {
   const col = columns[ci];
 
   if (currentSeed.isSkull) {
-    // Skull: destroy top 2 of that column
+    // Bug: eat top 2 of that column
     const removed = Math.min(2, col.length);
     if (removed > 0) {
       col.splice(col.length - removed, removed);
       const cx = colX(ci) + COL_W / 2;
       const cy = GRID_TOP + (MAX_ROWS - col.length - 1) * CELL_H;
       spawnP(cx, cy, '#888', 12);
-      addFeedback('💀 破坏!', cx, cy - 20, '#ff4444');
+      addFeedback('🐛 虫害!', cx, cy - 20, '#ff4444');
       shakeX = (Math.random() - 0.5) * 8;
     } else {
       const cx = colX(ci) + COL_W / 2;
-      addFeedback('空列无效', cx, GRID_TOP + MAX_ROWS * CELL_H / 2, '#666');
+      addFeedback('空田无效', cx, GRID_TOP + MAX_ROWS * CELL_H / 2, '#666');
     }
     comboCount = 0;
   } else {
@@ -165,7 +165,7 @@ function placeSeed(ci) {
       score = Math.max(0, score - 20);
       const cx = colX(ci) + COL_W / 2;
       spawnP(cx, GRID_TOP + MAX_ROWS * CELL_H / 2, '#ff4444', 15);
-      addFeedback('溢出! -20', cx, GRID_TOP + 20, '#ff4444');
+      addFeedback('🌿 杂草! -20', cx, GRID_TOP + 20, '#ff4444');
       flashAlpha = 0.3; flashColor = '#ff2200';
       shakeX = (Math.random() - 0.5) * 12;
       columns[ci] = [];
@@ -218,9 +218,9 @@ function checkAndClear(ci) {
     spawnP(cx, cy, ALL_SEEDS[seedIdx].color, 10 + matchLen * 5);
     if (comboCount > 1) {
       flashAlpha = 0.1; flashColor = ALL_SEEDS[seedIdx].color;
-      addFeedback(`${matchLen}连消! ×${comboMult} +${pts}`, cx, cy - 30, '#ffd700');
+      addFeedback(`${matchLen}连收! ×${comboMult} +${pts}`, cx, cy - 30, '#ffd700');
     } else {
-      addFeedback(`消除! +${pts}`, cx, cy - 20, ALL_SEEDS[seedIdx].color);
+      addFeedback(`🌾 收获! +${pts}`, cx, cy - 20, ALL_SEEDS[seedIdx].color);
     }
 
     // Chain: check again after clear (items above might now match)
