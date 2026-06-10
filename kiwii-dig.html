@@ -51,14 +51,13 @@ canvas { border-radius: 12px; cursor: pointer; }
     5 块田，地表的<strong>叶子大小</strong>暗示根系长度<br>
     光标扫描，<strong>空格/点击 = 拔!</strong><br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 拔出根系：连锁越长分越高! (1→5→15→30→50...)<br>
-    ▸ 根系可能跨田连接 — 一拔带出邻田的宝贝<br>
-    ▸ 🌟金色根 = 双倍分!<br>
-    ▸ 后期出现 🦠烂根 — 碰到就中断连锁并扣分<br><br>
-    ▸ 前期：根系短(1-3)，学习看暗示<br>
-    ▸ 中期：根系长(2-5)，连锁跨田<br>
-    ▸ 后期：超长根(3-7) + 烂根陷阱，高风险高回报<br><br>
-    ▸ <span style="color:#aaa">扩展方向：地下水脉、化石发现、根系地图记忆、boss巨根</span>
+    ▸ <strong style="color:#fff">关键：不拔的田每轮自动长大!</strong><br>
+    ▸ 🌱小(×1)→ 🌿中(×2-3)→ 🪴大(×4-5)→ 🌳巨(×6-7)<br>
+    ▸ 拔🌱小苗 = 扣 15 分! 要忍住等它长大<br>
+    ▸ 连锁越长分越爆! (1→5→15→30→50...)<br>
+    ▸ 🌟金色 = 双倍 · ⚠️ 有🦠烂根会中断连锁<br><br>
+    ▸ 策略：等大再拔 vs 光标已到再不拔就走了<br><br>
+    ▸ <span style="color:#aaa">扩展方向：季节变化、地下水脉、化石、boss巨根</span>
     </span>
   </p>
   <button id="go-btn">开拔!</button>
@@ -106,57 +105,69 @@ let shakeX = 0, shakeY = 0;
 let flashAlpha = 0, flashColor = '';
 let frame = 0;
 let pullAnim = null; // { col, items[], step, maxSteps, rotHit }
+let harvest = []; // collection tray of pulled items
 
 function t() { return globalRep / (TOTAL_REPS - 1); }
 
-function generatePlots() {
+function makePlot(startSize) {
   const p = t();
-  const plots_ = [];
-
-  // Determine root networks
-  // Each plot has a base root length, then some connect to neighbors
-  for (let i = 0; i < COLS; i++) {
-    const minLen = p < 0.25 ? 1 : p < 0.5 ? 2 : 3;
-    const maxLen = p < 0.25 ? 3 : p < 0.5 ? 5 : 7;
-    const rootLength = minLen + Math.floor(Math.random() * (maxLen - minLen + 1));
-
-    // Pick items for this root
-    const items = [];
-    const cropIdx = Math.floor(Math.random() * Math.min(3 + Math.floor(p * 4), CROPS.length));
-    for (let r = 0; r < rootLength; r++) {
-      items.push(CROPS[Math.floor(Math.random() * (cropIdx + 1))]);
-    }
-
-    // Rotten root chance (after 50% progress)
-    const hasRot = p > 0.5 && Math.random() < (p - 0.5) * 0.6;
-    if (hasRot) {
-      // Insert rot at random position (not first)
-      const rotPos = 1 + Math.floor(Math.random() * (items.length - 1));
-      items.splice(rotPos, 0, { emoji: '🦠', color: '#44aa44', rot: true });
-    }
-
-    // Golden chance
-    const golden = p > 0.3 && Math.random() < 0.12;
-
-    // Surface hint size correlates with root length (with some noise)
-    const surfaceSize = Math.min(1, (rootLength / 7) * 0.85 + Math.random() * 0.15);
-
-    plots_.push({ rootLength, items, hasRot, golden, surfaceSize, connected: [] });
+  const rootLength = startSize || (1 + Math.floor(Math.random() * 2));
+  const items = [];
+  const cropIdx = Math.floor(Math.random() * Math.min(3 + Math.floor(p * 4), CROPS.length));
+  for (let r = 0; r < rootLength; r++) {
+    items.push(CROPS[Math.floor(Math.random() * (cropIdx + 1))]);
   }
+  const hasRot = p > 0.5 && rootLength >= 4 && Math.random() < (p - 0.5) * 0.5;
+  if (hasRot) {
+    const rotPos = 1 + Math.floor(Math.random() * (items.length - 1));
+    items.splice(rotPos, 0, { emoji: '🦠', color: '#44aa44', rot: true });
+  }
+  const golden = p > 0.3 && Math.random() < 0.1;
+  return { rootLength, items, hasRot, golden, surfaceSize: rootLength / 7, connected: [] };
+}
 
-  // Cross-connections: some roots extend to neighbor
+function generatePlots() {
+  const plots_ = [];
+  for (let i = 0; i < COLS; i++) {
+    plots_.push(makePlot());
+  }
+  // Cross-connections
+  const p = t();
   for (let i = 0; i < COLS - 1; i++) {
-    if (Math.random() < 0.2 + p * 0.25) {
+    if (Math.random() < 0.15 + p * 0.2) {
       plots_[i].connected.push(i + 1);
       plots_[i + 1].connected.push(i);
     }
   }
-
   return plots_;
+}
+
+function growPlots(skipCol) {
+  // All plots EXCEPT the one just pulled grow by 1
+  for (let i = 0; i < COLS; i++) {
+    if (i === skipCol) continue;
+    const plot = plots[i];
+    if (!plot) continue;
+    const maxGrow = 7;
+    if (plot.items.filter(it => !it.rot).length < maxGrow) {
+      const p = t();
+      const cropIdx = Math.floor(Math.random() * Math.min(3 + Math.floor(p * 4), CROPS.length));
+      plot.items.push(CROPS[Math.floor(Math.random() * (cropIdx + 1))]);
+      plot.rootLength = plot.items.filter(it => !it.rot).length;
+      plot.surfaceSize = Math.min(1, plot.rootLength / 7);
+      // Rot can appear as it grows big
+      if (plot.rootLength >= 5 && !plot.hasRot && p > 0.4 && Math.random() < 0.3) {
+        plot.hasRot = true;
+        const rotPos = 2 + Math.floor(Math.random() * (plot.items.length - 2));
+        plot.items.splice(rotPos, 0, { emoji: '🦠', color: '#44aa44', rot: true });
+      }
+    }
+  }
 }
 
 function initGame() {
   plots = generatePlots();
+  harvest = [];
 }
 
 function pull(ci) {
@@ -168,14 +179,15 @@ function pull(ci) {
   // Pulling a tiny sprout (1 root) = waste! Penalty.
   if (rootLen <= 1 && !plot.golden) {
     const cx = GRID_LEFT + ci * COL_W + COL_W / 2;
-    score = Math.max(0, score - 10);
-    addFeedback('太小了! -10', cx, GROUND_Y - 40, '#ff6644');
-    shakeX = (Math.random() - 0.5) * 6;
-    spawnP(cx, GROUND_Y, '#aa6633', 6);
+    score = Math.max(0, score - 15);
+    addFeedback('🌱 太小了! -15', cx, GROUND_Y - 40, '#ff6644');
+    flashAlpha = 0.2; flashColor = '#ff4400';
+    shakeX = (Math.random() - 0.5) * 8;
+    spawnP(cx, GROUND_Y, '#aa6633', 8);
     globalRep++;
+    plots[ci] = makePlot(1);
+    growPlots(ci);
     updateHUD();
-    // Regenerate this plot
-    plots[ci] = generatePlots()[ci];
     if (globalRep >= TOTAL_REPS) state = 'done';
     return;
   }
@@ -278,6 +290,12 @@ function finishPull() {
     }
   }
 
+  // Add to harvest tray
+  for (const item of pa.items) {
+    if (!item.rot) harvest.push(item);
+  }
+  if (harvest.length > 15) harvest.splice(0, harvest.length - 15);
+
   pullAnim = null;
   globalRep++;
   updateHUD();
@@ -285,11 +303,9 @@ function finishPull() {
   if (globalRep >= TOTAL_REPS) {
     state = 'done';
   } else {
-    // Regenerate the pulled plot (and refresh all after every 5)
-    plots[pa.col] = generatePlots()[pa.col];
-    if (globalRep % 5 === 0) {
-      plots = generatePlots();
-    }
+    // Replace pulled plot with fresh sprout, grow all others
+    plots[pa.col] = makePlot(1);
+    growPlots(pa.col);
   }
 }
 
@@ -522,6 +538,21 @@ function render() {
     ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
+
+  // Harvest tray — show what you've collected
+  if (harvest.length > 0) {
+    ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('收获篮:', 14, 52);
+    const startX = 14;
+    const startY = 60;
+    for (let i = 0; i < harvest.length; i++) {
+      const row = Math.floor(i / 8);
+      const col = i % 8;
+      ctx.font = '22px serif';
+      ctx.fillText(harvest[i].emoji, startX + col * 28, startY + row * 28 + 20);
+    }
+  }
 
   // Progress bar
   ctx.fillStyle = 'rgba(255,255,255,0.06)';
