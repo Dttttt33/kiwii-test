@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kiwii Power — 挖矿寻宝</title>
+<title>Kiwii Power — 种子消消乐</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  background: #0f0c04;
+  background: #0a1a0a;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   min-height: 100vh;
   font-family: -apple-system, 'SF Pro Display', sans-serif;
@@ -26,16 +26,16 @@ canvas { border-radius: 12px; cursor: pointer; }
 .hi .g { color: #7aff7a; }
 .hi .y { color: #ffd700; }
 #start-overlay {
-  position: fixed; inset: 0; background: rgba(6,4,2,0.96);
+  position: fixed; inset: 0; background: rgba(4,12,4,0.96);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   z-index: 100; gap: 16px;
 }
 #start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
 #start-overlay p { color: #aaa; font-size: 17px; max-width: 480px; text-align: center; line-height: 2.2; }
-#start-overlay strong { color: #ffd700; }
+#start-overlay strong { color: #7aff7a; }
 #go-btn {
   margin-top: 14px; padding: 14px 40px; font-size: 16px;
-  background: #6a4a1a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
+  background: #2a6a2a; color: #fff; border: none; border-radius: 24px; cursor: pointer;
 }
 #go-btn:active { transform: scale(0.95); }
 #btm { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 13px; z-index: 10; }
@@ -44,30 +44,32 @@ canvas { border-radius: 12px; cursor: pointer; }
 <body>
 
 <div id="start-overlay">
-  <h1>⛏️ 挖矿寻宝</h1>
+  <h1>🌱 种子消消乐</h1>
   <p>
-    <strong style="color:#fff;font-size:15px">本质：风险深度 × 换道决策</strong><br>
-    <span style="color:#aaa;font-size:13px">越挖越深 = 越稀有，但炸弹也越多 — 何时换列是核心策略</span><br><br>
-    光标在 5 条矿道上扫描<br>
-    <strong>空格 / 点击 = 在当前列往下挖一格!</strong><br><br>
+    <strong style="color:#fff;font-size:15px">本质：分类决策 × 模式识别</strong><br>
+    <span style="color:#aaa;font-size:13px">把同类放一起 → 凑3消除 — 训练快速分类和空间规划</span><br><br>
+    每次出现一个随机种子/水果<br>
+    光标扫描 5 列，<strong>空格/点击 = 放进当前列!</strong><br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 第 1-2 层（土层）：🥕🥔🌽 蔬菜，安全<br>
-    ▸ 第 3-4 层（石层）：🍓🍇🍑 水果 + 少量💣<br>
-    ▸ 第 5-6 层（深层）：🍉🎃🌻 大奖 + 更多💣<br>
-    ▸ 第 7+ 层（矿脉）：💎🌈 传说! 但💣概率 40%<br><br>
-    ▸ 挖到💣：该列炸毁重置到第 1 层，扣 30 分<br>
-    ▸ <span style="color:#aaa">策略：看到下层发紫光/金光就继续挖，看到红光就换列!</span>
+    ▸ 同列连续 3 个相同 → 消除! +30~80分<br>
+    ▸ 列满(7格)溢出 → 该列清空，扣 20 分<br>
+    ▸ 连续消除 combo → 分数翻倍!<br><br>
+    ▸ 前期：3 种种子，容易凑<br>
+    ▸ 中期：5 种，需要规划列的用途<br>
+    ▸ 后期：6 种 + 💀毒种子(放哪炸哪列顶部2个)<br><br>
+    ▸ <span style="color:#aaa">扩展方向：特殊道具、炸弹消行、彩虹万能种子、PvP对战</span>
     </span>
   </p>
-  <button id="go-btn">开挖</button>
+  <button id="go-btn">开始</button>
 </div>
 
 <div id="hud">
   <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
   <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
   <div class="hi">分 <span class="y" id="h-sc">0</span></div>
+  <div class="hi">连消 <span class="g" id="h-combo">0</span></div>
 </div>
-<div id="btm">空格/点击 = 往下挖一格 · 不按 = 跳过该列</div>
+<div id="btm">空格/点击 = 放入当前列 · 3连相同消除!</div>
 
 <canvas id="c"></canvas>
 
@@ -79,173 +81,171 @@ const H = Math.min(640, window.innerHeight - 20);
 canvas.width = W; canvas.height = H;
 
 const COLS = 5;
-const COL_W = 100;
-const COL_GAP = (W - COLS * COL_W) / (COLS + 1);
-const GRID_TOP = 80;
-const CELL_H = 56;
-const VISIBLE_ROWS = 8;
+const MAX_ROWS = 7;
 const TOTAL_REPS = 40;
+const COL_W = 80;
+const CELL_H = 60;
+const GRID_LEFT = (W - COLS * COL_W) / 2;
+const GRID_TOP = 100;
 
-const TIER_COLORS = {
-  1: { glow: '#66aa44', bg: '#3a5a2a' },
-  2: { glow: '#4488dd', bg: '#2a3a5a' },
-  3: { glow: '#aa55ff', bg: '#3a2a5a' },
-  4: { glow: '#ffd700', bg: '#4a3a1a' },
-  '-1': { glow: '#ff2200', bg: '#4a1a1a' },
-  0: { glow: '#666', bg: '#2a2a2a' },
-};
-
-const LAYER_ITEMS = [
-  // Layer 0-1: soil — safe common stuff
-  [
-    { emoji: '🥕', pts: 8, tier: 1, w: 25 },
-    { emoji: '🥔', pts: 6, tier: 1, w: 25 },
-    { emoji: '🌽', pts: 10, tier: 1, w: 20 },
-    { emoji: '🧅', pts: 7, tier: 1, w: 20 },
-    { emoji: '🪨', pts: 2, tier: 0, w: 10 },
-  ],
-  // Layer 2-3: stone — good stuff + low bomb chance
-  [
-    { emoji: '🍅', pts: 16, tier: 2, w: 20 },
-    { emoji: '🍓', pts: 20, tier: 2, w: 18 },
-    { emoji: '🍇', pts: 22, tier: 2, w: 15 },
-    { emoji: '🍑', pts: 24, tier: 2, w: 12 },
-    { emoji: '🥕', pts: 8, tier: 1, w: 10 },
-    { emoji: '💣', pts: -30, tier: -1, w: 8 },
-  ],
-  // Layer 4-5: deep — rare + more bombs
-  [
-    { emoji: '🍉', pts: 40, tier: 3, w: 15 },
-    { emoji: '🎃', pts: 45, tier: 3, w: 12 },
-    { emoji: '🌻', pts: 38, tier: 3, w: 12 },
-    { emoji: '🍓', pts: 20, tier: 2, w: 10 },
-    { emoji: '💣', pts: -30, tier: -1, w: 18 },
-  ],
-  // Layer 6+: vein — legendary + high bomb
-  [
-    { emoji: '💎', pts: 80, tier: 4, w: 12 },
-    { emoji: '🌈', pts: 100, tier: 4, w: 8 },
-    { emoji: '🍉', pts: 40, tier: 3, w: 12 },
-    { emoji: '🌻', pts: 38, tier: 3, w: 10 },
-    { emoji: '💣', pts: -30, tier: -1, w: 25 },
-  ],
+const ALL_SEEDS = [
+  { emoji: '🌽', color: '#ffdd44' },
+  { emoji: '🥕', color: '#ff8833' },
+  { emoji: '🍇', color: '#9944cc' },
+  { emoji: '🍓', color: '#ff4466' },
+  { emoji: '🥬', color: '#44cc66' },
+  { emoji: '🍑', color: '#ffaa88' },
 ];
+const SKULL = { emoji: '💀', color: '#888' };
 
-function getLayerPool(depth) {
-  if (depth < 2) return LAYER_ITEMS[0];
-  if (depth < 4) return LAYER_ITEMS[1];
-  if (depth < 6) return LAYER_ITEMS[2];
-  return LAYER_ITEMS[3];
-}
-
-function pickItem(depth) {
-  const pool = getLayerPool(depth);
-  const total = pool.reduce((s, i) => s + i.w, 0);
-  let r = Math.random() * total;
-  for (const item of pool) { r -= item.w; if (r <= 0) return { ...item }; }
-  return { ...pool[0] };
-}
-
-// State
 let state = 'idle';
-let globalRep = 0, score = 0;
-let columns = []; // each col: { depth, cells: [{item, revealed}] }
-let cursorX = 0, cursorDir = 1, cursorSpeed = 1.5;
-let repActive = false, struck = false, repTimer = 0;
+let globalRep = 0, score = 0, comboCount = 0;
+let columns = []; // each: array of seed indices
+let cursorX = 0, cursorDir = 1, cursorSpeed = 1.8;
+let currentSeed = null; // { idx, emoji, color } or skull
 let particles = [], feedbacks = [];
 let shakeX = 0, shakeY = 0;
 let flashAlpha = 0, flashColor = '';
 let frame = 0;
-let collection = []; // last N items dug up, shown in collection tray
-let revealAnim = null; // { col, depth, item, timer } — big emoji reveal animation
+let clearAnims = []; // [{col, startRow, count, timer}]
 
-function colX(i) { return COL_GAP + i * (COL_W + COL_GAP); }
+function getSeedCount() {
+  const p = globalRep / (TOTAL_REPS - 1);
+  if (p < 0.25) return 3;
+  if (p < 0.5) return 4;
+  if (p < 0.75) return 5;
+  return 6;
+}
 
-function initColumns() {
+function hasSkull() {
+  return globalRep / (TOTAL_REPS - 1) > 0.6;
+}
+
+function pickSeed() {
+  if (hasSkull() && Math.random() < 0.15) {
+    return { idx: -1, emoji: SKULL.emoji, color: SKULL.color, isSkull: true };
+  }
+  const count = getSeedCount();
+  const idx = Math.floor(Math.random() * count);
+  return { idx, emoji: ALL_SEEDS[idx].emoji, color: ALL_SEEDS[idx].color, isSkull: false };
+}
+
+function colX(i) { return GRID_LEFT + i * COL_W; }
+
+function initGame() {
   columns = [];
-  for (let i = 0; i < COLS; i++) {
-    const cells = [];
-    for (let d = 0; d < VISIBLE_ROWS + 2; d++) {
-      cells.push({ item: pickItem(d), revealed: false });
+  for (let i = 0; i < COLS; i++) columns.push([]);
+  currentSeed = pickSeed();
+  comboCount = 0;
+}
+
+function placeSeed(ci) {
+  const col = columns[ci];
+
+  if (currentSeed.isSkull) {
+    // Skull: destroy top 2 of that column
+    const removed = Math.min(2, col.length);
+    if (removed > 0) {
+      col.splice(col.length - removed, removed);
+      const cx = colX(ci) + COL_W / 2;
+      const cy = GRID_TOP + (MAX_ROWS - col.length - 1) * CELL_H;
+      spawnP(cx, cy, '#888', 12);
+      addFeedback('💀 破坏!', cx, cy - 20, '#ff4444');
+      shakeX = (Math.random() - 0.5) * 8;
+    } else {
+      const cx = colX(ci) + COL_W / 2;
+      addFeedback('空列无效', cx, GRID_TOP + MAX_ROWS * CELL_H / 2, '#666');
     }
-    columns.push({ depth: 0, cells });
-  }
-}
-
-function resetColumn(ci) {
-  const col = columns[ci];
-  col.depth = 0;
-  col.cells = [];
-  for (let d = 0; d < VISIBLE_ROWS + 2; d++) {
-    col.cells.push({ item: pickItem(d), revealed: false });
-  }
-}
-
-function digColumn(ci) {
-  const col = columns[ci];
-  const cell = col.cells[col.depth];
-  if (!cell) return;
-
-  cell.revealed = true;
-  const item = cell.item;
-  const cx = colX(ci) + COL_W / 2;
-  const cy = GRID_TOP + CELL_H / 2; // always row 0 visually
-
-  if (item.tier === -1) {
-    // BOMB!
-    score = Math.max(0, score + item.pts);
-    flashAlpha = 0.4; flashColor = '#ff2200';
-    shakeX = (Math.random() - 0.5) * 16; shakeY = (Math.random() - 0.5) * 10;
-    spawnP(cx, cy, '#ff4400', 20);
-    spawnP(cx, cy, '#ffaa00', 12);
-    addFeedback(`💥 -${Math.abs(item.pts)}`, cx, cy - 30, '#ff4444');
-    revealAnim = { col: ci, item, timer: 30 };
-    setTimeout(() => resetColumn(ci), 500);
+    comboCount = 0;
   } else {
-    score += item.pts;
-    const tc = TIER_COLORS[item.tier] || TIER_COLORS[0];
-    spawnP(cx, cy, tc.glow, 8 + item.tier * 4);
-    if (item.tier >= 3) {
-      flashAlpha = 0.15; flashColor = tc.glow;
-      shakeX = (Math.random() - 0.5) * 5;
-    }
-    addFeedback(`+${item.pts}`, cx, cy - 35, tc.glow);
-    // Big reveal animation
-    revealAnim = { col: ci, item, timer: 40 };
-    // Add to collection tray
-    collection.push({ emoji: item.emoji, tier: item.tier, pts: item.pts });
-    if (collection.length > 12) collection.shift();
-    col.depth++;
-    while (col.cells.length <= col.depth + VISIBLE_ROWS) {
-      col.cells.push({ item: pickItem(col.cells.length), revealed: false });
+    col.push(currentSeed.idx);
+
+    // Check overflow
+    if (col.length > MAX_ROWS) {
+      score = Math.max(0, score - 20);
+      const cx = colX(ci) + COL_W / 2;
+      spawnP(cx, GRID_TOP + MAX_ROWS * CELL_H / 2, '#ff4444', 15);
+      addFeedback('溢出! -20', cx, GRID_TOP + 20, '#ff4444');
+      flashAlpha = 0.3; flashColor = '#ff2200';
+      shakeX = (Math.random() - 0.5) * 12;
+      columns[ci] = [];
+      comboCount = 0;
+    } else {
+      // Check for 3-match from bottom of the stack
+      checkAndClear(ci);
     }
   }
+
+  globalRep++;
   updateHUD();
+  if (globalRep >= TOTAL_REPS) {
+    state = 'done';
+  } else {
+    currentSeed = pickSeed();
+  }
+}
+
+function checkAndClear(ci) {
+  const col = columns[ci];
+  if (col.length < 3) return;
+
+  // Check from the top for consecutive matches
+  let matchLen = 1;
+  for (let i = col.length - 2; i >= 0; i--) {
+    if (col[i] === col[col.length - 1]) matchLen++;
+    else break;
+  }
+
+  if (matchLen >= 3) {
+    const startRow = col.length - matchLen;
+    const seedIdx = col[col.length - 1];
+    const cx = colX(ci) + COL_W / 2;
+    const cy = GRID_TOP + (MAX_ROWS - startRow - matchLen / 2) * CELL_H;
+
+    // Animate
+    clearAnims.push({ col: ci, startRow, count: matchLen, timer: 25 });
+
+    // Remove
+    col.splice(startRow, matchLen);
+
+    // Score
+    comboCount++;
+    const baseScore = 20 + matchLen * 10 + (seedIdx >= 3 ? 15 : 0);
+    const comboMult = Math.min(comboCount, 4);
+    const pts = baseScore * comboMult;
+    score += pts;
+
+    spawnP(cx, cy, ALL_SEEDS[seedIdx].color, 10 + matchLen * 5);
+    if (comboCount > 1) {
+      flashAlpha = 0.1; flashColor = ALL_SEEDS[seedIdx].color;
+      addFeedback(`${matchLen}连消! ×${comboMult} +${pts}`, cx, cy - 30, '#ffd700');
+    } else {
+      addFeedback(`消除! +${pts}`, cx, cy - 20, ALL_SEEDS[seedIdx].color);
+    }
+
+    // Chain: check again after clear (items above might now match)
+    setTimeout(() => { if (columns[ci]) checkAndClear(ci); }, 100);
+  } else {
+    comboCount = 0;
+  }
 }
 
 function strike() {
-  if (state !== 'play' || !repActive || struck) return;
-  struck = true;
+  if (state !== 'play') return;
 
-  // Which column is cursor over?
   let hitCol = -1;
   for (let i = 0; i < COLS; i++) {
     const cx = colX(i);
-    if (cursorX >= cx - 10 && cursorX <= cx + COL_W + 10) { hitCol = i; break; }
+    if (cursorX >= cx - 5 && cursorX <= cx + COL_W + 5) { hitCol = i; break; }
   }
-  if (hitCol >= 0) digColumn(hitCol);
-
-  repActive = false;
-  globalRep++;
-  updateHUD();
-  if (globalRep >= TOTAL_REPS) { state = 'done'; return; }
-  setTimeout(() => { repActive = true; struck = false; repTimer = 0; }, 300);
+  if (hitCol >= 0) placeSeed(hitCol);
 }
 
 function updateHUD() {
   document.getElementById('h-mv').textContent = `${Math.min(Math.floor(globalRep / 10) + 1, 4)}/4`;
   document.getElementById('h-rp').textContent = `${globalRep % 10}/10`;
   document.getElementById('h-sc').textContent = score;
+  document.getElementById('h-combo').textContent = comboCount;
 }
 
 function spawnP(x, y, color, n) {
@@ -262,26 +262,16 @@ function update() {
   shakeX *= 0.85; shakeY *= 0.85;
   if (flashAlpha > 0) flashAlpha -= 0.02;
 
-  if (repActive && !struck) {
+  if (state === 'play') {
     cursorX += cursorSpeed * cursorDir;
-    if (cursorX > W - 30) { cursorX = W - 30; cursorDir = -1; }
-    if (cursorX < 30) { cursorX = 30; cursorDir = 1; }
-    repTimer++;
-    if (repTimer > (W - 60) / cursorSpeed) {
-      // Missed — no dig this rep
-      repActive = false;
-      globalRep++;
-      updateHUD();
-      if (globalRep >= TOTAL_REPS) { state = 'done'; return; }
-      setTimeout(() => { repActive = true; struck = false; repTimer = 0; }, 250);
-    }
+    const leftBound = GRID_LEFT - 10;
+    const rightBound = GRID_LEFT + COLS * COL_W + 10;
+    if (cursorX > rightBound) { cursorX = rightBound; cursorDir = -1; }
+    if (cursorX < leftBound) { cursorX = leftBound; cursorDir = 1; }
   }
 
-  // Reveal animation countdown
-  if (revealAnim) {
-    revealAnim.timer--;
-    if (revealAnim.timer <= 0) revealAnim = null;
-  }
+  clearAnims.forEach(a => a.timer--);
+  clearAnims = clearAnims.filter(a => a.timer > 0);
 
   particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.018; });
   particles = particles.filter(p => p.life > 0);
@@ -294,139 +284,107 @@ function render() {
   ctx.save();
   ctx.translate(shakeX, shakeY);
 
-  // Background — underground gradient
+  // Background
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#2a2010'); bg.addColorStop(0.3, '#1a1508'); bg.addColorStop(1, '#0a0804');
+  bg.addColorStop(0, '#0a1a0a'); bg.addColorStop(1, '#041008');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
   // Draw columns
   for (let i = 0; i < COLS; i++) {
-    const col = columns[i];
     const x = colX(i);
+    const col = columns[i];
 
-    // Column background shaft
-    ctx.fillStyle = 'rgba(30,25,15,0.5)';
-    ctx.fillRect(x, GRID_TOP, COL_W, VISIBLE_ROWS * CELL_H);
-    ctx.strokeStyle = 'rgba(80,60,30,0.3)'; ctx.lineWidth = 1;
-    ctx.strokeRect(x, GRID_TOP, COL_W, VISIBLE_ROWS * CELL_H);
+    // Column bg
+    ctx.fillStyle = 'rgba(20,40,20,0.4)';
+    ctx.fillRect(x + 2, GRID_TOP, COL_W - 4, MAX_ROWS * CELL_H);
+    ctx.strokeStyle = 'rgba(60,120,60,0.3)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x + 2, GRID_TOP, COL_W - 4, MAX_ROWS * CELL_H);
 
-    // Draw cells
-    for (let d = 0; d < VISIBLE_ROWS; d++) {
-      const actualDepth = col.depth + d;
-      const cell = col.cells[actualDepth];
-      if (!cell) continue;
-      const cy = GRID_TOP + d * CELL_H;
+    // Row guides
+    for (let r = 0; r < MAX_ROWS; r++) {
+      ctx.strokeStyle = 'rgba(40,80,40,0.15)';
+      ctx.strokeRect(x + 3, GRID_TOP + r * CELL_H, COL_W - 6, CELL_H);
+    }
 
-      if (d === 0 && !cell.revealed) {
-        // Current dig target — highlighted
-        const tc = TIER_COLORS[cell.item.tier] || TIER_COLORS[0];
-        // Glow hint
-        const pulse = 0.6 + Math.sin(frame * 0.04 + i * 1.2) * 0.3;
-        ctx.fillStyle = tc.bg;
-        ctx.fillRect(x + 2, cy + 2, COL_W - 4, CELL_H - 4);
-        ctx.save();
-        ctx.shadowColor = tc.glow; ctx.shadowBlur = 10 * pulse;
-        ctx.strokeStyle = tc.glow; ctx.lineWidth = 2;
-        ctx.strokeRect(x + 2, cy + 2, COL_W - 4, CELL_H - 4);
-        ctx.restore();
-        // "?" with tier hint color
-        ctx.font = 'bold 22px serif'; ctx.textAlign = 'center';
-        ctx.fillStyle = tc.glow;
-        ctx.globalAlpha = 0.7;
-        ctx.fillText('?', x + COL_W / 2, cy + CELL_H / 2 + 7);
-        ctx.globalAlpha = 1;
-        // Danger indicator for bombs
-        if (cell.item.tier === -1) {
-          ctx.font = '12px sans-serif';
-          ctx.fillStyle = '#ff4444';
-          ctx.fillText('⚠️', x + COL_W / 2, cy + 14);
-        }
-      } else if (d > 0 && !cell.revealed) {
-        // Future cells — dim hint only for next one
-        if (d === 1) {
-          const tc = TIER_COLORS[cell.item.tier] || TIER_COLORS[0];
-          ctx.fillStyle = 'rgba(20,15,10,0.8)';
-          ctx.fillRect(x + 2, cy + 2, COL_W - 4, CELL_H - 4);
-          ctx.save();
-          ctx.globalAlpha = 0.3;
-          ctx.shadowColor = tc.glow; ctx.shadowBlur = 6;
-          ctx.strokeStyle = tc.glow; ctx.lineWidth = 1;
-          ctx.strokeRect(x + 4, cy + 4, COL_W - 8, CELL_H - 8);
-          ctx.restore();
-        } else {
-          // Deeper: just dark
-          ctx.fillStyle = `rgba(15,10,5,${0.7 + d * 0.03})`;
-          ctx.fillRect(x + 2, cy + 2, COL_W - 4, CELL_H - 4);
+    // Seeds in column (bottom-aligned)
+    for (let r = 0; r < col.length; r++) {
+      const seedIdx = col[r];
+      const seed = ALL_SEEDS[seedIdx];
+      const cellY = GRID_TOP + (MAX_ROWS - 1 - r) * CELL_H;
+
+      // Check if part of a clearing animation
+      let clearing = false;
+      for (const a of clearAnims) {
+        if (a.col === i && r >= a.startRow && r < a.startRow + a.count) {
+          clearing = true; break;
         }
       }
-    }
 
-    // Depth label under column
-    ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-    const depthLabel = col.depth < 2 ? '土层' : col.depth < 4 ? '石层' : col.depth < 6 ? '深层' : '矿脉';
-    const depthColor = col.depth < 2 ? '#aa8844' : col.depth < 4 ? '#88aacc' : col.depth < 6 ? '#aa88ff' : '#ffd700';
-    ctx.fillStyle = depthColor;
-    ctx.fillText(`${depthLabel} (${col.depth})`, x + COL_W / 2, GRID_TOP + VISIBLE_ROWS * CELL_H + 16);
-
-    // Reveal animation — big emoji popping out of the cell
-    if (revealAnim && revealAnim.col === i) {
-      const progress = 1 - (revealAnim.timer / 40);
-      const scale = progress < 0.3 ? progress / 0.3 * 1.4 : 1.4 - (progress - 0.3) * 0.5;
-      const alpha = revealAnim.timer / 40;
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, alpha + 0.3);
-      ctx.font = `${Math.round(36 * scale)}px serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText(revealAnim.item.emoji, x + COL_W / 2, GRID_TOP + CELL_H / 2 + 10 - progress * 20);
-      if (revealAnim.item.tier >= 2) {
-        ctx.shadowColor = TIER_COLORS[revealAnim.item.tier].glow;
-        ctx.shadowBlur = 15;
-        ctx.fillText(revealAnim.item.emoji, x + COL_W / 2, GRID_TOP + CELL_H / 2 + 10 - progress * 20);
+      if (clearing) {
+        ctx.globalAlpha = 0.3 + Math.random() * 0.3;
       }
-      ctx.restore();
+
+      // Cell background tint
+      ctx.fillStyle = seed.color + '22';
+      ctx.fillRect(x + 3, cellY + 1, COL_W - 6, CELL_H - 2);
+
+      // Emoji
+      ctx.font = '32px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(seed.emoji, x + COL_W / 2, cellY + CELL_H / 2);
+
+      ctx.globalAlpha = 1;
     }
+
+    // Column height indicator
+    ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = col.length >= 6 ? '#ff6644' : col.length >= 4 ? '#ffaa44' : '#66aa66';
+    ctx.fillText(`${col.length}/${MAX_ROWS}`, x + COL_W / 2, GRID_TOP + MAX_ROWS * CELL_H + 14);
   }
 
-  // Collection tray — show recent finds at top-right
-  if (collection.length > 0) {
-    const trayX = W - 20;
-    const trayY = 50;
-    ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('收获:', trayX, trayY - 5);
-    for (let i = collection.length - 1, row = 0; i >= 0 && row < 12; i--, row++) {
-      const c = collection[i];
-      const ty = trayY + 8 + row * 26;
-      const tc = TIER_COLORS[c.tier] || TIER_COLORS[0];
-      ctx.font = '20px serif'; ctx.textAlign = 'right';
-      ctx.fillText(c.emoji, trayX, ty + 6);
-      ctx.font = '11px sans-serif';
-      ctx.fillStyle = tc.glow;
-      ctx.fillText(`+${c.pts}`, trayX - 26, ty + 6);
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    }
-  }
-
-  // Cursor
-  if (repActive && !struck) {
-    // Highlight column
+  // Current seed preview + cursor
+  if (state === 'play' && currentSeed) {
+    // Which column is highlighted
+    let hitCol = -1;
     for (let i = 0; i < COLS; i++) {
       const cx = colX(i);
-      if (cursorX >= cx - 10 && cursorX <= cx + COL_W + 10) {
-        ctx.strokeStyle = 'rgba(255,220,60,0.5)'; ctx.lineWidth = 3;
-        ctx.setLineDash([6, 4]);
-        ctx.strokeRect(cx - 4, GRID_TOP - 4, COL_W + 8, VISIBLE_ROWS * CELL_H + 8);
-        ctx.setLineDash([]);
-        // Arrow
-        ctx.fillStyle = '#ffcc33';
-        const ax = cx + COL_W / 2;
-        ctx.beginPath(); ctx.moveTo(ax, GRID_TOP - 15); ctx.lineTo(ax - 8, GRID_TOP - 25); ctx.lineTo(ax + 8, GRID_TOP - 25); ctx.closePath(); ctx.fill();
-        break;
+      if (cursorX >= cx - 5 && cursorX <= cx + COL_W + 5) { hitCol = i; break; }
+    }
+
+    if (hitCol >= 0) {
+      const hx = colX(hitCol);
+      // Highlight column
+      ctx.strokeStyle = 'rgba(120,255,120,0.5)'; ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(hx, GRID_TOP - 2, COL_W, MAX_ROWS * CELL_H + 4);
+      ctx.setLineDash([]);
+
+      // Preview: where seed will land
+      const landRow = columns[hitCol].length;
+      if (landRow < MAX_ROWS) {
+        const landY = GRID_TOP + (MAX_ROWS - 1 - landRow) * CELL_H;
+        ctx.globalAlpha = 0.4;
+        ctx.font = '32px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(currentSeed.emoji, hx + COL_W / 2, landY + CELL_H / 2);
+        ctx.globalAlpha = 1;
       }
     }
+
     // Cursor line
-    ctx.strokeStyle = 'rgba(255,210,60,0.3)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cursorX, GRID_TOP - 30); ctx.lineTo(cursorX, GRID_TOP + VISIBLE_ROWS * CELL_H + 5); ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,255,120,0.3)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cursorX, GRID_TOP - 30); ctx.lineTo(cursorX, GRID_TOP + MAX_ROWS * CELL_H + 5); ctx.stroke();
+
+    // Next seed indicator at top
+    ctx.font = '28px serif'; ctx.textAlign = 'center';
+    ctx.fillText(currentSeed.emoji, W / 2, 70);
+    ctx.font = '12px sans-serif'; ctx.fillStyle = '#aaa';
+    ctx.fillText('下一个', W / 2, 50);
+
+    // Arrow pointing down
+    if (hitCol >= 0) {
+      const ax = colX(hitCol) + COL_W / 2;
+      ctx.fillStyle = '#7aff7a';
+      ctx.beginPath(); ctx.moveTo(ax, GRID_TOP - 10); ctx.lineTo(ax - 8, GRID_TOP - 22); ctx.lineTo(ax + 8, GRID_TOP - 22); ctx.closePath(); ctx.fill();
+    }
   }
 
   ctx.restore();
@@ -454,21 +412,19 @@ function render() {
   // Progress bar
   ctx.fillStyle = 'rgba(255,255,255,0.06)';
   ctx.fillRect(W/2 - 100, H - 10, 200, 4);
-  ctx.fillStyle = '#ffd700';
+  ctx.fillStyle = '#7aff7a';
   ctx.fillRect(W/2 - 100, H - 10, 200 * (globalRep / TOTAL_REPS), 4);
 
   // Done
   if (state === 'done') {
     ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center';
-    ctx.font = '26px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('矿井结束', W/2, H/2 - 50);
+    ctx.font = '26px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('游戏结束', W/2, H/2 - 50);
     ctx.font = '22px sans-serif'; ctx.fillStyle = '#ffd700'; ctx.fillText(`总分: ${score}`, W/2, H/2 - 10);
-    const maxDepth = Math.max(...columns.map(c => c.depth));
-    ctx.font = '15px sans-serif'; ctx.fillStyle = '#aaa'; ctx.fillText(`最深: ${maxDepth} 层`, W/2, H/2 + 20);
-    const grade = score >= 500 ? 'S' : score >= 350 ? 'A' : score >= 200 ? 'B' : 'C';
-    const gc = score >= 500 ? '#ffd700' : score >= 350 ? '#7aff7a' : score >= 200 ? '#88aaff' : '#aaa';
-    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = gc; ctx.fillText(grade, W/2, H/2 + 70);
-    ctx.font = '13px sans-serif'; ctx.fillStyle = '#888'; ctx.fillText('点击重玩', W/2, H/2 + 100);
+    const grade = score >= 600 ? 'S' : score >= 400 ? 'A' : score >= 200 ? 'B' : 'C';
+    const gc = score >= 600 ? '#ffd700' : score >= 400 ? '#7aff7a' : score >= 200 ? '#88aaff' : '#aaa';
+    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = gc; ctx.fillText(grade, W/2, H/2 + 45);
+    ctx.font = '13px sans-serif'; ctx.fillStyle = '#888'; ctx.fillText('点击重玩', W/2, H/2 + 80);
   }
 }
 
@@ -476,12 +432,13 @@ function loop() { update(); render(); requestAnimationFrame(loop); }
 
 function handleInput() {
   if (state === 'done') {
-    globalRep = 0; score = 0; cursorX = W/2; cursorDir = 1;
-    initColumns(); particles = []; feedbacks = [];
-    state = 'play'; repActive = true; struck = false; repTimer = 0;
-    updateHUD(); return;
+    globalRep = 0; score = 0; comboCount = 0;
+    cursorX = GRID_LEFT + COLS * COL_W / 2; cursorDir = 1;
+    particles = []; feedbacks = []; clearAnims = [];
+    initGame(); state = 'play'; updateHUD();
+    return;
   }
-  strike();
+  if (state === 'play') strike();
 }
 
 document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); handleInput(); } });
@@ -492,8 +449,7 @@ document.getElementById('go-btn').addEventListener('click', (e) => {
   e.stopPropagation();
   document.getElementById('start-overlay').style.display = 'none';
   state = 'play';
-  initColumns();
-  repActive = true; struck = false; repTimer = 0;
+  initGame();
   updateHUD();
   loop();
 });
