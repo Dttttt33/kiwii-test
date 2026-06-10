@@ -163,6 +163,23 @@ function pull(ci) {
   const plot = plots[ci];
   if (!plot) return;
 
+  const rootLen = plot.items.filter(it => !it.rot).length;
+
+  // Pulling a tiny sprout (1 root) = waste! Penalty.
+  if (rootLen <= 1 && !plot.golden) {
+    const cx = GRID_LEFT + ci * COL_W + COL_W / 2;
+    score = Math.max(0, score - 10);
+    addFeedback('太小了! -10', cx, GROUND_Y - 40, '#ff6644');
+    shakeX = (Math.random() - 0.5) * 6;
+    spawnP(cx, GROUND_Y, '#aa6633', 6);
+    globalRep++;
+    updateHUD();
+    // Regenerate this plot
+    plots[ci] = generatePlots()[ci];
+    if (globalRep >= TOTAL_REPS) state = 'done';
+    return;
+  }
+
   // Start pull animation
   pullAnim = {
     col: ci,
@@ -383,57 +400,46 @@ function render() {
       ctx.setLineDash([]);
     }
 
-    // Surface plant (size = hint)
-    const sz = plot.surfaceSize;
-    const plantH = 15 + sz * 45;
-    const leafCount = Math.ceil(sz * 5);
-
-    // Stem
-    ctx.strokeStyle = '#3a8a3a'; ctx.lineWidth = 2 + sz * 2;
-    ctx.beginPath(); ctx.moveTo(cx, GROUND_Y); ctx.lineTo(cx, GROUND_Y - plantH); ctx.stroke();
-
-    // Leaves
-    ctx.fillStyle = plot.golden ? '#ffd700' : '#4ab54a';
-    for (let l = 0; l < leafCount; l++) {
-      const ly = GROUND_Y - plantH * (0.3 + l * 0.15);
-      const side = l % 2 === 0 ? -1 : 1;
-      const lsz = 6 + sz * 10;
-      ctx.beginPath();
-      ctx.ellipse(cx + side * (8 + sz * 6), ly, lsz, lsz * 0.4, side * 0.5, 0, Math.PI * 2);
-      ctx.fill();
+    // Surface plant — VERY OBVIOUS tier system
+    const rootLen = plot.items.filter(it => !it.rot).length;
+    let plantEmoji, plantSize, tierLabel, tierColor;
+    if (rootLen <= 1) {
+      plantEmoji = '🌱'; plantSize = 28; tierLabel = '小'; tierColor = '#888';
+    } else if (rootLen <= 3) {
+      plantEmoji = '🌿'; plantSize = 36; tierLabel = '中'; tierColor = '#66cc66';
+    } else if (rootLen <= 5) {
+      plantEmoji = '🪴'; plantSize = 44; tierLabel = '大'; tierColor = '#44aaff';
+    } else {
+      plantEmoji = '🌳'; plantSize = 54; tierLabel = '巨'; tierColor = '#ffd700';
     }
 
-    // Top sprout
-    ctx.fillStyle = plot.golden ? '#ffe44a' : '#5cc55c';
-    ctx.beginPath();
-    ctx.ellipse(cx, GROUND_Y - plantH - 5, 5 + sz * 8, 8 + sz * 6, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Big emoji above ground
+    ctx.font = `${plantSize}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(plantEmoji, cx, GROUND_Y - 5);
 
-    // Golden sparkle
+    // Tier label + root count — large and obvious
+    ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = tierColor;
+    ctx.fillText(`${tierLabel} ×${rootLen}`, cx, GROUND_Y - plantSize - 12);
+
+    // Golden glow
     if (plot.golden) {
-      const sparkle = Math.sin(frame * 0.08 + i) * 0.5 + 0.5;
+      const sparkle = 0.5 + Math.sin(frame * 0.08 + i) * 0.3;
       ctx.save();
-      ctx.globalAlpha = sparkle * 0.6;
-      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 12;
-      ctx.fillStyle = '#ffd700';
-      ctx.beginPath(); ctx.arc(cx, GROUND_Y - plantH - 10, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = sparkle;
+      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20;
+      ctx.font = `${plantSize}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(plantEmoji, cx, GROUND_Y - 5);
       ctx.restore();
+      ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#ffd700'; ctx.textAlign = 'center';
+      ctx.fillText('🌟×2', cx, GROUND_Y - plantSize - 28);
     }
 
-    // Rot warning (subtle)
+    // Rot warning — obvious red skull
     if (plot.hasRot) {
-      ctx.globalAlpha = 0.4 + Math.sin(frame * 0.06) * 0.2;
-      ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillStyle = '#88aa44';
-      ctx.fillText('~', cx - 8, GROUND_Y - 5);
-      ctx.fillText('~', cx + 8, GROUND_Y - 3);
-      ctx.globalAlpha = 1;
+      ctx.font = '14px serif'; ctx.textAlign = 'center';
+      ctx.fillText('⚠️', cx + 25, GROUND_Y - 20);
     }
-
-    // Root count hint (small number)
-    ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.fillText(`×${plot.items.filter(it => !it.rot).length}`, cx, GROUND_Y + 20);
   }
 
   // Pull animation — show roots being pulled up
