@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kiwii Power — 种地收获</title>
+<title>Kiwii Power — 拔萝卜</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  background: #0a1a0a;
+  background: #0a1a08;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   min-height: 100vh;
   font-family: -apple-system, 'SF Pro Display', sans-serif;
@@ -31,7 +31,7 @@ canvas { border-radius: 12px; cursor: pointer; }
   z-index: 100; gap: 16px;
 }
 #start-overlay h1 { color: #fff; font-size: 36px; font-weight: 300; }
-#start-overlay p { color: #aaa; font-size: 17px; max-width: 480px; text-align: center; line-height: 2.2; }
+#start-overlay p { color: #aaa; font-size: 17px; max-width: 500px; text-align: center; line-height: 2.2; }
 #start-overlay strong { color: #7aff7a; }
 #go-btn {
   margin-top: 14px; padding: 14px 40px; font-size: 16px;
@@ -44,32 +44,33 @@ canvas { border-radius: 12px; cursor: pointer; }
 <body>
 
 <div id="start-overlay">
-  <h1>🌾 种地收获</h1>
+  <h1>🥕 拔萝卜</h1>
   <p>
-    <strong style="color:#fff;font-size:15px">本质：分类决策 × 田地规划</strong><br>
-    <span style="color:#aaa;font-size:13px">5 块田，把同类作物种一起 → 3连成熟收获! 训练快速归类和空间管理</span><br><br>
-    每次拿到一颗随机种子<br>
-    光标扫描 5 块田，<strong>空格/点击 = 种进当前田!</strong><br><br>
+    <strong style="color:#fff;font-size:15px">本质：信息判读 × 连锁期望</strong><br>
+    <span style="color:#aaa;font-size:13px">地表越茂盛 = 地下根系越密！一拔带出一串 — 训练线索判断和延迟决策</span><br><br>
+    5 块田，地表的<strong>叶子大小</strong>暗示根系长度<br>
+    光标扫描，<strong>空格/点击 = 拔!</strong><br><br>
     <span style="color:#888;font-size:14px;line-height:1.8">
-    ▸ 同田连续 3 株相同 → 成熟收获! +30~80分<br>
-    ▸ 田满(7株)杂草丛生 → 清田重来，扣 20 分<br>
-    ▸ 连续收获 combo → 分数翻倍!<br><br>
-    ▸ 前期：3 种作物(🌽🥕🍇)，容易归类<br>
-    ▸ 中期：5 种，需要规划每块田种什么<br>
-    ▸ 后期：6 种 + 🐛害虫(放哪吃哪田顶部2株)<br><br>
-    ▸ <span style="color:#aaa">扩展方向：季节轮作、肥料加速、彩虹种子、虫害防治</span>
+    ▸ 拔出根系：连锁越长分越高! (1→5→15→30→50...)<br>
+    ▸ 根系可能跨田连接 — 一拔带出邻田的宝贝<br>
+    ▸ 🌟金色根 = 双倍分!<br>
+    ▸ 后期出现 🦠烂根 — 碰到就中断连锁并扣分<br><br>
+    ▸ 前期：根系短(1-3)，学习看暗示<br>
+    ▸ 中期：根系长(2-5)，连锁跨田<br>
+    ▸ 后期：超长根(3-7) + 烂根陷阱，高风险高回报<br><br>
+    ▸ <span style="color:#aaa">扩展方向：地下水脉、化石发现、根系地图记忆、boss巨根</span>
     </span>
   </p>
-  <button id="go-btn">开种</button>
+  <button id="go-btn">开拔!</button>
 </div>
 
 <div id="hud">
   <div class="hi">动作 <span class="g" id="h-mv">1/4</span></div>
   <div class="hi">Rep <span class="g" id="h-rp">0/10</span></div>
   <div class="hi">分 <span class="y" id="h-sc">0</span></div>
-  <div class="hi">连收 <span class="g" id="h-combo">0</span></div>
+  <div class="hi">最长 <span class="g" id="h-best">0</span></div>
 </div>
-<div id="btm">空格/点击 = 种进当前田 · 同田3连 = 成熟收获!</div>
+<div id="btm">空格/点击 = 拔! · 叶子越大根越长!</div>
 
 <canvas id="c"></canvas>
 
@@ -81,171 +82,221 @@ const H = Math.min(640, window.innerHeight - 20);
 canvas.width = W; canvas.height = H;
 
 const COLS = 5;
-const MAX_ROWS = 7;
 const TOTAL_REPS = 40;
-const COL_W = 80;
-const CELL_H = 60;
+const COL_W = 120;
 const GRID_LEFT = (W - COLS * COL_W) / 2;
-const GRID_TOP = 100;
+const GROUND_Y = H * 0.38;
 
-const ALL_SEEDS = [
-  { emoji: '🌽', color: '#ffdd44' },
+const CROPS = [
   { emoji: '🥕', color: '#ff8833' },
-  { emoji: '🍇', color: '#9944cc' },
-  { emoji: '🍓', color: '#ff4466' },
-  { emoji: '🥬', color: '#44cc66' },
-  { emoji: '🍑', color: '#ffaa88' },
+  { emoji: '🥔', color: '#cc9944' },
+  { emoji: '🌽', color: '#ffdd44' },
+  { emoji: '🧅', color: '#ddaa88' },
+  { emoji: '🍠', color: '#cc6688' },
+  { emoji: '🥜', color: '#aa8855' },
+  { emoji: '🫚', color: '#ccaa33' },
 ];
-const SKULL = { emoji: '🐛', color: '#888' };
 
 let state = 'idle';
-let globalRep = 0, score = 0, comboCount = 0;
-let columns = []; // each: array of seed indices
-let cursorX = 0, cursorDir = 1, cursorSpeed = 1.8;
-let currentSeed = null; // { idx, emoji, color } or skull
+let globalRep = 0, score = 0, bestChain = 0;
+let cursorX = 0, cursorDir = 1, cursorSpeed = 1.6;
+let plots = []; // each: { rootLength, items[], hasRot, golden, surfaceSize, connected[] }
 let particles = [], feedbacks = [];
 let shakeX = 0, shakeY = 0;
 let flashAlpha = 0, flashColor = '';
 let frame = 0;
-let clearAnims = []; // [{col, startRow, count, timer}]
+let pullAnim = null; // { col, items[], step, maxSteps, rotHit }
 
-function getSeedCount() {
-  const p = globalRep / (TOTAL_REPS - 1);
-  if (p < 0.25) return 3;
-  if (p < 0.5) return 4;
-  if (p < 0.75) return 5;
-  return 6;
-}
+function t() { return globalRep / (TOTAL_REPS - 1); }
 
-function hasSkull() {
-  return globalRep / (TOTAL_REPS - 1) > 0.6;
-}
+function generatePlots() {
+  const p = t();
+  const plots_ = [];
 
-function pickSeed() {
-  if (hasSkull() && Math.random() < 0.15) {
-    return { idx: -1, emoji: SKULL.emoji, color: SKULL.color, isSkull: true };
+  // Determine root networks
+  // Each plot has a base root length, then some connect to neighbors
+  for (let i = 0; i < COLS; i++) {
+    const minLen = p < 0.25 ? 1 : p < 0.5 ? 2 : 3;
+    const maxLen = p < 0.25 ? 3 : p < 0.5 ? 5 : 7;
+    const rootLength = minLen + Math.floor(Math.random() * (maxLen - minLen + 1));
+
+    // Pick items for this root
+    const items = [];
+    const cropIdx = Math.floor(Math.random() * Math.min(3 + Math.floor(p * 4), CROPS.length));
+    for (let r = 0; r < rootLength; r++) {
+      items.push(CROPS[Math.floor(Math.random() * (cropIdx + 1))]);
+    }
+
+    // Rotten root chance (after 50% progress)
+    const hasRot = p > 0.5 && Math.random() < (p - 0.5) * 0.6;
+    if (hasRot) {
+      // Insert rot at random position (not first)
+      const rotPos = 1 + Math.floor(Math.random() * (items.length - 1));
+      items.splice(rotPos, 0, { emoji: '🦠', color: '#44aa44', rot: true });
+    }
+
+    // Golden chance
+    const golden = p > 0.3 && Math.random() < 0.12;
+
+    // Surface hint size correlates with root length (with some noise)
+    const surfaceSize = Math.min(1, (rootLength / 7) * 0.85 + Math.random() * 0.15);
+
+    plots_.push({ rootLength, items, hasRot, golden, surfaceSize, connected: [] });
   }
-  const count = getSeedCount();
-  const idx = Math.floor(Math.random() * count);
-  return { idx, emoji: ALL_SEEDS[idx].emoji, color: ALL_SEEDS[idx].color, isSkull: false };
-}
 
-function colX(i) { return GRID_LEFT + i * COL_W; }
+  // Cross-connections: some roots extend to neighbor
+  for (let i = 0; i < COLS - 1; i++) {
+    if (Math.random() < 0.2 + p * 0.25) {
+      plots_[i].connected.push(i + 1);
+      plots_[i + 1].connected.push(i);
+    }
+  }
+
+  return plots_;
+}
 
 function initGame() {
-  columns = [];
-  for (let i = 0; i < COLS; i++) columns.push([]);
-  currentSeed = pickSeed();
-  comboCount = 0;
+  plots = generatePlots();
 }
 
-function placeSeed(ci) {
-  const col = columns[ci];
+function pull(ci) {
+  const plot = plots[ci];
+  if (!plot) return;
 
-  if (currentSeed.isSkull) {
-    // Bug: eat top 2 of that column
-    const removed = Math.min(2, col.length);
-    if (removed > 0) {
-      col.splice(col.length - removed, removed);
-      const cx = colX(ci) + COL_W / 2;
-      const cy = GRID_TOP + (MAX_ROWS - col.length - 1) * CELL_H;
-      spawnP(cx, cy, '#888', 12);
-      addFeedback('🐛 虫害!', cx, cy - 20, '#ff4444');
-      shakeX = (Math.random() - 0.5) * 8;
-    } else {
-      const cx = colX(ci) + COL_W / 2;
-      addFeedback('空田无效', cx, GRID_TOP + MAX_ROWS * CELL_H / 2, '#666');
-    }
-    comboCount = 0;
+  // Start pull animation
+  pullAnim = {
+    col: ci,
+    items: [...plot.items],
+    golden: plot.golden,
+    connected: [...plot.connected],
+    step: 0,
+    maxSteps: plot.items.length,
+    rotHit: false,
+    scoredItems: 0,
+    totalPts: 0,
+  };
+}
+
+function advancePull() {
+  if (!pullAnim) return;
+
+  const pa = pullAnim;
+  if (pa.step >= pa.maxSteps) {
+    // Done pulling — finalize
+    finishPull();
+    return;
+  }
+
+  const item = pa.items[pa.step];
+  const cx = GRID_LEFT + pa.col * COL_W + COL_W / 2;
+  const cy = GROUND_Y + 40 + pa.step * 50;
+
+  if (item.rot) {
+    // Hit rotten root — stop chain!
+    pa.rotHit = true;
+    score = Math.max(0, score - 15);
+    flashAlpha = 0.3; flashColor = '#44aa44';
+    shakeX = (Math.random() - 0.5) * 12;
+    spawnP(cx, cy, '#44aa44', 15);
+    addFeedback('🦠 烂根! -15', cx, cy - 30, '#44aa44');
+    finishPull();
+    return;
+  }
+
+  // Good pull!
+  pa.scoredItems++;
+  const chainBonus = [0, 1, 5, 15, 30, 50, 75, 105][Math.min(pa.scoredItems, 7)];
+  const mult = pa.golden ? 2 : 1;
+  const pts = (8 + chainBonus) * mult;
+  pa.totalPts += pts;
+  score += pts;
+
+  spawnP(cx, cy, item.color, 5 + pa.scoredItems * 2);
+  if (pa.scoredItems >= 4) {
+    addFeedback(`${item.emoji} 连锁${pa.scoredItems}! +${pts}`, cx, cy - 25, '#ffd700');
   } else {
-    col.push(currentSeed.idx);
+    addFeedback(`${item.emoji} +${pts}`, cx, cy - 20, item.color);
+  }
 
-    // Check overflow
-    if (col.length > MAX_ROWS) {
-      score = Math.max(0, score - 20);
-      const cx = colX(ci) + COL_W / 2;
-      spawnP(cx, GRID_TOP + MAX_ROWS * CELL_H / 2, '#ff4444', 15);
-      addFeedback('🌿 杂草! -20', cx, GRID_TOP + 20, '#ff4444');
-      flashAlpha = 0.3; flashColor = '#ff2200';
-      shakeX = (Math.random() - 0.5) * 12;
-      columns[ci] = [];
-      comboCount = 0;
-    } else {
-      // Check for 3-match from bottom of the stack
-      checkAndClear(ci);
+  if (pa.golden) {
+    spawnP(cx, cy, '#ffd700', 4);
+  }
+
+  pa.step++;
+}
+
+function finishPull() {
+  const pa = pullAnim;
+
+  // Chain bonus feedback
+  if (pa.scoredItems >= 3 && !pa.rotHit) {
+    const cx = GRID_LEFT + pa.col * COL_W + COL_W / 2;
+    flashAlpha = 0.12; flashColor = '#ffd700';
+    addFeedback(`🎉 ${pa.scoredItems}连根! 总+${pa.totalPts}`, cx, GROUND_Y - 30, '#ffd700');
+    spawnP(cx, GROUND_Y, '#ffd700', 15);
+  }
+
+  if (pa.scoredItems > bestChain) bestChain = pa.scoredItems;
+
+  // Pull from connected plots too
+  if (!pa.rotHit && pa.connected.length > 0) {
+    for (const ci of pa.connected) {
+      if (plots[ci] && plots[ci].items.length > 0) {
+        // Pull 1-2 bonus items from connected
+        const bonus = Math.min(2, plots[ci].items.length);
+        const cx = GRID_LEFT + ci * COL_W + COL_W / 2;
+        for (let b = 0; b < bonus; b++) {
+          const item = plots[ci].items[b];
+          if (item && !item.rot) {
+            const pts = 12 * (pa.golden ? 2 : 1);
+            score += pts;
+            spawnP(cx, GROUND_Y + 60, item.color, 6);
+            addFeedback(`${item.emoji} 连带! +${pts}`, cx, GROUND_Y + 40 + b * 30, '#88ddaa');
+          }
+        }
+        // Mark connected as partially depleted
+        plots[ci].items = plots[ci].items.slice(bonus);
+        plots[ci].surfaceSize *= 0.4;
+      }
     }
   }
 
+  pullAnim = null;
   globalRep++;
   updateHUD();
+
   if (globalRep >= TOTAL_REPS) {
     state = 'done';
   } else {
-    currentSeed = pickSeed();
-  }
-}
-
-function checkAndClear(ci) {
-  const col = columns[ci];
-  if (col.length < 3) return;
-
-  // Check from the top for consecutive matches
-  let matchLen = 1;
-  for (let i = col.length - 2; i >= 0; i--) {
-    if (col[i] === col[col.length - 1]) matchLen++;
-    else break;
-  }
-
-  if (matchLen >= 3) {
-    const startRow = col.length - matchLen;
-    const seedIdx = col[col.length - 1];
-    const cx = colX(ci) + COL_W / 2;
-    const cy = GRID_TOP + (MAX_ROWS - startRow - matchLen / 2) * CELL_H;
-
-    // Animate
-    clearAnims.push({ col: ci, startRow, count: matchLen, timer: 25 });
-
-    // Remove
-    col.splice(startRow, matchLen);
-
-    // Score
-    comboCount++;
-    const baseScore = 20 + matchLen * 10 + (seedIdx >= 3 ? 15 : 0);
-    const comboMult = Math.min(comboCount, 4);
-    const pts = baseScore * comboMult;
-    score += pts;
-
-    spawnP(cx, cy, ALL_SEEDS[seedIdx].color, 10 + matchLen * 5);
-    if (comboCount > 1) {
-      flashAlpha = 0.1; flashColor = ALL_SEEDS[seedIdx].color;
-      addFeedback(`${matchLen}连收! ×${comboMult} +${pts}`, cx, cy - 30, '#ffd700');
-    } else {
-      addFeedback(`🌾 收获! +${pts}`, cx, cy - 20, ALL_SEEDS[seedIdx].color);
+    // Regenerate the pulled plot (and refresh all after every 5)
+    plots[pa.col] = generatePlots()[pa.col];
+    if (globalRep % 5 === 0) {
+      plots = generatePlots();
     }
-
-    // Chain: check again after clear (items above might now match)
-    setTimeout(() => { if (columns[ci]) checkAndClear(ci); }, 100);
-  } else {
-    comboCount = 0;
   }
 }
+
+let pullTimer = 0;
 
 function strike() {
-  if (state !== 'play') return;
+  if (state !== 'play' || pullAnim) return;
 
   let hitCol = -1;
   for (let i = 0; i < COLS; i++) {
-    const cx = colX(i);
-    if (cursorX >= cx - 5 && cursorX <= cx + COL_W + 5) { hitCol = i; break; }
+    const cx = GRID_LEFT + i * COL_W;
+    if (cursorX >= cx - 10 && cursorX <= cx + COL_W + 10) { hitCol = i; break; }
   }
-  if (hitCol >= 0) placeSeed(hitCol);
+  if (hitCol >= 0) {
+    pull(hitCol);
+    pullTimer = 0;
+  }
 }
 
 function updateHUD() {
   document.getElementById('h-mv').textContent = `${Math.min(Math.floor(globalRep / 10) + 1, 4)}/4`;
   document.getElementById('h-rp').textContent = `${globalRep % 10}/10`;
   document.getElementById('h-sc').textContent = score;
-  document.getElementById('h-combo').textContent = comboCount;
+  document.getElementById('h-best').textContent = bestChain;
 }
 
 function spawnP(x, y, color, n) {
@@ -254,7 +305,7 @@ function spawnP(x, y, color, n) {
     particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s - 2, life: 1, color, sz: 2 + Math.random() * 4 });
   }
 }
-function addFeedback(t, x, y, c) { feedbacks.push({ text: t, x, y, life: 1.5, color: c }); }
+function addFeedback(t, x, y, c) { feedbacks.push({ text: t, x, y, life: 1.8, color: c }); }
 
 function update() {
   if (state !== 'play' && state !== 'done') return;
@@ -262,20 +313,27 @@ function update() {
   shakeX *= 0.85; shakeY *= 0.85;
   if (flashAlpha > 0) flashAlpha -= 0.02;
 
-  if (state === 'play') {
+  // Cursor
+  if (!pullAnim && state === 'play') {
+    cursorSpeed = 1.4 + t() * 0.6;
     cursorX += cursorSpeed * cursorDir;
-    const leftBound = GRID_LEFT - 10;
-    const rightBound = GRID_LEFT + COLS * COL_W + 10;
+    const leftBound = GRID_LEFT - 20;
+    const rightBound = GRID_LEFT + COLS * COL_W + 20;
     if (cursorX > rightBound) { cursorX = rightBound; cursorDir = -1; }
     if (cursorX < leftBound) { cursorX = leftBound; cursorDir = 1; }
   }
 
-  clearAnims.forEach(a => a.timer--);
-  clearAnims = clearAnims.filter(a => a.timer > 0);
+  // Pull animation — advance every N frames
+  if (pullAnim) {
+    pullTimer++;
+    if (pullTimer % 12 === 0) {
+      advancePull();
+    }
+  }
 
-  particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.018; });
+  particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life -= 0.015; });
   particles = particles.filter(p => p.life > 0);
-  feedbacks.forEach(f => { f.y -= 1.2; f.life -= 0.013; });
+  feedbacks.forEach(f => { f.y -= 0.8; f.life -= 0.012; });
   feedbacks = feedbacks.filter(f => f.life > 0);
 }
 
@@ -284,107 +342,157 @@ function render() {
   ctx.save();
   ctx.translate(shakeX, shakeY);
 
-  // Background
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0a1a0a'); bg.addColorStop(1, '#041008');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  // Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+  sky.addColorStop(0, '#1a3a2a'); sky.addColorStop(1, '#0a2a1a');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, GROUND_Y);
 
-  // Draw columns
+  // Ground
+  ctx.fillStyle = '#3a2a15';
+  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+
+  // Ground texture line
+  ctx.strokeStyle = '#5a4a25'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(W, GROUND_Y); ctx.stroke();
+  ctx.strokeStyle = '#2a5a2a'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x = 0; x < W; x += 8) {
+    const gy = GROUND_Y - 2 + Math.sin(x * 0.05 + frame * 0.01) * 2;
+    x === 0 ? ctx.moveTo(x, gy) : ctx.lineTo(x, gy);
+  }
+  ctx.stroke();
+
+  // Draw plots
   for (let i = 0; i < COLS; i++) {
-    const x = colX(i);
-    const col = columns[i];
+    const plot = plots[i];
+    if (!plot) continue;
+    const x = GRID_LEFT + i * COL_W;
+    const cx = x + COL_W / 2;
 
-    // Column bg
-    ctx.fillStyle = 'rgba(20,40,20,0.4)';
-    ctx.fillRect(x + 2, GRID_TOP, COL_W - 4, MAX_ROWS * CELL_H);
-    ctx.strokeStyle = 'rgba(60,120,60,0.3)'; ctx.lineWidth = 1;
-    ctx.strokeRect(x + 2, GRID_TOP, COL_W - 4, MAX_ROWS * CELL_H);
+    // Underground hint (faint root lines)
+    ctx.strokeStyle = 'rgba(100,80,40,0.2)'; ctx.lineWidth = 2;
+    const rootDepth = plot.items.length * 40;
+    ctx.beginPath(); ctx.moveTo(cx, GROUND_Y + 10); ctx.lineTo(cx, GROUND_Y + 10 + rootDepth); ctx.stroke();
 
-    // Row guides
-    for (let r = 0; r < MAX_ROWS; r++) {
-      ctx.strokeStyle = 'rgba(40,80,40,0.15)';
-      ctx.strokeRect(x + 3, GRID_TOP + r * CELL_H, COL_W - 6, CELL_H);
+    // Cross-connections (dotted lines underground)
+    for (const ci of plot.connected) {
+      const ox = GRID_LEFT + ci * COL_W + COL_W / 2;
+      ctx.strokeStyle = 'rgba(100,150,80,0.15)'; ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(cx, GROUND_Y + 50); ctx.lineTo(ox, GROUND_Y + 50); ctx.stroke();
+      ctx.setLineDash([]);
     }
 
-    // Seeds in column (bottom-aligned)
-    for (let r = 0; r < col.length; r++) {
-      const seedIdx = col[r];
-      const seed = ALL_SEEDS[seedIdx];
-      const cellY = GRID_TOP + (MAX_ROWS - 1 - r) * CELL_H;
+    // Surface plant (size = hint)
+    const sz = plot.surfaceSize;
+    const plantH = 15 + sz * 45;
+    const leafCount = Math.ceil(sz * 5);
 
-      // Check if part of a clearing animation
-      let clearing = false;
-      for (const a of clearAnims) {
-        if (a.col === i && r >= a.startRow && r < a.startRow + a.count) {
-          clearing = true; break;
-        }
-      }
+    // Stem
+    ctx.strokeStyle = '#3a8a3a'; ctx.lineWidth = 2 + sz * 2;
+    ctx.beginPath(); ctx.moveTo(cx, GROUND_Y); ctx.lineTo(cx, GROUND_Y - plantH); ctx.stroke();
 
-      if (clearing) {
-        ctx.globalAlpha = 0.3 + Math.random() * 0.3;
-      }
+    // Leaves
+    ctx.fillStyle = plot.golden ? '#ffd700' : '#4ab54a';
+    for (let l = 0; l < leafCount; l++) {
+      const ly = GROUND_Y - plantH * (0.3 + l * 0.15);
+      const side = l % 2 === 0 ? -1 : 1;
+      const lsz = 6 + sz * 10;
+      ctx.beginPath();
+      ctx.ellipse(cx + side * (8 + sz * 6), ly, lsz, lsz * 0.4, side * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-      // Cell background tint
-      ctx.fillStyle = seed.color + '22';
-      ctx.fillRect(x + 3, cellY + 1, COL_W - 6, CELL_H - 2);
+    // Top sprout
+    ctx.fillStyle = plot.golden ? '#ffe44a' : '#5cc55c';
+    ctx.beginPath();
+    ctx.ellipse(cx, GROUND_Y - plantH - 5, 5 + sz * 8, 8 + sz * 6, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-      // Emoji
-      ctx.font = '32px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(seed.emoji, x + COL_W / 2, cellY + CELL_H / 2);
+    // Golden sparkle
+    if (plot.golden) {
+      const sparkle = Math.sin(frame * 0.08 + i) * 0.5 + 0.5;
+      ctx.save();
+      ctx.globalAlpha = sparkle * 0.6;
+      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 12;
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath(); ctx.arc(cx, GROUND_Y - plantH - 10, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
 
+    // Rot warning (subtle)
+    if (plot.hasRot) {
+      ctx.globalAlpha = 0.4 + Math.sin(frame * 0.06) * 0.2;
+      ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#88aa44';
+      ctx.fillText('~', cx - 8, GROUND_Y - 5);
+      ctx.fillText('~', cx + 8, GROUND_Y - 3);
       ctx.globalAlpha = 1;
     }
 
-    // Column height indicator
+    // Root count hint (small number)
     ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillStyle = col.length >= 6 ? '#ff6644' : col.length >= 4 ? '#ffaa44' : '#66aa66';
-    ctx.fillText(`${col.length}/${MAX_ROWS}`, x + COL_W / 2, GRID_TOP + MAX_ROWS * CELL_H + 14);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillText(`×${plot.items.filter(it => !it.rot).length}`, cx, GROUND_Y + 20);
   }
 
-  // Current seed preview + cursor
-  if (state === 'play' && currentSeed) {
-    // Which column is highlighted
-    let hitCol = -1;
-    for (let i = 0; i < COLS; i++) {
-      const cx = colX(i);
-      if (cursorX >= cx - 5 && cursorX <= cx + COL_W + 5) { hitCol = i; break; }
-    }
+  // Pull animation — show roots being pulled up
+  if (pullAnim) {
+    const pa = pullAnim;
+    const cx = GRID_LEFT + pa.col * COL_W + COL_W / 2;
 
-    if (hitCol >= 0) {
-      const hx = colX(hitCol);
-      // Highlight column
-      ctx.strokeStyle = 'rgba(120,255,120,0.5)'; ctx.lineWidth = 3;
-      ctx.setLineDash([6, 4]);
-      ctx.strokeRect(hx, GRID_TOP - 2, COL_W, MAX_ROWS * CELL_H + 4);
-      ctx.setLineDash([]);
+    // Draw revealed root
+    ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(cx, GROUND_Y + 10);
+    const revealDepth = Math.min(pa.step + 1, pa.maxSteps) * 50;
+    ctx.lineTo(cx, GROUND_Y + 10 + revealDepth); ctx.stroke();
 
-      // Preview: where seed will land
-      const landRow = columns[hitCol].length;
-      if (landRow < MAX_ROWS) {
-        const landY = GRID_TOP + (MAX_ROWS - 1 - landRow) * CELL_H;
-        ctx.globalAlpha = 0.4;
-        ctx.font = '32px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(currentSeed.emoji, hx + COL_W / 2, landY + CELL_H / 2);
-        ctx.globalAlpha = 1;
+    // Draw items along root
+    for (let s = 0; s <= pa.step && s < pa.items.length; s++) {
+      const item = pa.items[s];
+      const iy = GROUND_Y + 40 + s * 50;
+      // Rising animation
+      const rise = Math.max(0, (pullTimer - s * 12) * 2);
+      const drawY = iy - Math.min(rise, iy - GROUND_Y + 60);
+
+      ctx.font = '30px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (item.rot && pa.rotHit) {
+        ctx.fillText(item.emoji, cx, drawY);
+      } else if (!item.rot) {
+        ctx.fillText(item.emoji, cx, drawY);
       }
     }
 
-    // Cursor line
-    ctx.strokeStyle = 'rgba(120,255,120,0.3)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cursorX, GRID_TOP - 30); ctx.lineTo(cursorX, GRID_TOP + MAX_ROWS * CELL_H + 5); ctx.stroke();
+    // Pull string effect
+    ctx.strokeStyle = 'rgba(255,255,200,0.3)'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(cx, GROUND_Y - 30); ctx.lineTo(cx, GROUND_Y + 10); ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
-    // Next seed indicator at top
-    ctx.font = '28px serif'; ctx.textAlign = 'center';
-    ctx.fillText(currentSeed.emoji, W / 2, 70);
-    ctx.font = '12px sans-serif'; ctx.fillStyle = '#aaa';
-    ctx.fillText('下一个', W / 2, 50);
-
-    // Arrow pointing down
-    if (hitCol >= 0) {
-      const ax = colX(hitCol) + COL_W / 2;
-      ctx.fillStyle = '#7aff7a';
-      ctx.beginPath(); ctx.moveTo(ax, GRID_TOP - 10); ctx.lineTo(ax - 8, GRID_TOP - 22); ctx.lineTo(ax + 8, GRID_TOP - 22); ctx.closePath(); ctx.fill();
+  // Cursor
+  if (!pullAnim && state === 'play') {
+    let hitCol = -1;
+    for (let i = 0; i < COLS; i++) {
+      const cx = GRID_LEFT + i * COL_W;
+      if (cursorX >= cx - 10 && cursorX <= cx + COL_W + 10) { hitCol = i; break; }
     }
+
+    if (hitCol >= 0) {
+      const hx = GRID_LEFT + hitCol * COL_W;
+      ctx.strokeStyle = 'rgba(120,255,120,0.4)'; ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(hx, GROUND_Y - 80, COL_W, 80 + (H - GROUND_Y) * 0.6);
+      ctx.setLineDash([]);
+
+      // Hand/pull indicator
+      ctx.font = '24px serif'; ctx.textAlign = 'center';
+      ctx.fillText('🤚', hx + COL_W / 2, GROUND_Y - 85);
+    }
+
+    // Cursor line
+    ctx.strokeStyle = 'rgba(120,255,120,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cursorX, 0); ctx.lineTo(cursorX, H); ctx.stroke();
   }
 
   ctx.restore();
@@ -404,7 +512,7 @@ function render() {
   // Feedbacks
   for (const f of feedbacks) {
     ctx.globalAlpha = Math.min(1, Math.max(0, f.life));
-    ctx.font = 'bold 18px -apple-system, sans-serif'; ctx.textAlign = 'center';
+    ctx.font = 'bold 17px -apple-system, sans-serif'; ctx.textAlign = 'center';
     ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
@@ -419,12 +527,13 @@ function render() {
   if (state === 'done') {
     ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center';
-    ctx.font = '26px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('游戏结束', W/2, H/2 - 50);
-    ctx.font = '22px sans-serif'; ctx.fillStyle = '#ffd700'; ctx.fillText(`总分: ${score}`, W/2, H/2 - 10);
-    const grade = score >= 600 ? 'S' : score >= 400 ? 'A' : score >= 200 ? 'B' : 'C';
-    const gc = score >= 600 ? '#ffd700' : score >= 400 ? '#7aff7a' : score >= 200 ? '#88aaff' : '#aaa';
-    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = gc; ctx.fillText(grade, W/2, H/2 + 45);
-    ctx.font = '13px sans-serif'; ctx.fillStyle = '#888'; ctx.fillText('点击重玩', W/2, H/2 + 80);
+    ctx.font = '26px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('收获季结束', W/2, H/2 - 60);
+    ctx.font = '22px sans-serif'; ctx.fillStyle = '#ffd700'; ctx.fillText(`总分: ${score}`, W/2, H/2 - 20);
+    ctx.font = '16px sans-serif'; ctx.fillStyle = '#88ddaa'; ctx.fillText(`最长连根: ${bestChain}`, W/2, H/2 + 10);
+    const grade = score >= 600 ? 'S' : score >= 400 ? 'A' : score >= 250 ? 'B' : 'C';
+    const gc = score >= 600 ? '#ffd700' : score >= 400 ? '#7aff7a' : score >= 250 ? '#88aaff' : '#aaa';
+    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = gc; ctx.fillText(grade, W/2, H/2 + 60);
+    ctx.font = '13px sans-serif'; ctx.fillStyle = '#888'; ctx.fillText('点击重玩', W/2, H/2 + 95);
   }
 }
 
@@ -432,10 +541,11 @@ function loop() { update(); render(); requestAnimationFrame(loop); }
 
 function handleInput() {
   if (state === 'done') {
-    globalRep = 0; score = 0; comboCount = 0;
+    globalRep = 0; score = 0; bestChain = 0;
     cursorX = GRID_LEFT + COLS * COL_W / 2; cursorDir = 1;
-    particles = []; feedbacks = []; clearAnims = [];
-    initGame(); state = 'play'; updateHUD();
+    particles = []; feedbacks = []; pullAnim = null;
+    plots = generatePlots();
+    state = 'play'; updateHUD();
     return;
   }
   if (state === 'play') strike();
