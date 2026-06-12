@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kiwii | 40 关身体冒险地图</title>
+  <title>Kiwii | 今天的训练</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap');
     :root {
@@ -98,41 +98,44 @@
     .audit-stat,.meta,.key{background:rgba(255,255,255,.72);border:1px solid rgba(114,93,66,.14)}.audit-stat small,.meta small,.key small{color:#8a7b66}.audit-stat b,.meta b{color:#725d42}.key b{color:#168d7f}
     .exercise i{color:#fff;background:#19c8b9}.exercise-head{color:#8a7b66}.why{color:#725d42;background:#ffec9d;border:2px solid #f5c31c}
     .focus-table{border:0;border-radius:20px;gap:8px;overflow:visible}.focus-row{border-bottom:0}.move em{color:#725d42;background:#f3ead5}
+    .app{display:block;max-width:1280px}
+    main{min-height:calc(100vh - 36px)}
+    .topbar{min-height:74px;padding:16px clamp(20px,4vw,48px)}
+    .top-title{color:#168d7f;font-size:22px;font-weight:900;letter-spacing:-.05em;text-transform:lowercase}
+    .top-right{font-weight:800;color:#725d42}
+    .detail-page{max-width:1180px;margin:0 auto;padding-top:clamp(36px,6vw,72px)}
+    .detail-page h2{max-width:760px;font-size:clamp(38px,6vw,72px);line-height:1}
+    .quest-meta{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 26px}
+    .quest-meta span{padding:8px 13px;border:2px solid #d4c4a8;border-radius:999px;background:#fffdf7;box-shadow:0 3px 0 rgba(188,170,137,.25);font-size:11px;font-weight:800}
+    .detail-grid{align-items:start}
+    .quest-card-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .quest-start{width:100%;min-height:62px;margin-top:18px;font-size:16px}
+    .quest-start.started{color:#fff;border-color:#118f85;background:#19c8b9;box-shadow:0 5px 0 #118f85}
+    .quiet-actions{justify-content:center;margin-top:24px}
     @media(max-width:980px){.app{border-radius:0;border:0}.shell{padding:0}}
+    @media(max-width:720px){main{min-height:100vh}.top-right{font-size:10px}.detail-page{padding-top:30px}.exercise-head{display:none}.exercise{grid-template-columns:32px repeat(3,1fr)}.exercise>span:nth-child(2){grid-column:2/-1}.exercise .audit-cell{padding-top:8px;border-top:1px dashed var(--line)}.exercise .audit-cell br{display:none}.audit-bar{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
 <body>
 <div class="shell"><div class="app">
-  <aside class="rail">
-    <div class="brand"><span class="brand-mark"></span>kiwii</div>
-    <div class="rail-label">Kiwii adventure map</div>
-    <nav class="rail-nav">
-      <button class="active" data-page="home"><b>00 / START</b>冒险地图首页</button>
-      <button data-page="input"><b>01 / BAG</b>查看我的装备</button>
-      <button data-page="mix"><b>02 / WORLDS</b>探索区域分布</button>
-      <button data-page="sessions"><b>03 / MAP</b>40 关完整地图</button>
-      <button data-page="detail"><b>04 / QUEST</b>打开今日关卡</button>
-    </nav>
-    <div class="rail-foot"><strong>ADVENTURE MODE</strong><br>48 种动作卡 · 2 件装备<br>40 关会成长的身体旅程</div>
-  </aside>
   <main>
-    <header class="topbar"><span class="top-title" id="topTitle">冒险地图首页</span><div class="top-right">地图已根据你生成 <span class="live"></span></div></header>
+    <header class="topbar"><span class="top-title" id="topTitle">kiwii</span><div class="top-right">今天第一关 <span class="live"></span></div></header>
 
     <section class="page active" data-page="home">
-      <div class="eyebrow">Your Kiwii adventure map</div>
-      <h1>你的 40 关身体冒险，<span class="hilite">已经铺好第一条路。</span></h1>
-      <p class="lead">每次来玩一小关，地图就会更懂你一点。它会记住你的力量、愿望和需要慢行的地方，让下一关总是刚好够有趣。</p>
+      <div class="eyebrow">KIWII ADVENTURE</div>
+      <h1>今天，从<span class="hilite">第一关</span>开始。</h1>
+      <p class="lead">每次完成一小关，你的冒险地图都会继续长大。</p>
       <div class="steps">
-        <div class="step-card"><i>1</i><h3>装备已经装进背包</h3><p>刚才的力量关卡、冒险愿望和慢行旗帜，都已经变成地图的起点。</p></div>
-        <div class="step-card"><i>2</i><h3>十个训练区域等你探索</h3><p>力量森林、核心山谷、节奏海岸会轮流出现，不会一直重复同一种玩法。</p></div>
-        <div class="step-card"><i>3</i><h3>每一关都有具体玩法</h3><p>打开关卡就能看到动作顺序、装备重量、次数和预计时间，照着玩就可以。</p></div>
+        <div class="step-card"><i>1</i><h3>带上装备</h3><p>你的体测结果已经装进背包。</p></div>
+        <div class="step-card"><i>2</i><h3>探索地图</h3><p>每一关都有一点新的身体玩法。</p></div>
+        <div class="step-card"><i>3</i><h3>收下升级</h3><p>完成今天的小任务，就算通关。</p></div>
       </div>
-      <div class="button-row"><button class="btn lime" data-go="input">打开冒险背包</button></div>
+      <div class="button-row"><button class="btn lime" data-go="detail">开始今天第一关</button></div>
     </section>
 
     <section class="page" data-page="input">
-      <div class="eyebrow">Stop 01 · adventure bag</div><div class="expert-review"><b>Kiwii 已经替你收好</b><p>刚才闯关得到的力量手感、冒险愿望和慢行区域，都装进了这个背包。它们会决定地图从哪里开始、哪些关卡多出现一点。</p></div><h2>先看看你的<span class="hilite">冒险背包。</span></h2>
-      <p class="lead">想临时换愿望或调整装备，也可以直接在这里改。地图会马上重新铺路。</p>
+      <div class="eyebrow">MY BAG</div><h2>你的<span class="hilite">冒险背包。</span></h2>
+      <p class="lead">想换个目标，在这里点一下就好。</p>
       <div class="card" style="margin-top:16px">
         <h3>本次冒险装备</h3>
         <div class="input-strip">
@@ -145,37 +148,35 @@
     </section>
 
     <section class="page" data-page="mix">
-      <div class="eyebrow">Stop 02 · adventure worlds</div><div class="expert-review"><b>这张地图为什么长这样？</b><p>Kiwii 会让你喜欢的区域多出现一点，也会在高能量关卡之间放进轻松小岛。慢行旗帜附近，则会自动换成更舒服的玩法。</p></div><h2>未来 40 关，<span class="hilite">会经过这些区域。</span></h2>
-      <p class="lead">每种颜色都是一种身体玩法。比例不是死课表，它会随着你每次回来的状态继续变化。</p>
-      <div class="audit-note"><b>地图提示：</b>力量、稳定、节奏和恢复会交替出现。你不需要一次看懂全部，先知道这趟旅程不会无聊就够了。</div>
+      <div class="eyebrow">WORLDS</div><h2>接下来会遇见的<span class="hilite">冒险区域。</span></h2>
+      <p class="lead">力量森林、核心山谷、节奏海岸，轮流玩，不无聊。</p>
       <div class="card dark"><h3>我的区域探索比例</h3><div class="allocation" id="allocation"></div></div>
       <h3 style="margin-top:22px">每个区域会玩到什么</h3><div class="focus-table" id="mixFocus"></div>
       <div class="button-row"><button class="btn secondary" data-go="input">返回冒险背包</button><button class="btn lime" data-go="sessions">展开 40 关地图</button></div>
     </section>
 
     <section class="page" data-page="sessions">
-      <div class="eyebrow">Stop 03 · full adventure map</div><div class="expert-review"><b>地图会照顾你的游戏节奏</b><p>相似关卡不会一直连着来，高能量挑战之后会安排喘口气的小岛，让身体有时间把新技能存下来。</p></div><h2>未来 40 关的<span class="hilite">完整冒险地图。</span></h2>
-      <p class="lead">点开任何一关，就能提前偷看当天的玩法。今天只需要选一关，不用一口气走完整张地图。</p>
-      <h3>地图设计的四条小规则</h3>
-      <div class="route-rules"><div class="rule-card"><b>01 · 换着区域玩</b><p>不会连续轰炸同一个部位，每关都留一点新鲜感。</p></div><div class="rule-card"><b>02 · 高低能量交替</b><p>力量、控制、节奏和轻松关卡轮流出现。</p></div><div class="rule-card"><b>03 · 路上有休息岛</b><p>活动和恢复关均匀散开，给身体补充能量。</p></div><div class="rule-card"><b>04 · 慢行旗会生效</b><p>需要照顾的区域不会连续遇到高难度挑战。</p></div></div>
-      <h3 style="margin-top:24px">我的 40 关路线</h3>
+      <div class="eyebrow">ADVENTURE MAP</div><h2>你的<span class="hilite">40 关冒险地图。</span></h2>
+      <p class="lead">点一关，看看下一站去哪里。</p>
+      <h3 style="margin-top:24px">选择关卡</h3>
       <div class="timeline" id="timeline"></div><div class="legend" id="legend"></div>
       <div class="button-row"><button class="btn secondary" data-go="mix">看看区域分布</button><button class="btn lime" data-go="detail">打开选中的关卡</button></div>
     </section>
 
     <section class="page detail-page" data-page="detail">
-      <div class="eyebrow">Stop 04 · today’s quest</div><div class="expert-review"><b>今天只玩这一关</b><p>装备不会中途更换，动作顺序已经排好。左边右边、重量、次数和循环数都写得清清楚楚，跟着走就行。</p></div><h2>今日关卡已经打开，准备好就开玩。</h2>
-      <p class="lead">把每个动作当成一个小任务。按顺序完成一轮，休息一下，再看看要不要继续下一轮。</p>
+      <div class="eyebrow">TODAY'S QUEST</div>
+      <h2>准备好了。<span class="hilite">开始今天的训练。</span></h2>
+      <div class="quest-meta"><span id="questDuration">约 20 分钟</span><span>全身启动</span><span>跟着做就好</span></div>
       <div class="detail-grid">
         <div class="card"><div class="session-head"><div><small id="detailIndex">关卡 01 / 40</small><h3 id="detailTitle">力量森林开场关</h3></div><span class="hardware" id="detailHardware">T-Bar</span></div><div class="exercise-list"><div class="exercise-head"><span></span><span>小任务顺序</span><span>左边右边</span><span>每轮次数</span><span>装备重量</span></div><div id="exerciseList"></div></div></div>
-        <div class="card dark"><h3>本关任务卡</h3><div class="audit-bar"><div class="audit-stat"><small>大约用时</small><b id="detailTime">6 分钟</b></div><div class="audit-stat"><small>小任务</small><b id="detailCount">4 个</b></div><div class="audit-stat"><small>地图圈数</small><b id="detailRounds">2 轮</b></div><div class="audit-stat"><small>今日装备</small><b id="auditHardware">T-Bar</b></div><div class="audit-stat"><small>升级技能</small><b id="detailFocus">下肢稳定</b></div></div><p id="detailWhy" style="margin-top:15px;color:#725d42;font-size:12px;line-height:1.75"></p></div>
+        <div class="card dark"><div class="quest-card-title"><h3>今天的任务</h3><span class="hardware">READY</span></div><div class="audit-bar"><div class="audit-stat"><small>用时</small><b id="detailTime">6 分钟</b></div><div class="audit-stat"><small>动作</small><b id="detailCount">4 个</b></div><div class="audit-stat"><small>圈数</small><b id="detailRounds">2 轮</b></div><div class="audit-stat"><small>装备</small><b id="auditHardware">T-Bar</b></div><div class="audit-stat"><small>今日技能</small><b id="detailFocus">下肢稳定</b></div></div><button class="btn lime quest-start" id="startQuest">开始这一关</button></div>
       </div>
-      <div class="button-row"><button class="btn secondary" data-go="sessions">返回 40 关地图</button><button class="btn secondary" id="detailPrev">上一关</button><button class="btn lime" id="detailNext">看看下一关</button><button class="btn secondary" data-go="library">打开动作图鉴</button></div>
+      <div class="button-row quiet-actions"><button class="btn secondary" id="detailPrev">上一关</button><button class="btn secondary" id="detailNext">换一关</button><button class="btn secondary" data-go="sessions">查看冒险地图</button></div>
     </section>
 
     <section class="page" data-page="library">
-      <div class="eyebrow">Bonus · movement collection</div><h2>这是你的<span class="hilite">动作卡图鉴。</span></h2>
-      <p class="lead">每张动作卡都有自己的装备和技能属性。Kiwii 会从同一件装备里挑出顺手的组合，拼成每一关。</p>
+      <div class="eyebrow">COLLECTION</div><h2>你的<span class="hilite">动作卡图鉴。</span></h2>
+      <p class="lead">玩过的动作，都会收进这里。</p>
       <div class="library-toolbar"><button class="chip selected" data-filter="All">全部</button><button class="chip" data-filter="T-Bar">T-Bar</button><button class="chip" data-filter="Single Handle">Single Handle</button></div>
       <div class="library" id="library"></div>
       <div class="button-row"><button class="btn secondary" data-go="detail">回到今日关卡</button></div>
@@ -301,10 +302,10 @@ function renderImpact(){
  $("mixImpact").innerHTML=html;
 }
 function renderTimeline(){$("timeline").innerHTML=sessions.map((s,i)=>`<button class="session ${i===currentSession?"selected":""}" data-session="${i}" style="border-top:5px solid ${s.type.color}"><b>关卡 ${String(s.id).padStart(2,"0")}</b><small>${s.type.name}</small><small>${s.hardware}</small></button>`).join("");$("legend").innerHTML=routeTypes.map(x=>`<span><i style="background:${x.color}"></i>${x.name}</span>`).join("")}
-function renderDetail(i){currentSession=(i+sessions.length)%sessions.length;const s=sessions[currentSession];if(!s)return;$("detailIndex").textContent=`关卡 ${String(s.id).padStart(2,"0")} / 40`;$("detailTitle").textContent=`${s.type.name} · ${s.hardware==="T-Bar"?"双手装备关":"单手装备关"}`;$("detailHardware").textContent=s.hardware;$("auditHardware").textContent=s.hardware;$("exerciseList").innerHTML=s.moves.map((m,n)=>`<div class="exercise"><i>${n+1}</i><span><b>${m.cn}${m.downgraded?" · 舒适版":""}</b><small>${m.en}${m.downgraded?" · 已照顾："+m.reasons.join("、"):""}</small></span><span class="audit-cell"><b>${m.unilateral?"左边 → 右边":"两边一起"}</b><br>${m.unilateral?"记得换边":"不用换边"}</span><span class="audit-cell"><b>${m.unilateral?"每边 "+m.reps:m.reps} 次</b><br>每轮</span><span class="audit-cell"><b>${m.load} kg</b><br>${s.hardware}${m.downgraded?" · 轻装版":""}</span></div>`).join("");$("detailTime").textContent=`约 ${s.minutes} 分钟`;$("detailCount").textContent=`${s.moves.length} 个`;$("detailRounds").textContent=`${s.rounds} 轮`;$("detailFocus").textContent=s.focus;$("detailWhy").textContent=`这关会帮你靠近：${goalLabels().join("、")}。全程只用 ${s.hardware}，完成一轮后${s.rounds===2?"休息一下，再走同样一圈":"就能通关"}。${selectedFocus.includes("今天没有慢行区")?"今天没有慢行区，可以自在探索。":"Kiwii 已绕开需要小心的区域："+selectedFocus.join("、")+"，并把保留动作换成更舒服的版本。"}`}
+function renderDetail(i){currentSession=(i+sessions.length)%sessions.length;const s=sessions[currentSession];if(!s)return;$("detailIndex").textContent=`关卡 ${String(s.id).padStart(2,"0")} / 40`;$("detailTitle").textContent=`${s.type.name} · ${s.hardware==="T-Bar"?"双手装备关":"单手装备关"}`;$("detailHardware").textContent=s.hardware;$("auditHardware").textContent=s.hardware;$("questDuration").textContent=`约 ${s.minutes} 分钟`;$("exerciseList").innerHTML=s.moves.map((m,n)=>`<div class="exercise"><i>${n+1}</i><span><b>${m.cn}${m.downgraded?" · 舒适版":""}</b><small>${m.en}${m.downgraded?" · 已照顾："+m.reasons.join("、"):""}</small></span><span class="audit-cell"><b>${m.unilateral?"左边 → 右边":"两边一起"}</b><br>${m.unilateral?"记得换边":"不用换边"}</span><span class="audit-cell"><b>${m.unilateral?"每边 "+m.reps:m.reps} 次</b><br>每轮</span><span class="audit-cell"><b>${m.load} kg</b><br>${s.hardware}${m.downgraded?" · 轻装版":""}</span></div>`).join("");$("detailTime").textContent=`约 ${s.minutes} 分钟`;$("detailCount").textContent=`${s.moves.length} 个`;$("detailRounds").textContent=`${s.rounds} 轮`;$("detailFocus").textContent=s.focus;const startButton=$("startQuest");if(startButton){startButton.textContent="开始这一关";startButton.classList.remove("started")}}
 function renderLibrary(filter="All"){$("library").innerHTML=exercises.filter(x=>filter==="All"||x.hardware===filter).map(x=>`<div class="move"><b>${x.cn}</b><small>${x.en}</small><em>${x.hardware}</em></div>`).join("")}
-function showPage(page){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.dataset.page===page));document.querySelectorAll(".rail-nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));$("topTitle").textContent={home:"冒险地图首页",input:"我的冒险背包",mix:"探索区域分布",sessions:"40 关完整地图",detail:"今日关卡",library:"动作卡图鉴"}[page];if(page==="detail")renderDetail(currentSession)}
-document.addEventListener("click",e=>{const nav=e.target.closest("[data-page], [data-go]");if(nav)showPage(nav.dataset.page||nav.dataset.go);
+function showPage(page){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.dataset.page===page));document.querySelectorAll(".rail-nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));$("topTitle").textContent=page==="detail"?"kiwii":{home:"冒险首页",input:"我的背包",mix:"探索区域",sessions:"冒险地图",library:"动作图鉴"}[page];if(page==="detail")renderDetail(currentSession)}
+document.addEventListener("click",e=>{const nav=e.target.closest("button[data-page], [data-go]");if(nav)showPage(nav.dataset.page||nav.dataset.go);
  const session=e.target.closest("[data-session]");if(session){renderDetail(Number(session.dataset.session));renderTimeline();showPage("detail")}
  const goal=e.target.closest("[data-goal]");if(goal){const g=goal.dataset.goal;if(selectedGoals.includes(g))selectedGoals=selectedGoals.filter(x=>x!==g);else if(selectedGoals.length<3)selectedGoals.push(g);generate()}
  const focus=e.target.closest("[data-focus]");if(focus){const f=focus.dataset.focus;if(f==="今天没有慢行区")selectedFocus=["今天没有慢行区"];else{selectedFocus=selectedFocus.filter(x=>x!=="今天没有慢行区");if(selectedFocus.includes(f))selectedFocus=selectedFocus.filter(x=>x!==f);else selectedFocus.push(f)}generate()}
@@ -314,11 +315,12 @@ renderChips();renderLibrary();generate();
 if(assessmentProfile){
  $("squatLoad").value=assessmentProfile.squatLoad;
  generate();
- showPage("mix");
 }
+showPage("detail");
 $("squatLoad").addEventListener("change",generate);
 $("detailPrev").addEventListener("click",()=>{renderDetail(currentSession-1);renderTimeline()});
 $("detailNext").addEventListener("click",()=>{renderDetail(currentSession+1);renderTimeline()});
+$("startQuest").addEventListener("click",event=>{event.currentTarget.textContent="训练开始";event.currentTarget.classList.add("started")});
 </script>
 </body><!-- v1781023574 -->
 </html>

@@ -59,8 +59,7 @@
       border-radius: 30px;
       overflow: hidden;
       position: relative;
-      display: grid;
-      grid-template-columns: 240px 1fr;
+      display: block;
       background: var(--paper);
       box-shadow: var(--shadow);
     }
@@ -189,7 +188,7 @@
     .choice small { display: block; color: var(--muted); font-size: 11px; line-height: 1.55; }
     .choice.selected small { color: rgba(255,255,255,.62); }
     .choice.recommended { position: relative; }
-    .choice.recommended::after { content: "系统建议"; position: absolute; top: 9px; right: 9px; padding: 3px 7px; border-radius: 10px; color: var(--ink); background: var(--lime); font-size: 9px; font-weight: 700; }
+    .choice.recommended::after { content: "推荐"; position: absolute; top: 9px; right: 9px; padding: 3px 7px; border-radius: 10px; color: var(--ink); background: var(--lime); font-size: 9px; font-weight: 700; }
     .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 660px; margin-top: 28px; }
     .field { padding: 15px 17px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.44); }
     .field label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 11px; }
@@ -322,8 +321,7 @@
 
     @media (max-width: 900px) {
       .shell { padding: 0; }
-      .app { min-height: 100vh; border-radius: 0; grid-template-columns: 1fr; }
-      .rail { display: none; }
+      .app { min-height: 100vh; border-radius: 0; }
       .screen { padding: 34px 22px 24px; }
       .hero, .ready-layout, .result-layout { grid-template-columns: 1fr; min-height: 0; }
       .hero-card, .body-map { min-height: 390px; }
@@ -490,134 +488,193 @@
     .vbt-head, .vbt-round { color: #8a7b66; }
     .vbt-head b, .vbt-round em { color: #168d7f; }
     .vbt-round b { color: #725d42; }
+
+
+    /* User-facing Nintendo-style polish */
+    .hero-split { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 34px; align-items: center; }
+    .game-badges { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+    .game-badge { padding: 8px 12px; border: 2px solid #d4c4a8; border-radius: 999px; background: #fffdf7; color: #725d42; font-size: 12px; font-weight: 900; box-shadow: 0 3px 0 rgba(188,170,137,.28); }
+    .quest-card { min-height: 440px; padding: 24px; position: relative; overflow: hidden; border-radius: 28px; border: 3px solid #82d5bb; background: linear-gradient(#b9ebf5 0 48%, #a8dea8 48% 100%); box-shadow: 0 9px 0 rgba(66,149,130,.18); }
+    .quest-card::before { content: ""; position: absolute; left: 50%; bottom: 58px; width: 310px; height: 120px; transform: translateX(-50%); border-radius: 50%; background: #f8e7b8; border: 3px solid rgba(114,93,66,.14); }
+    .quest-sun { position: absolute; right: 34px; top: 34px; width: 74px; height: 74px; border-radius: 50%; background: #ffcf4a; border: 5px solid #fff6c8; box-shadow: 0 5px 0 #d9a92f; }
+    .quest-cloud { position: absolute; left: 28px; top: 54px; width: 82px; height: 28px; border-radius: 999px; background: rgba(255,255,255,.85); box-shadow: 38px 9px 0 rgba(255,255,255,.7); }
+    .mascot { position: absolute; left: 50%; bottom: 116px; width: 150px; height: 150px; transform: translateX(-50%); border-radius: 48% 48% 44% 44%; background: #19c8b9; border: 5px solid #fffdf7; box-shadow: 0 8px 0 #118f85; }
+    .mascot::before, .mascot::after { content: ""; position: absolute; top: 48px; width: 17px; height: 17px; border-radius: 50%; background: #725d42; box-shadow: 0 3px 0 rgba(255,255,255,.35); }
+    .mascot::before { left: 42px; }
+    .mascot::after { right: 42px; }
+    .mascot-face { position: absolute; left: 50%; top: 78px; width: 48px; height: 22px; transform: translateX(-50%); border-bottom: 5px solid #725d42; border-radius: 0 0 999px 999px; }
+    .quest-path { position: absolute; left: 50%; bottom: 22px; display: grid; grid-template-columns: repeat(3, 48px); gap: 18px; transform: translateX(-50%); }
+    .quest-node { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; border: 3px solid #fffdf7; color: #725d42; background: #ffcf4a; box-shadow: 0 5px 0 #d0a82a; font-weight: 900; }
+    .field label, .choice small, .note, .lead { font-weight: 600; }
+    .guide-card ol { padding-left: 0; list-style: none; }
+    .guide-card li { padding: 7px 0 7px 24px; position: relative; }
+    .guide-card li::before { content: "★"; position: absolute; left: 0; color: #ffcf4a; text-shadow: 0 1px 0 #b7861f; }
+    .topbar { min-height: 82px; padding: 18px clamp(22px, 4vw, 52px); }
+    .topbar-title { color: #168d7f; font-size: 22px; font-weight: 900; letter-spacing: -.05em; text-transform: lowercase; }
+    .topbar-right { flex: 1; justify-content: flex-end; }
+    .topbar-right .progress { width: min(420px, 50vw); height: 10px; }
+    #stepCopy { min-width: 42px; color: #725d42; font-size: 13px; font-weight: 900; text-align: right; }
+    .onboarding-screen { min-height: calc(100vh - 118px); display: none; place-items: center; }
+    .onboarding-screen.active { display: grid; }
+    .onboarding-wrap { width: min(1040px, 100%); }
+    .onboarding-head { margin-bottom: 28px; text-align: center; }
+    .onboarding-head h1, .onboarding-head h2 { max-width: none; }
+    .onboarding-head .lead { max-width: 620px; margin: 0 auto; }
+    .measure-layout { display: grid; grid-template-columns: .9fr 1.1fr; gap: 24px; align-items: stretch; }
+    .scale-card {
+      min-height: 400px; padding: 32px; position: relative; overflow: hidden;
+      display: grid; place-items: center; text-align: center;
+      border: 3px solid #82d5bb; border-radius: 32px;
+      background:
+        radial-gradient(circle, rgba(130,213,187,.18) 1.5px, transparent 1.5px) 0 0/28px 28px,
+        #e8faf5;
+      box-shadow: 0 8px 0 rgba(66,149,130,.18);
+    }
+    .scale-platform { width: 230px; height: 118px; position: relative; display: grid; place-items: center; border: 5px solid #fff; border-radius: 50%; background: #82d5bb; box-shadow: 0 12px 0 #47a997; }
+    .scale-platform::before { content: ""; position: absolute; width: 112px; height: 112px; bottom: 66px; border: 7px solid #fff; border-radius: 50%; background: #ffcf4a; box-shadow: 0 7px 0 #d0a82a; }
+    .scale-platform::after { content: "站这里"; position: absolute; bottom: 102px; z-index: 1; color: #725d42; font-size: 18px; font-weight: 900; }
+    .scan-line { position: absolute; left: 15%; right: 15%; top: 49%; height: 4px; border-radius: 9px; background: #19c8b9; box-shadow: 0 0 18px rgba(25,200,185,.8); animation: scan 2.4s ease-in-out infinite; }
+    @keyframes scan { 0%,100% { transform: translateY(-90px); opacity: .4; } 50% { transform: translateY(92px); opacity: 1; } }
+    .measure-results { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-top: 28px; }
+    .measure-result { padding: 15px; border: 2px solid #d4c4a8; border-radius: 18px; background: #fffdf7; }
+    .measure-result small { display: block; color: #93836d; font-weight: 800; }
+    .measure-result b { display: block; margin-top: 5px; color: #725d42; font-size: 28px; }
+    .profile-picker { padding: 28px; border: 2px solid #d4c4a8; border-radius: 28px; background: #fffdf7; box-shadow: 0 6px 0 rgba(188,170,137,.24); }
+    .picker-block + .picker-block { margin-top: 24px; }
+    .picker-label { display: block; margin-bottom: 12px; color: #725d42; font-size: 15px; font-weight: 900; }
+    .age-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .age-grid .choice, .gender-grid .choice { min-height: 52px; padding: 10px 12px; text-align: center; }
+    .age-grid .choice b, .gender-grid .choice b { margin: 0; }
+    .gender-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .identity-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 26px; }
+    .identity-grid .choice { min-height: 190px; padding: 22px 16px; text-align: center; }
+    .identity-icon { display: block; margin-bottom: 18px; font-size: 34px; }
+    .identity-grid .choice b { font-size: 16px; }
+    .identity-grid .choice small { margin-top: 8px; font-size: 12px; }
+    .pain-layout { display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; align-items: stretch; }
+    .pain-layout .choice-grid { grid-template-columns: repeat(3, 1fr); margin-top: 18px; }
+    .pain-layout .body-map { min-height: 440px; }
+    .onboarding-actions { display: flex; justify-content: center; gap: 12px; margin-top: 28px; }
+    @media (max-width: 900px) { .hero-split { grid-template-columns: 1fr; } .quest-card { min-height: 330px; } .mascot { bottom: 86px; transform: translateX(-50%) scale(.8); } }
+    @media (max-width: 900px) {
+      .measure-layout, .pain-layout { grid-template-columns: 1fr; }
+      .identity-grid { grid-template-columns: 1fr 1fr; }
+      .scale-card { min-height: 330px; }
+      .pain-layout .body-map { min-height: 400px; }
+    }
+    @media (max-width: 560px) {
+      .topbar-title { font-size: 19px; }
+      .topbar-right .progress { width: 42vw; }
+      .onboarding-screen { min-height: calc(100vh - 82px); padding-top: 26px; }
+      .onboarding-head { text-align: left; }
+      .onboarding-head .lead { margin: 0; }
+      .age-grid, .gender-grid { grid-template-columns: 1fr 1fr; }
+      .identity-grid { grid-template-columns: 1fr; }
+      .identity-grid .choice { min-height: 112px; text-align: left; }
+      .identity-icon { display: inline-block; margin: 0 12px 0 0; font-size: 24px; vertical-align: middle; }
+      .pain-layout .choice-grid { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
   <div class="shell">
     <div class="app">
-      <aside class="rail">
-        <div class="brand"><span class="brand-mark"></span>kiwii</div>
-        <div class="rail-label">Kiwii adventure map</div>
-        <div class="stage-list">
-          <div class="stage active" data-stage="calibrate" role="button" tabindex="0"><span class="stage-dot">01</span><span><b>认识新伙伴</b><small>告诉 Kiwii 你的状态</small></span></div>
-          <div class="stage" data-stage="assess" role="button" tabindex="0"><span class="stage-dot">02</span><span><b>闯过小关卡</b><small>一起做几个动作</small></span></div>
-          <div class="stage" data-stage="profile" role="button" tabindex="0"><span class="stage-dot">03</span><span><b>领取能力卡</b><small>看看你的隐藏特长</small></span></div>
-          <div class="stage" data-stage="route" role="button" tabindex="0"><span class="stage-dot">04</span><span><b>打开冒险地图</b><small>生成专属训练旅程</small></span></div>
-        </div>
-        <div class="rail-foot"><strong>ADVENTURE MODE</strong><br>今天不考试<br>只是认识一下身体伙伴</div>
-      </aside>
-
       <main>
         <header class="topbar">
-          <span class="topbar-title" id="topTitle">欢迎来到 Kiwii 出发站</span>
-          <div class="topbar-right"><span id="stepCopy">预计 1 分钟</span><div class="progress"><span id="progressBar"></span></div><span class="live-dot"></span></div>
+          <span class="topbar-title" id="topTitle">kiwii</span>
+          <div class="topbar-right"><div class="progress"><span id="progressBar"></span></div><span id="stepCopy">1 / 3</span></div>
         </header>
 
         <div class="content">
-          <section class="screen active" data-screen="intro" data-stage="calibrate" data-progress="4">
-            <div class="hero">
-              <div>
-                <div class="eyebrow">Kiwii adventure begins</div>
-                <h1>嗨，新搭档。<br><span class="hilite">先让 Kiwii 认识你。</span></h1>
-                <p class="lead">不用拼成绩，也没有标准答案。我们先玩几个身体小关卡，找到最适合你今天出发的方式。</p>
-                <div class="button-row"><button class="btn primary" data-next>出发，认识一下</button></div>
+          <section class="screen onboarding-screen active" data-screen="profile" data-stage="calibrate" data-progress="12">
+            <div class="onboarding-wrap">
+              <div class="onboarding-head">
+                <h2>站上板子，我们先认识一下你。</h2>
+                <p class="lead">保持自然站立，身高和体重会自动出现。</p>
               </div>
-            </div>
-          </section>
-
-          <section class="screen" data-screen="profile" data-stage="calibrate" data-progress="14">
-            <div class="question-wrap">
-              <div class="counter"><span>01</span> / 04 · 认识新搭档</div>
-              <h2>先交换一下冒险名片。</h2>
-              <p class="lead">几条简单信息，就能让 Kiwii 把动作和阻力调到刚刚好的手感。</p>
-              <div class="fields">
-                <div class="field"><label>你的年龄</label><input type="number" placeholder="请输入" inputmode="numeric"><span>岁</span></div>
-                <div class="field"><label>身高 · 自动测量，可修改</label><input type="number" value="172" inputmode="numeric"><span>cm</span><i class="auto-tag">已自动读取</i></div>
-                <div class="field"><label>体重 · 自动测量，可修改</label><input type="number" value="66" inputmode="numeric"><span>kg</span><i class="auto-tag">已自动读取</i></div>
-              </div>
-              <p class="note">最后一个小问题：你希望我们用哪组身体参考数据？</p>
-              <div class="segmented" data-single>
-                <button class="choice"><b>女性</b></button><button class="choice selected"><b>男性</b></button><button class="choice"><b>不想回答</b></button>
-              </div>
-              <p class="note">这些数字只用来帮你调装备，不会被拿来给身材打分。</p>
-              <div class="button-row"><button class="btn secondary" data-back>回到上一站</button><button class="btn primary" data-next>名片填好了</button></div>
-            </div>
-          </section>
-
-          <section class="screen" data-screen="experience" data-stage="calibrate" data-progress="30">
-            <div class="question-wrap">
-              <div class="counter"><span>02</span> / 04 · 选择出发手感</div>
-              <h2>今天想从哪种难度开局？</h2>
-              <p class="lead">跟着直觉选就行。Kiwii 会先按这个手感准备装备，再边玩边微调。</p>
-              <div class="choice-grid" data-single>
-                <button class="choice"><b>散步模式</b><small>慢慢来，先熟悉动作和装备。</small></button>
-                <button class="choice selected"><b>冒险模式</b><small>有一点挑战，做完会觉得很满足。</small></button>
-                <button class="choice"><b>冲刺模式</b><small>我常常训练，想早点感受到力量。</small></button>
-                <button class="choice"><b>高手模式</b><small>装备可以重一点，我熟悉自己的节奏。</small></button>
-              </div>
-              <div class="button-row"><button class="btn secondary" data-back>回到上一站</button><button class="btn primary" data-next>选好了，继续</button></div>
-            </div>
-          </section>
-
-          <section class="screen" data-screen="risk" data-stage="calibrate" data-progress="38">
-            <div class="question-wrap">
-              <div class="counter"><span>03</span> / 04 · 冒险前提醒</div>
-              <h2>出发前，有没有需要 Kiwii 记住的事？</h2>
-              <p class="lead">有就告诉我们。今天的关卡会自动变温柔，之后的路线也会绕开不舒服的地方。</p>
-              <div class="choice-grid" data-multi>
-                <button class="choice"><b>最近做过手术，正在恢复</b></button><button class="choice"><b>骨头或韧带还在休息</b></button><button class="choice"><b>医生让我先别运动</b></button>
-                <button class="choice"><b>孕期或产后恢复中</b></button><button class="choice"><b>心脏或血压需要留意</b></button><button class="choice selected"><b>没有特别提醒，今天可以正常冒险</b></button>
-              </div>
-              <div class="button-row"><button class="btn secondary" data-back>回到上一站</button><button class="btn primary" data-next>记住了，继续</button></div>
-            </div>
-          </section>
-
-          <section class="screen" data-screen="pain" data-stage="calibrate" data-progress="50">
-            <div class="question-wrap">
-              <div class="counter"><span>04</span> / 04 · 标记慢行区域</div>
-              <h2>身体地图上，哪里要插一面“小心慢行”旗？</h2>
-              <p class="lead">可以多选。Kiwii 会换动作、降装备，绝不硬闯。</p>
-              <div class="choice-grid" data-multi data-pain-zones>
-                <button class="choice"><b>颈部</b></button><button class="choice"><b>肩</b></button><button class="choice"><b>肘 / 手腕</b></button>
-                <button class="choice"><b>腰背</b></button><button class="choice"><b>髋</b></button><button class="choice"><b>膝</b></button>
-                <button class="choice"><b>踝</b></button><button class="choice"><b>其他</b></button><button class="choice"><b>没有，今天状态不错</b></button>
-              </div>
-              <div class="button-row"><button class="btn secondary" data-back>回到上一站</button><button class="btn primary" data-next>地图标好了</button></div>
-            </div>
-          </section>
-
-          <section class="screen" data-screen="ready" data-stage="calibrate" data-progress="59">
-            <div class="ready-layout">
-              <div>
-                <div class="eyebrow">Ready for mini quests</div>
-                <h2>装备检查完成。<br>七个身体小关卡，轻松玩过去。</h2>
-                <p class="lead">每一步都有提示，不用背动作。觉得不舒服就停一下，Kiwii 永远跟着你的节奏走。</p>
-                <div class="mini-list">
-                  <div class="mini" id="protectionSummary"><i>✓</i> 肩部已插上慢行旗</div>
-                  <div class="mini"><i>✓</i> 装备会根据表现自动变轻或变重</div>
-                  <div class="mini"><i>✓</i> 每关都有清楚的动作提示</div>
+              <div class="measure-layout">
+                <div class="scale-card">
+                  <div>
+                    <div class="scale-platform"></div>
+                    <span class="scan-line"></span>
+                    <div class="measure-results">
+                      <div class="measure-result"><small>身高</small><b>172 cm</b></div>
+                      <div class="measure-result"><small>体重</small><b>66 kg</b></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="button-row"><button class="btn secondary" data-back>再检查一下</button><button class="btn lime primary" data-next>进入第一关</button></div>
-              </div>
-              <div class="body-map">
-                <div class="body-map-head">Body protection · active</div>
-                <div class="silhouette" id="bodySilhouette"><span class="head"></span><span class="body"></span><span class="arm-l"></span><span class="arm-r"></span><span class="leg-l"></span><span class="leg-r"></span></div>
-                <div class="map-callout" id="protectionCallout">已识别 1 个需要照顾的区域。测试过程会根据动作反馈动态调整。</div>
+                <div class="profile-picker">
+                  <div class="picker-block">
+                    <span class="picker-label">你的年龄</span>
+                    <div class="age-grid" data-single>
+                      <button class="choice"><b>18–24</b></button><button class="choice selected"><b>25–34</b></button><button class="choice"><b>35–44</b></button>
+                      <button class="choice"><b>45–54</b></button><button class="choice"><b>55–64</b></button><button class="choice"><b>65+</b></button>
+                    </div>
+                  </div>
+                  <div class="picker-block">
+                    <span class="picker-label">你的性别</span>
+                    <div class="gender-grid" data-single>
+                      <button class="choice"><b>女性</b></button><button class="choice selected"><b>男性</b></button><button class="choice"><b>不想回答</b></button>
+                    </div>
+                  </div>
+                  <div class="onboarding-actions"><button class="btn primary" data-next>下一步</button></div>
+                </div>
               </div>
             </div>
           </section>
 
-          <section class="screen test-screen" data-screen="test" data-stage="assess" data-progress="74">
+          <section class="screen onboarding-screen" data-screen="experience" data-stage="calibrate" data-progress="24">
+            <div class="onboarding-wrap">
+              <div class="onboarding-head">
+                <h2>哪一句最像现在的你？</h2>
+                <p class="lead">这会决定体测第一关从多轻开始。</p>
+              </div>
+              <div class="identity-grid" data-single>
+                <button class="choice"><span class="identity-icon">○</span><b>第一次认真练</b><small>动作和装备都想慢慢熟悉</small></button>
+                <button class="choice"><span class="identity-icon">↻</span><b>好久没动了</b><small>身体记得一点，但需要找回感觉</small></button>
+                <button class="choice selected"><span class="identity-icon">△</span><b>偶尔会练练</b><small>有一点基础，也想有一点挑战</small></button>
+                <button class="choice"><span class="identity-icon">◇</span><b>每周都会练</b><small>熟悉常见动作和训练节奏</small></button>
+                <button class="choice"><span class="identity-icon">★</span><b>训练是日常</b><small>可以直接从明显的阻力开始</small></button>
+              </div>
+              <div class="onboarding-actions"><button class="btn secondary" data-back>上一步</button><button class="btn primary" data-next>就是这个</button></div>
+            </div>
+          </section>
+
+          <section class="screen onboarding-screen" data-screen="pain" data-stage="calibrate" data-progress="36">
+            <div class="onboarding-wrap">
+              <div class="onboarding-head">
+                <h2>今天哪里需要轻一点？</h2>
+                <p class="lead">可以多选。Kiwii 会自动换成更舒服的动作。</p>
+              </div>
+              <div class="pain-layout">
+                <div>
+                  <div class="choice-grid" data-multi data-pain-zones>
+                    <button class="choice"><b>颈部</b></button><button class="choice"><b>肩</b></button><button class="choice"><b>肘 / 手腕</b></button>
+                    <button class="choice"><b>腰背</b></button><button class="choice"><b>髋</b></button><button class="choice"><b>膝</b></button>
+                    <button class="choice"><b>踝</b></button><button class="choice"><b>其他</b></button><button class="choice selected"><b>没有，都还不错</b></button>
+                  </div>
+                  <div class="onboarding-actions"><button class="btn secondary" data-back>上一步</button><button class="btn lime primary" data-next>开始体测</button></div>
+                </div>
+                <div class="body-map">
+                  <div class="body-map-head">身体地图</div>
+                  <div class="silhouette" id="bodySilhouette"><span class="head"></span><span class="body"></span><span class="arm-l"></span><span class="arm-r"></span><span class="leg-l"></span><span class="leg-r"></span></div>
+                  <div class="map-callout" id="protectionCallout">都还不错，可以正常开始。</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="screen test-screen" data-screen="test" data-stage="assess" data-progress="66">
             <div class="camera">
-              <div class="camera-info"><span>KIWII / LIVE</span><span>实时识别中</span></div>
-              <div class="camera-title" id="cameraTitle"><small>灵活性</small>动作 1 · 举 T-bar 深蹲</div>
+              <div class="camera-info"><span>KIWII / LIVE</span><span>跟着你动</span></div>
+              <div class="camera-title" id="cameraTitle"><small>关卡 1</small>举 T-bar 深蹲</div>
               <div class="camera-position" id="cameraPosition">正面面对屏幕</div>
               <div class="camera-frame" id="cameraFrame" data-pose="front"><div class="silhouette"><span class="head"></span><span class="body"></span><span class="arm-l"></span><span class="arm-r"></span><span class="leg-l"></span><span class="leg-r"></span></div></div>
               <div class="pose-label" id="poseLabel"><b>举 T-bar 深蹲</b>双手握住 T-bar<br>举过头顶</div>
             </div>
             <aside class="test-panel">
               <div class="guide-card">
-                <b>本关玩法</b>
+                <b>怎么玩</b>
                 <ol id="guideList">
                   <li>双手握住 T-bar 两端，举到头顶上方。</li>
                   <li>先正面面对屏幕，双脚与肩同宽站立。</li>
@@ -626,95 +683,35 @@
                 </ol>
               </div>
               <div class="vbt-box" id="vbtBox">
-                <div class="vbt-head"><span>本轮阻力</span><b id="vbtLoad">12 kg</b></div>
+                <div class="vbt-head"><span>这一轮手感</span><b id="vbtLoad">12 kg</b></div>
                 <div class="vbt-rounds" id="vbtRounds"></div>
               </div>
               <div class="test-nav" id="testNav"></div>
               <div class="test-actions">
                 <button class="btn secondary" id="testBack">上一个</button>
-                <button class="btn lime primary" id="testNext">准备好，开玩</button>
+                <button class="btn lime primary" id="testNext">开始这一关</button>
               </div>
             </aside>
           </section>
 
-          <section class="screen" data-screen="results" data-stage="profile" data-progress="82">
+          <section class="screen" data-screen="results" data-stage="profile" data-progress="78">
             <div class="result-layout">
               <div>
-                <div class="eyebrow">Ability card unlocked</div>
-                <h2>新能力卡解锁。<br>原来你藏着不少好底子。</h2>
-                <p class="lead">你的发力很可靠，动作控制也很稳。下一段旅程不用一下冲太远，先把稳定感练成常驻技能。</p>
-                <div class="button-row"><button class="btn secondary" id="resultsBack">再玩一次上一关</button><button class="btn lime primary" data-next>选择冒险主线</button></div>
+                <div class="eyebrow">Stage clear!</div>
+                <h2>准备好了。<br>开始今天的训练。</h2>
+                <p class="lead">Kiwii 已经选好适合你现在状态的第一关。</p>
+                <div class="button-row"><button class="btn secondary" id="resultsBack">再测一次</button><button class="btn lime primary" id="startTraining">开始训练</button></div>
               </div>
               <div class="score-card">
-                <div class="eyebrow" style="color:var(--mint)">今日冒险能量</div>
-                <div class="score">75<small>/ 100</small></div>
-                <div class="bar-stack">
-                  <div class="ability"><span>灵活性</span><span class="ability-line"><i style="width:74%"></i></span><b>74</b></div>
-                  <div class="ability"><span>稳定性</span><span class="ability-line"><i style="width:68%"></i></span><b>68</b></div>
-                  <div class="ability"><span>力量</span><span class="ability-line"><i style="width:81%"></i></span><b>81</b></div>
-                  <div class="ability"><span>心肺</span><span class="ability-line"><i style="width:76%"></i></span><b>76</b></div>
-                </div>
-                <div class="insight">Kiwii 的悄悄话：力量技能已经不错啦。先升级单腿站稳和髋部活动，之后很多动作都会突然变顺。</div>
+                <div class="eyebrow" style="color:var(--mint)">今天第一关</div>
+                <div class="score">1<small>小关</small></div>
+                <div class="insight">全身启动 · 稳定优先 · 难度刚刚好</div>
                 <div class="personality">
-                  <div class="personality-card"><small>你的冒险角色</small><b>稳稳升级型</b></div>
-                  <div class="personality-card"><small>今日闪光点</small><b>下肢力量很可靠</b></div>
-                  <div class="personality-card"><small>下一项技能</small><b>单腿站稳升级</b></div>
+                  <div class="personality-card"><small>装备</small><b>T-Bar</b></div>
+                  <div class="personality-card"><small>节奏</small><b>冒险模式</b></div>
+                  <div class="personality-card"><small>目标</small><b>站得更稳</b></div>
                 </div>
               </div>
-            </div>
-          </section>
-
-          <section class="screen" data-screen="goal" data-stage="route" data-progress="89">
-            <div class="question-wrap">
-              <div class="counter"><span>01</span> / 02 · 选择冒险主线</div>
-              <h2>接下来，最想解锁哪种变化？</h2>
-              <p class="lead">挑 1–3 个愿望。Kiwii 会把它们变成一路上的关卡和奖励。</p>
-              <div class="choice-grid" data-multi data-max="3">
-                <button class="choice"><b>穿衣服更利落有型</b><small>身体更紧实，慢慢长出喜欢的线条</small></button>
-                <button class="choice"><b>变轻盈，也留住力量</b><small>体重变化时，肌肉和精神都别掉队</small></button>
-                <button class="choice"><b>解锁大力气技能</b><small>搬、抬、推、拉都变得更轻松</small></button>
-                <button class="choice"><b>跑跳玩耍更有电</b><small>跑步打球不容易累，身体反应更快</small></button>
-                <button class="choice"><b>找回满格日常体力</b><small>工作生活一整天，电量还能稳稳在线</small></button>
-                <button class="choice selected"><b>坐站都更松快舒服</b><small>少一点紧绷酸累，身体更愿意活动</small></button>
-              </div>
-              <div class="button-row"><button class="btn secondary" data-back>看看能力卡</button><button class="btn primary" data-next>愿望选好了</button></div>
-            </div>
-          </section>
-
-          <section class="screen" data-screen="focus" data-stage="route" data-progress="94">
-            <div class="question-wrap">
-              <div class="counter"><span>02</span> / 02 · 选择优先技能</div>
-              <h2>第一张地图，想先点亮哪些技能树？</h2>
-              <p class="lead">Kiwii 已经放了两枚推荐徽章。可以照单全收，也可以自己换，最多选 3 项。</p>
-              <div class="choice-grid" data-multi data-max="3">
-                <button class="choice"><b>上肢推力</b><small>胸、肩、手臂后侧</small></button>
-                <button class="choice"><b>上肢拉力</b><small>背部、手臂前侧</small></button>
-                <button class="choice selected recommended"><b>下肢稳定</b><small>臀腿力量与单腿控制</small></button>
-                <button class="choice selected recommended"><b>核心控制</b><small>躯干稳定与动作质量</small></button>
-                <button class="choice"><b>全身均衡</b><small>由 Kiwii 组合安排</small></button>
-                <button class="choice"><b>听系统推荐</b><small>根据每次训练动态调整</small></button>
-              </div>
-              <div class="button-row"><button class="btn secondary" data-back>重选愿望</button><button class="btn lime primary" data-next>展开我的冒险地图</button></div>
-            </div>
-          </section>
-
-          <section class="screen" data-screen="final" data-stage="route" data-progress="100">
-            <div class="question-wrap">
-              <div class="eyebrow">Your adventure map is ready</div>
-              <h2>第一张地图画好啦。<br><span class="hilite">来，和 Kiwii 击个掌出发。</span></h2>
-              <p class="lead">不用一天变成超级英雄。每次点亮一个小关卡，身体就会悄悄多一项技能。</p>
-              <div class="final-grid">
-                <div class="final-card accent"><small>本期愿望</small><b>坐着站着，都更松快舒服</b></div>
-                <div class="final-card"><small>开局技能</small><b>先站稳 · 再升级全身力量</b></div>
-                <div class="final-card"><small>推荐冒险节奏</small><b>每周 3 关 · 每关 20 分钟</b></div>
-                <div class="final-card"><small>慢行旗帜</small><b id="finalProtection">肩部慢行模式已开启</b></div>
-              </div>
-              <div class="commit-card">
-                <h3>和 Kiwii 约好一件小事</h3>
-                <p class="commit-copy">接下来 2 周，试着完成 <strong>每周 3 关、每关 20 分钟</strong>。地图会跟着你的状态自动变化。只要稳定回来玩，你会慢慢感觉到：<strong>动作更顺、身体更轻、下一次也更想继续。</strong></p>
-                <div class="signature">出发暗号：和 Kiwii 击掌<br><b id="signature">等待你的 high-five</b></div>
-              </div>
-              <div class="button-row"><button class="btn secondary" data-back>再改改地图</button><button class="btn lime highfive" id="highfive">High-five，出发</button><button class="btn secondary" id="restart">重新开始冒险</button></div>
             </div>
           </section>
         </div>
@@ -724,20 +721,12 @@
 
   <script>
     const screens = [...document.querySelectorAll(".screen")];
-    const stages = [...document.querySelectorAll(".stage")];
     const bar = document.getElementById("progressBar");
     const topTitle = document.getElementById("topTitle");
     const stepCopy = document.getElementById("stepCopy");
-    const titles = {
-      calibrate: ["欢迎来到 Kiwii 出发站", "先认识一下新搭档"],
-      assess: ["身体小关卡", "跟着提示轻松玩"],
-      profile: ["你的能力卡", "新技能已经解锁"],
-      route: ["冒险地图工坊", "马上就能出发"]
-    };
     let current = 0;
     let testAction = 0;
     let vbtRound = 0;
-    const stageTargets = { calibrate: "intro", assess: "test", profile: "results", route: "goal" };
     const painZones = {
       "颈部": { left: 63, top: 42, label: "颈部" },
       "肩": { left: 27, top: 68, label: "肩部" },
@@ -802,7 +791,7 @@
       {
         assessment: 6, category: "力量", title: "T-bar 阻力深蹲", position: "正面面对屏幕", poseStyle: "resisted-squat", vbt: true,
         pose: "T-bar 阻力深蹲", poseNote: "双手握紧 T-bar<br>向上尽量快",
-        guide: ["正面面对屏幕，双脚与肩同宽站立。", "双手握住 T-bar，保持身体稳定。", "缓慢下蹲，再用你能做到的最快速度站起。", "完成后稍等一下，Kiwii 会识别速度并调整阻力。"]
+        guide: ["正面面对屏幕，双脚与肩同宽站立。", "双手握住 T-bar，保持身体稳定。", "缓慢下蹲，再用你觉得有力的速度站起。", "完成后稍等一下，Kiwii 会帮你换到更合适的手感。"]
       },
       {
         assessment: 7, category: "心肺", title: "1 分钟开合跳", position: "正面面对屏幕", poseStyle: "jump",
@@ -811,33 +800,29 @@
       }
     ];
     const experienceLoads = {
-      "散步模式": 8,
-      "冒险模式": 12,
-      "冲刺模式": 16,
-      "高手模式": 20
+      "第一次认真练": 8,
+      "好久没动了": 10,
+      "偶尔会练练": 12,
+      "每周都会练": 16,
+      "训练是日常": 20
     };
 
     function render(index) {
       current = Math.max(0, Math.min(index, screens.length - 1));
       screens.forEach((screen, i) => screen.classList.toggle("active", i === current));
       const screen = screens[current];
-      const stage = screen.dataset.stage;
-      const stageIndex = ["calibrate", "assess", "profile", "route"].indexOf(stage);
-      stages.forEach((item, i) => {
-        item.classList.toggle("active", i === stageIndex);
-        item.classList.toggle("done", i < stageIndex);
-      });
-      topTitle.textContent = titles[stage][0];
-      stepCopy.textContent = titles[stage][1];
+      const onboardingStep = { profile: "1 / 3", experience: "2 / 3", pain: "3 / 3" };
+      topTitle.textContent = "kiwii";
+      stepCopy.textContent = onboardingStep[screen.dataset.screen] || (screen.dataset.stage === "assess" ? "体测" : screen.dataset.stage === "profile" ? "完成" : "开练");
       bar.style.width = `${screen.dataset.progress}%`;
       if (screen.dataset.screen === "test") renderTestAction();
-      if (screen.dataset.screen === "ready") renderProtection();
+      if (screen.dataset.screen === "pain") renderProtection();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function selectedPainZones() {
       const painScreen = document.querySelector('[data-screen="pain"]');
-      return [...painScreen.querySelectorAll("[data-pain-zones] .choice.selected b")].map(item => item.textContent).filter(item => !item.includes("没有"));
+      return [...painScreen.querySelectorAll("[data-pain-zones] .choice.selected b")].map(item => item.textContent).filter(item => !item.includes("没有") && !item.includes("状态"));
     }
 
     function renderProtection() {
@@ -854,23 +839,25 @@
         marker.style.top = `${zone.top}px`;
         silhouette.appendChild(marker);
       });
-      const summary = selected.length ? `${selected.join("、")} 已插上慢行旗` : "今天没有需要慢行的区域";
-      document.getElementById("protectionSummary").innerHTML = `<i>✓</i> ${summary}`;
-      document.getElementById("protectionCallout").textContent = selected.length ? `记住啦：有 ${selected.length} 处需要慢一点。关卡会自动换成更舒服的玩法。` : "状态不错。途中如果感觉不对，随时停下来歇一歇。";
-      document.getElementById("finalProtection").textContent = selected.length ? `${selected.join("、")}慢行模式已开启` : "今天可以自在探索";
+      const summary = selected.length ? `${selected.join("、")} 会温柔一点` : "今天没有特别不舒服的地方";
+      const protectionSummary = document.getElementById("protectionSummary");
+      if (protectionSummary) protectionSummary.innerHTML = `<i>✓</i> ${summary}`;
+      document.getElementById("protectionCallout").textContent = selected.length ? `记住啦：${selected.join("、")} 会温柔一点。` : "状态不错。途中如果感觉不对，随时停下来歇一歇。";
+      const finalProtection = document.getElementById("finalProtection");
+      if (finalProtection) finalProtection.textContent = selected.length ? `${selected.join("、")}会温柔一点` : "今天可以自在开练";
     }
 
     function initialVbtLoad() {
-      const experience = document.querySelector('[data-screen="experience"] .choice.selected b')?.textContent || "冒险模式";
+      const experience = document.querySelector('[data-screen="experience"] .choice.selected b')?.textContent || "偶尔会练练";
       return experienceLoads[experience] || 12;
     }
 
     function getVbtRounds() {
       const load = initialVbtLoad();
       return [
-        { load: `${load} kg`, speed: "0.82 m/s", result: "速度合适，继续加阻" },
-        { load: `${load + 4} kg`, speed: "0.71 m/s", result: "保持不错，再试一次" },
-        { load: `${load + 8} kg`, speed: "0.58 m/s", result: "找到合适阻力" }
+        { load: `${load} kg`, speed: "0.82 m/s", result: "手感不错" },
+        { load: `${load + 4} kg`, speed: "0.71 m/s", result: "继续挑战" },
+        { load: `${load + 8} kg`, speed: "0.58 m/s", result: "手感确认" }
       ];
     }
 
@@ -878,7 +865,7 @@
       const goalMap = {
         "穿衣服更利落有型": "增肌塑形",
         "变轻盈，也留住力量": "减脂瘦身",
-        "解锁大力气技能": "提升力量",
+        "力气变大一点": "提升力量",
         "跑跳玩耍更有电": "运动表现",
         "找回满格日常体力": "恢复日常体能",
         "坐站都更松快舒服": "体态与舒适度"
@@ -912,7 +899,7 @@
       const action = testActions[testAction];
       const number = String(testAction + 1).padStart(2, "0");
       document.getElementById("cameraPosition").textContent = action.position;
-      document.getElementById("cameraTitle").innerHTML = `<small>${action.category}</small>动作 ${action.assessment} · ${action.title}`;
+      document.getElementById("cameraTitle").innerHTML = `<small>关卡 ${action.assessment}</small>${action.title}`;
       document.getElementById("cameraFrame").dataset.pose = action.poseStyle;
       document.getElementById("poseLabel").innerHTML = `<b>${action.pose}</b>${action.poseNote}`;
       document.getElementById("guideList").innerHTML = action.guide.map(item => `<li>${item}</li>`).join("");
@@ -923,7 +910,7 @@
       document.getElementById("testBack").textContent = testAction === 0 ? "返回准备页" : "上一个";
       document.getElementById("vbtBox").classList.toggle("active", Boolean(action.vbt));
       if (action.vbt) renderVbt();
-      else document.getElementById("testNext").textContent = testAction === testActions.length - 1 ? "通关，领取能力卡" : "这一关完成，去下一关";
+      else document.getElementById("testNext").textContent = testAction === testActions.length - 1 ? "看今日状态" : "下一关";
     }
 
     function renderVbt() {
@@ -931,7 +918,7 @@
       const round = vbtRounds[Math.min(vbtRound, vbtRounds.length - 1)];
       document.getElementById("vbtLoad").textContent = round.load;
       document.getElementById("vbtRounds").innerHTML = vbtRounds.slice(0, vbtRound).map((item, index) => `<div class="vbt-round"><b>第 ${index + 1} 次</b><span>${item.load} · ${item.speed}</span><em>${item.result}</em></div>`).join("");
-      document.getElementById("testNext").textContent = vbtRound < vbtRounds.length ? `完成第 ${vbtRound + 1} 次力量挑战` : "装备手感确认，下一关";
+      document.getElementById("testNext").textContent = vbtRound < vbtRounds.length ? `完成第 ${vbtRound + 1} 次` : "下一关";
     }
 
     document.addEventListener("click", (event) => {
@@ -941,17 +928,16 @@
         if (group.hasAttribute("data-single")) [...group.children].forEach(item => item.classList.remove("selected"));
         if (group.dataset.max && !choice.classList.contains("selected") && group.querySelectorAll(".selected").length >= Number(group.dataset.max)) return;
         const choiceText = choice.querySelector("b")?.textContent || "";
-        if (group.hasAttribute("data-multi") && choiceText.includes("没有")) [...group.children].forEach(item => item.classList.remove("selected"));
-        if (group.hasAttribute("data-multi") && !choiceText.includes("没有")) [...group.children].forEach(item => {
-          if (item.querySelector("b")?.textContent.includes("没有")) item.classList.remove("selected");
+        if (group.hasAttribute("data-multi") && (choiceText.includes("没有") || choiceText.includes("状态"))) [...group.children].forEach(item => item.classList.remove("selected"));
+        if (group.hasAttribute("data-multi") && !choiceText.includes("没有") && !choiceText.includes("状态")) [...group.children].forEach(item => {
+          if (item.querySelector("b")?.textContent.includes("没有") || item.querySelector("b")?.textContent.includes("状态")) item.classList.remove("selected");
         });
         choice.classList.toggle("selected");
         if (choice.closest('[data-screen="experience"]')) vbtRound = 0;
+        if (choice.closest('[data-screen="pain"]')) renderProtection();
       }
       if (event.target.closest("[data-next]")) render(current + 1);
       if (event.target.closest("[data-back]")) render(current - 1);
-      const stage = event.target.closest(".stage");
-      if (stage) render(screens.findIndex(screen => screen.dataset.screen === stageTargets[stage.dataset.stage]));
       const assessmentJump = event.target.closest("[data-test-assessment]");
       if (assessmentJump) {
         const assessment = Number(assessmentJump.dataset.testAssessment);
@@ -979,6 +965,7 @@
         testAction = testActions.length - 1;
         render(current - 1);
       }
+      if (event.target.closest("#startTraining")) openProgrammingResult();
       if (event.target.closest("#restart")) {
         testAction = 0;
         vbtRound = 0;
@@ -986,18 +973,12 @@
       }
       if (event.target.closest("#highfive")) {
         const button = document.getElementById("highfive");
-        button.textContent = "击掌成功，正在展开地图";
+        button.textContent = "击掌成功";
         button.classList.add("done");
-        document.getElementById("signature").textContent = "暗号正确 · 冒险正式开始";
+        document.getElementById("signature").textContent = "击掌成功 · 开始训练";
         window.setTimeout(openProgrammingResult, 450);
       }
     });
-    stages.forEach(stage => stage.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        render(screens.findIndex(screen => screen.dataset.screen === stageTargets[stage.dataset.stage]));
-      }
-    }));
     render(0);
   </script>
 </body>
