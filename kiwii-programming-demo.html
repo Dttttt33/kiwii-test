@@ -183,7 +183,21 @@ const goals=[
 {id:"体态与舒适度",label:"腰酸背疼，想久坐不累",sub:"身体不再总是绷着，坐着站着都更舒服"}
 ];
 const focusAreas=["肩部","腰背","髋部","膝部","踝部","没有特殊保护"];
-let selectedGoals=["体态与舒适度"]; let selectedFocus=["没有特殊保护"]; let sessions=[];let currentSession=0;
+function importedProfile(){
+ try{
+  const stored=JSON.parse(sessionStorage.getItem("kiwiiProgrammingProfile")||"null");
+  if(!stored)return null;
+  return{
+   squatLoad:Number(stored.squatLoad)||28,
+   goals:Array.isArray(stored.goals)?stored.goals.filter(id=>goals.some(goal=>goal.id===id)).slice(0,3):[],
+   focus:Array.isArray(stored.focus)?stored.focus.filter(item=>focusAreas.includes(item)):[]
+  };
+ }catch{return null}
+}
+const assessmentProfile=importedProfile();
+let selectedGoals=assessmentProfile?.goals.length?assessmentProfile.goals:["体态与舒适度"];
+let selectedFocus=assessmentProfile?.focus.length?assessmentProfile.focus:["没有特殊保护"];
+let sessions=[];let currentSession=0;
 const $=id=>document.getElementById(id);
 function value(id){return Number($(id).value)||0}
 function renderChips(){
@@ -273,6 +287,11 @@ document.addEventListener("click",e=>{const nav=e.target.closest("[data-page], [
  const filter=e.target.closest("[data-filter]");if(filter){document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("selected",x===filter));renderLibrary(filter.dataset.filter)}
 });
 renderChips();renderLibrary();generate();
+if(assessmentProfile){
+ $("squatLoad").value=assessmentProfile.squatLoad;
+ generate();
+ showPage("mix");
+}
 $("squatLoad").addEventListener("change",generate);
 $("detailPrev").addEventListener("click",()=>{renderDetail(currentSession-1);renderTimeline()});
 $("detailNext").addEventListener("click",()=>{renderDetail(currentSession+1);renderTimeline()});

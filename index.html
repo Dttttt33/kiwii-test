@@ -728,6 +728,40 @@
       ];
     }
 
+    function programmingProfile() {
+      const goalMap = {
+        "想更有线条，但不想练太壮": "增肌塑形",
+        "正在减重，想保住肌肉": "减脂瘦身",
+        "想练出更有力量感的身体": "提升力量",
+        "想保持运动能力": "运动表现",
+        "体能下降，想重新找回状态": "恢复日常体能",
+        "腰酸背疼，想久坐不累": "体态与舒适度"
+      };
+      const protectionMap = {
+        "肩": "肩部",
+        "腰背": "腰背",
+        "髋": "髋部",
+        "膝": "膝部",
+        "踝": "踝部"
+      };
+      const goals = [...document.querySelectorAll('[data-screen="goal"] .choice.selected b')]
+        .map(item => goalMap[item.textContent])
+        .filter(Boolean);
+      const protection = selectedPainZones().map(item => protectionMap[item]).filter(Boolean);
+      const rounds = getVbtRounds();
+
+      return {
+        squatLoad: Number.parseFloat(rounds.at(-1).load),
+        goals: goals.length ? goals : ["体态与舒适度"],
+        focus: protection.length ? protection : ["没有特殊保护"]
+      };
+    }
+
+    function openProgrammingResult() {
+      sessionStorage.setItem("kiwiiProgrammingProfile", JSON.stringify(programmingProfile()));
+      window.location.href = "kiwii-programming-demo.html?from=assessment";
+    }
+
     function renderTestAction() {
       const action = testActions[testAction];
       const number = String(testAction + 1).padStart(2, "0");
@@ -809,6 +843,7 @@
         button.textContent = "✓ 已击掌，承诺已签署";
         button.classList.add("done");
         document.getElementById("signature").textContent = "已签署 · 第一阶段正式开始";
+        window.setTimeout(openProgrammingResult, 450);
       }
     });
     stages.forEach(stage => stage.addEventListener("keydown", event => {
