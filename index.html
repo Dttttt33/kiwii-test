@@ -2400,18 +2400,38 @@
       ["Single Handle","招财猫推举","upper","mobility"],["T-Bar","硬拉接划船","full","pull"],["Single Handle","双臂过顶臂屈伸","upper","accessory"],["T-Bar","从地推举","full","power"],["Single Handle","弓步蹲推举","full","power"],["Single Handle","弓步躯干旋转","core","rotation"],["T-Bar","过顶深蹲","full","mobility"],["Single Handle","单臂硬拉接高拉","full","power"],["Single Handle","单臂硬拉接推举","full","power"],["Single Handle","单腿划船接提膝","full","stability"],["T-Bar","深蹲连肩推","full","power"],["Single Handle","深蹲摆举","full","power"]
     ].map(([hardware,cn,region,role])=>({hardware,cn,region,role,advanced:true}));
 
-    function adventureUserLevel() {
-      const profile = programmingProfile();
-      const scores = profile.assessment || {};
-      const avg = (scores.mobility + scores.stability + scores.strength + scores.cardio) / 4 || 50;
-      const exp = profile.experience || "";
-      const age = profile.age || "";
-      let level = 2;
-      if (avg < 50 || /刚开始/.test(exp)) level = 1;
-      else if (avg < 65 || /停了一阵|偶尔动动/.test(exp)) level = 1;
-      else if (avg >= 76 && /每周都练|老手了/.test(exp)) level = 3;
-      if (/55|65/.test(age) && level > 1) level = Math.max(1, level - 1);
-      return level;
+    function adventureProfile() {
+      const p = programmingProfile();
+      const s = p.assessment || { mobility: 50, stability: 50, strength: 50, cardio: 50 };
+      const age = p.age || "";
+      const exp = p.experience || "";
+      const weight = Number(document.getElementById("weightInput")?.value) || 66;
+      const height = Number(document.getElementById("heightInput")?.value) || 172;
+      const gender = document.querySelector('[data-screen="profile"] .gender-grid .choice.selected b')?.textContent || "";
+
+      const ageFactor = /55|65/.test(age) ? 0.7 : /45/.test(age) ? 0.85 : /35/.test(age) ? 0.95 : 1.0;
+      const expFactor = { "刚开始": 0.6, "停了一阵": 0.75, "偶尔动动": 0.85, "每周都练": 1.0, "老手了": 1.1 }[exp] || 0.85;
+      const genderLoadFactor = gender === "女性" ? 0.75 : 1.0;
+      const bmi = weight / (height / 100) ** 2;
+      const weightFactor = bmi > 30 ? 0.85 : bmi < 18.5 ? 0.9 : 1.0;
+
+      return {
+        scores: s,
+        squatLoad: p.squatLoad || 16,
+        goals: p.goals || [],
+        focus: p.focus || [],
+        ageFactor,
+        expFactor,
+        genderLoadFactor,
+        weightFactor,
+        stabilityScore: s.stability,
+        mobilityScore: s.mobility,
+        strengthScore: s.strength,
+        cardioScore: s.cardio,
+        isOlder: /55|65/.test(age),
+        isNew: /刚开始|停了一阵/.test(exp),
+        isStrong: /每周都练|老手了/.test(exp) && s.strength >= 70
+      };
     }
 
     function adventureWeights() {
@@ -2513,15 +2533,6 @@
       return false;
     }
 
-    function adventureMovementLoad(move, slot) {
-      const profile = programmingProfile();
-      const best = profile.squatLoad || 20;
-      const ratio = { anchor: .5, power: .38, pull: .32, push: .28, stability: .24, control: .2, mobility: .16, rotation: .18, accessory: .16 }[move.role] || .22;
-      const protectFactor = (profile.focus || []).length > 0 ? .88 : 1;
-      const orderFactor = [1, 1, .9, .85, .85][slot] || .85;
-      const raw = best * ratio * (move.hardware === "Single Handle" ? .58 : 1) * protectFactor * orderFactor;
-      return Math.max(move.hardware === "T-Bar" ? 4 : 2, Math.round(raw / (move.hardware === "T-Bar" ? 2 : 1)) * (move.hardware === "T-Bar" ? 2 : 1));
-    }
 
     function adventureFitSequence(moves, targetMin) {
       let rounds = 2;
@@ -2534,24 +2545,38 @@
       return { moves, rounds, minutes };
     }
 
+    function adventureTierForMove(move, ap, progression) {
+      const tier = move.tier || 2;
+      if (tier === 1) return true;
+      const relevantScore = move.region === "lower" ? (ap.stabilityScore + ap.strengthScore) / 2
+        : move.region === "upper" ? ap.strengthScore
+        : move.region === "core" ? ap.stabilityScore
+        : (ap.strengthScore + ap.stabilityScore) / 2;
+      const threshold = tier === 2 ? 45 : 65;
+      const progressionBonus = progression * 15;
+      return (relevantScore + progressionBonus) >= threshold;
+    }
+
     function buildAdventureSession(i, type) {
-      const profile = programmingProfile();
+      const ap = adventureProfile();
       const hardware = i % 2 === 0 ? "T-Bar" : "Single Handle";
       const isPostAssessment = i >= 20;
-      const userLevel = adventureUserLevel();
       const progression = Math.min(i / 39, 1);
-      const tierCeiling = Math.min(3, userLevel + Math.floor(progression * 1.5));
 
-      const basePool = kiwiiExercises.filter(e => (e.tier || 1) <= tierCeiling);
+      const basePool = kiwiiExercises.filter(e => adventureTierForMove(e, ap, progression));
       const exercisePool = isPostAssessment ? [...basePool, ...advancedMoves] : basePool;
       const safe = exercisePool.filter(e => e.hardware === hardware && !adventureProtected(e));
       const available = safe.length >= 4 ? safe : exercisePool.filter(e => e.hardware === hardware);
 
-      const count = userLevel === 1 ? 3 : 3 + (i % 3);
-      const levelLoadScale = [0, 0.7, 1.0, 1.15][userLevel];
-      const loadMultiplier = levelLoadScale * (1 + progression * 0.3);
-      const levelRepsBase = [0, 5, 6, 7][userLevel];
-      const goalReps = (profile.goals || []).some(g => /减脂/.test(g)) ? 2 : 0;
+      const stabilityDriven = ap.stabilityScore < 55;
+      const count = (ap.isNew || ap.isOlder) ? 3 : stabilityDriven ? 3 : 3 + (i % 3);
+
+      const loadBase = ap.squatLoad * ap.ageFactor * ap.genderLoadFactor * ap.weightFactor * ap.expFactor;
+      const loadProgression = 1 + progression * 0.3;
+
+      const repsBase = ap.cardioScore >= 70 ? 7 : ap.cardioScore >= 50 ? 6 : 5;
+      const repsMax = ap.isOlder ? 10 : ap.isNew ? 10 : 12;
+      const goalReps = ap.goals.some(g => /减脂/.test(g)) ? 2 : 0;
 
       const used = [];
       const moves = [];
@@ -2559,17 +2584,24 @@
         let candidates = available.filter(e => e.role === type.roles[n % type.roles.length] && !used.includes(e.cn));
         if (!candidates.length) candidates = available.filter(e => !used.includes(e.cn));
         if (!candidates.length) break;
+        if (stabilityDriven && candidates.some(e => !adventureIsUnilateral(e))) {
+          candidates = candidates.filter(e => !adventureIsUnilateral(e));
+        }
         const safePool = candidates.filter(e => !adventureClashes(moves.at(-1), e));
         const pick = safePool.length ? safePool : candidates;
         const move = pick[(i + n * 3) % pick.length];
         used.push(move.cn);
         const unilateral = adventureIsUnilateral(move);
-        const reps = Math.min(userLevel === 1 ? 10 : 12, levelRepsBase + Math.round(progression * 3) + ((n * 2) % 3) + goalReps);
-        const load = Math.max(move.hardware === "T-Bar" ? 4 : 2, Math.round(adventureMovementLoad(move, n) * loadMultiplier));
+        const reps = Math.min(repsMax, repsBase + Math.round(progression * 3) + ((n * 2) % 3) + goalReps);
+        const roleRatio = { anchor: .5, power: .38, pull: .32, push: .28, stability: .24, control: .2, mobility: .16, rotation: .18, accessory: .16 }[move.role] || .22;
+        const orderFactor = [1, 1, .9, .85, .85][n] || .85;
+        const hwFactor = move.hardware === "Single Handle" ? .58 : 1;
+        const rawLoad = loadBase * roleRatio * hwFactor * orderFactor * loadProgression;
+        const load = Math.max(move.hardware === "T-Bar" ? 4 : 2, Math.round(rawLoad / (move.hardware === "T-Bar" ? 2 : 1)) * (move.hardware === "T-Bar" ? 2 : 1));
         moves.push({ ...move, load, reps, unilateral });
       }
       moves.sort((a, b) => adventurePostureHeight(a) - adventurePostureHeight(b));
-      const targetMin = userLevel === 1 ? Math.round(5 + progression * 1.5) : Math.round(6 + progression * 2);
+      const targetMin = (ap.isNew || ap.isOlder) ? Math.round(5 + progression * 1.5) : Math.round(6 + progression * 2);
       const fitted = adventureFitSequence(moves, targetMin);
       return { id: i + 1, type, hardware, moves: fitted.moves, rounds: fitted.rounds, focus: type.focus, minutes: fitted.minutes, isPostAssessment };
     }
