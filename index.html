@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kiwii | 身体冒险出发站</title>
+  <title>Kiwii | 运动出发站</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;900&family=Nunito:wght@400;500;600;700;800;900&display=swap');
 
     :root {
       --ink: #102b27;
@@ -23,7 +23,7 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: var(--ink-deep); }
+    html, body { margin: 0; height: 100%; min-height: 100%; overflow: hidden; background: var(--ink-deep); }
     body {
       color: var(--ink);
       font-family: "Noto Sans SC", "DM Sans", sans-serif;
@@ -33,6 +33,7 @@
     button { cursor: pointer; }
 
     .shell {
+      height: 100vh;
       min-height: 100vh;
       padding: 18px;
       position: relative;
@@ -54,7 +55,8 @@
     }
     .app {
       width: min(1380px, 100%);
-      min-height: calc(100vh - 36px);
+      height: calc(100vh - 36px);
+      min-height: 0;
       margin: 0 auto;
       border-radius: 30px;
       overflow: hidden;
@@ -104,7 +106,7 @@
     .rail-foot { margin-top: auto; padding-top: 22px; color: rgba(255,255,255,.5); font-size: 11px; line-height: 1.7; }
     .rail-foot strong { color: var(--lime); font-weight: 700; }
 
-    main { min-width: 0; display: flex; flex-direction: column; }
+    main { min-width: 0; height: 100%; display: flex; flex-direction: column; }
     .topbar {
       min-height: 70px;
       padding: 18px 28px;
@@ -120,11 +122,12 @@
     .progress { width: 150px; height: 5px; overflow: hidden; border-radius: 10px; background: rgba(16,43,39,.1); }
     .progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--ink); transition: width .4s ease; }
 
-    .content { flex: 1; min-height: 0; display: flex; }
+    .content { flex: 1; min-height: 0; display: flex; overflow: hidden; }
     .screen {
       width: 100%;
       padding: 48px clamp(28px, 5vw, 78px) 32px;
       display: none;
+      overflow: hidden;
       animation: reveal .52s cubic-bezier(.2,.8,.2,1) both;
     }
     .screen.active { display: block; }
@@ -169,7 +172,7 @@
     .btn.lime::after { color: var(--ink); }
     .btn[disabled] { cursor: not-allowed; opacity: .42; transform: none; box-shadow: none; }
 
-    .question-wrap { max-width: 970px; }
+    .question-wrap { max-width: 970px; margin: 0 auto; }
     .counter { margin-bottom: 16px; color: var(--muted); font: 700 11px "DM Sans"; letter-spacing: .15em; text-transform: uppercase; }
     .counter span { color: var(--ink); }
     .choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-top: 26px; }
@@ -244,12 +247,16 @@
     .skip-test { width: 100%; margin-top: 27px; justify-content: center; border-color: rgba(255,255,255,.18); color: #fff; }
     .test-type { color: var(--lime); font: 700 11px "DM Sans"; letter-spacing: .14em; text-transform: uppercase; }
     .test-title { margin: 5px 0 6px; color: #fff; font-size: 27px; line-height: 1.12; letter-spacing: -.06em; }
-    .guide-card { margin-top: 18px; padding: 15px; border-radius: 14px; color: var(--ink); background: var(--paper); }
-    .guide-card b { display: block; margin-bottom: 9px; color: var(--ink); font-size: 12px; }
-    .guide-card ol { margin: 0; padding-left: 19px; }
-    .guide-card li { margin: 6px 0; color: #48615c; font-size: 12px; line-height: 1.55; }
+    .task-ticket { min-height: 220px; padding: 24px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; border: 3px solid #d4c4a8; border-radius: 26px; color: var(--ink); background: radial-gradient(circle,rgba(247,205,103,.16) 1.5px,transparent 1.5px) 0 0/26px 26px,#fffdf7; box-shadow: 0 5px 0 rgba(188,170,137,.25); }
+    .camera-ticket { position: absolute; right: 28px; top: 280px; z-index: 5; width: 300px; min-height: 220px; }
+    .task-ticket::before, .task-ticket::after { content: ""; position: absolute; top: 78px; width: 24px; height: 24px; border-radius: 50%; background: #f8e7b8; border: 2px solid #d4c4a8; }
+    .task-ticket::before { left: -14px; }
+    .task-ticket::after { right: -14px; }
+    .ticket-task { padding: 18px 4px 4px; }
+    .ticket-task b { display: block; color: #725d42; font-size: 27px; line-height: 1.35; letter-spacing: -.04em; text-align: center; }
+    .review-label { margin-top: 18px; color: #9a835a; font-size: 9px; font-weight: 900; letter-spacing: .14em; text-align: center; text-transform: uppercase; }
     .test-nav { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 17px; }
-    .test-nav button { height: 7px; padding: 0; border: 0; border-radius: 5px; background: rgba(255,255,255,.12); transition: .2s ease; }
+    .test-nav button { height: 7px; padding: 18px 0; border: 0; border-radius: 5px; background: rgba(255,255,255,.12); background-clip: content-box; transition: .2s ease; }
     .test-nav button:hover, .test-nav button:focus-visible { transform: scaleY(1.7); outline: none; }
     .test-nav button.done { background: var(--mint); }
     .test-nav button.active { background: var(--lime); }
@@ -329,6 +336,7 @@
       .test-screen.active { grid-template-columns: 1fr; }
       .test-panel { padding: 20px; }
       .camera { min-height: calc(100vh - 70px); }
+      .camera-ticket { left: 50%; right: auto; top: auto; bottom: 20px; width: calc(100% - 40px); min-height: 160px; transform: translateX(-50%); }
       .camera-frame { transform: scale(.77); }
       .camera-tip h2 { font-size: 27px; }
       .topbar { padding: 15px 18px; }
@@ -478,8 +486,6 @@
     .camera-position, .pose-label { color: #725d42; border: 2px solid #d4c4a8; background: rgba(255,253,247,.9); }
     .pose-label b { color: #168d7f; }
     .test-panel { background: #f8e7b8; border-left: 3px dashed rgba(114,93,66,.16); }
-    .guide-card { color: #725d42; border: 2px solid #d4c4a8; background: #fffdf7; }
-    .guide-card li { color: #725d42; }
     .test-actions .secondary { color: #725d42; border-color: #c4b89e; }
     .test-nav button { background: rgba(114,93,66,.14); }
     .test-nav button.done { background: #82d5bb; }
@@ -492,8 +498,13 @@
 
     /* User-facing Nintendo-style polish */
     .hero-split { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 34px; align-items: center; }
-    .game-badges { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
-    .game-badge { padding: 8px 12px; border: 2px solid #d4c4a8; border-radius: 999px; background: #fffdf7; color: #725d42; font-size: 12px; font-weight: 900; box-shadow: 0 3px 0 rgba(188,170,137,.28); }
+    .bird-guide { display: flex; align-items: flex-end; gap: 12px; margin-top: 22px; }
+    .bird-icon { width: 78px; height: 78px; flex: 0 0 auto; filter: drop-shadow(0 4px 0 rgba(114,93,66,.16)); }
+    .bird-icon.small { width: 58px; height: 58px; }
+    .bird-bubble { max-width: 410px; padding: 13px 17px; position: relative; border: 2px solid #d4c4a8; border-radius: 20px 20px 20px 7px; color: #725d42; background: #fffdf7; font-size: 13px; font-weight: 700; line-height: 1.6; }
+    .bird-bubble::before { content: ""; position: absolute; left: -10px; bottom: 10px; width: 17px; height: 17px; border-left: 2px solid #d4c4a8; border-bottom: 2px solid #d4c4a8; background: #fffdf7; transform: rotate(45deg); }
+    .helper-bird { display: flex; align-items: flex-end; gap: 10px; margin-top: 18px; }
+    .helper-bird .bird-bubble { max-width: none; flex: 1; }
     .quest-card { min-height: 440px; padding: 24px; position: relative; overflow: hidden; border-radius: 28px; border: 3px solid #82d5bb; background: linear-gradient(#b9ebf5 0 48%, #a8dea8 48% 100%); box-shadow: 0 9px 0 rgba(66,149,130,.18); }
     .quest-card::before { content: ""; position: absolute; left: 50%; bottom: 58px; width: 310px; height: 120px; transform: translateX(-50%); border-radius: 50%; background: #f8e7b8; border: 3px solid rgba(114,93,66,.14); }
     .quest-sun { position: absolute; right: 34px; top: 34px; width: 74px; height: 74px; border-radius: 50%; background: #ffcf4a; border: 5px solid #fff6c8; box-shadow: 0 5px 0 #d9a92f; }
@@ -506,17 +517,20 @@
     .quest-path { position: absolute; left: 50%; bottom: 22px; display: grid; grid-template-columns: repeat(3, 48px); gap: 18px; transform: translateX(-50%); }
     .quest-node { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; border: 3px solid #fffdf7; color: #725d42; background: #ffcf4a; box-shadow: 0 5px 0 #d0a82a; font-weight: 900; }
     .field label, .choice small, .note, .lead { font-weight: 600; }
-    .guide-card ol { padding-left: 0; list-style: none; }
-    .guide-card li { padding: 7px 0 7px 24px; position: relative; }
-    .guide-card li::before { content: "★"; position: absolute; left: 0; color: #ffcf4a; text-shadow: 0 1px 0 #b7861f; }
     .topbar { min-height: 82px; padding: 18px clamp(22px, 4vw, 52px); }
-    .topbar-title { color: #168d7f; font-size: 22px; font-weight: 900; letter-spacing: -.05em; text-transform: lowercase; }
+    .topbar-title {
+      color: #168d7f;
+      font-family: "Nunito", "Noto Sans SC", sans-serif;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -.07em;
+      text-transform: lowercase;
+    }
     .topbar-right { flex: 1; justify-content: flex-end; }
     .topbar-right .progress { width: min(420px, 50vw); height: 10px; }
-    #stepCopy { min-width: 42px; color: #725d42; font-size: 13px; font-weight: 900; text-align: right; }
-    .onboarding-screen { min-height: calc(100vh - 118px); display: none; place-items: center; }
+    .onboarding-screen { height: calc(100vh - 118px); display: none; place-items: center; overflow: hidden; }
     .onboarding-screen.active { display: grid; }
-    .onboarding-wrap { width: min(1040px, 100%); }
+    .onboarding-wrap { width: 100%; max-width: 100%; padding: 0 clamp(32px, 4vw, 60px); }
     .onboarding-head { margin-bottom: 28px; text-align: center; }
     .onboarding-head h1, .onboarding-head h2 { max-width: none; }
     .onboarding-head .lead { max-width: 620px; margin: 0 auto; }
@@ -539,8 +553,14 @@
     .measure-result { padding: 15px; border: 2px solid #d4c4a8; border-radius: 18px; background: #fffdf7; }
     .measure-result small { display: block; color: #93836d; font-weight: 800; }
     .measure-result b { display: block; margin-top: 5px; color: #725d42; font-size: 28px; }
+    .measurement-editor { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+    .measurement-editor .field { position: relative; padding: 14px 16px; }
+    .measurement-editor .field input { padding-right: 42px; }
+    .measurement-editor .field span { position: absolute; right: 16px; bottom: 20px; float: none; margin: 0; }
+    .measurement-editor .auto-tag { margin-top: 8px; }
     .profile-picker { padding: 28px; border: 2px solid #d4c4a8; border-radius: 28px; background: #fffdf7; box-shadow: 0 6px 0 rgba(188,170,137,.24); }
-    .picker-block + .picker-block { margin-top: 24px; }
+    .picker-block + .picker-block { margin-top: 28px; }
+    .picker-block .note { margin-top: 14px; }
     .picker-label { display: block; margin-bottom: 12px; color: #725d42; font-size: 15px; font-weight: 900; }
     .age-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
     .age-grid .choice, .gender-grid .choice { min-height: 52px; padding: 10px 12px; text-align: center; }
@@ -548,13 +568,804 @@
     .gender-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
     .identity-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 26px; }
     .identity-grid .choice { min-height: 190px; padding: 22px 16px; text-align: center; }
-    .identity-icon { display: block; margin-bottom: 18px; font-size: 34px; }
+    .identity-icon { width: 74px; height: 74px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 24px; background: #f7f3df; border: 2px solid #d4c4a8; }
+    .identity-icon svg { width: 54px; height: 54px; overflow: visible; }
     .identity-grid .choice b { font-size: 16px; }
     .identity-grid .choice small { margin-top: 8px; font-size: 12px; }
     .pain-layout { display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; align-items: stretch; }
     .pain-layout .choice-grid { grid-template-columns: repeat(3, 1fr); margin-top: 18px; }
     .pain-layout .body-map { min-height: 440px; }
     .onboarding-actions { display: flex; justify-content: center; gap: 12px; margin-top: 28px; }
+    .welcome-screen { height: calc(100vh - 118px); display: none; place-items: center; overflow: hidden; }
+    .welcome-screen.active { display: grid; }
+    .welcome-copy h1 { max-width: 660px; }
+    .welcome-copy .lead { max-width: 590px; }
+    .welcome-copy .button-row { margin-top: 24px; }
+    .welcome-screen .onboarding-wrap { max-width: 860px; }
+    .welcome-copy { text-align: center; }
+    .welcome-copy h1 {
+      max-width: none;
+      margin-bottom: 14px;
+      font-size: clamp(38px, 5vw, 62px);
+      white-space: nowrap;
+      animation: line-in .55s .05s both;
+    }
+    .welcome-copy .lead {
+      max-width: 700px;
+      margin: 0 auto;
+      font-size: clamp(18px, 2vw, 23px);
+      line-height: 1.55;
+      animation: line-in .55s .35s both;
+    }
+    .welcome-copy .bird-guide {
+      justify-content: center;
+      animation: line-in .55s .65s both;
+    }
+    .welcome-copy .button-row {
+      justify-content: flex-end;
+      animation: line-in .55s .95s both;
+    }
+    @keyframes line-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: none; }
+    }
+    .topbar-right .progress {
+      width: min(620px, 62vw);
+      height: 16px;
+      position: relative;
+      overflow: visible;
+      background: #fffdf7;
+    }
+    .progress > span {
+      background: linear-gradient(90deg, #82d5bb, #19c8b9, #ffcf4a);
+    }
+    .journey-dots { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+    .journey-dot {
+      width: 17px;
+      height: 17px;
+      padding: 0;
+      position: relative;
+      z-index: 2;
+      border: 2px solid #d4c4a8;
+      border-radius: 50%;
+      background: #fffdf7;
+      box-shadow: 0 1px 0 rgba(114,93,66,.18);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: .18s ease;
+    }
+    .journey-dot:hover { transform: translateY(-2px) scale(1.12); border-color: #19c8b9; }
+    .journey-dot.done { border-color: #19c8b9; background: #82d5bb; }
+    .journey-dot.active { border-color: #d0a82a; background: #ffcf4a; transform: scale(1.22); }
+    .journey-dot.special {
+      width: 25px;
+      height: 25px;
+      display: grid;
+      place-items: center;
+      border-color: #725d42;
+      color: #725d42;
+      background: #ffcf4a;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    #stepCopy { min-width: 54px !important; font-size: 14px !important; }
+    .topbar { position: sticky; top: 0; z-index: 20; }
+    .onboarding-actions { justify-content: flex-end; }
+    .bird-subtitle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      max-width: 650px;
+      margin: 12px auto 0;
+    }
+    .bird-subtitle .bird-icon { width: 52px; height: 52px; }
+    .bird-subtitle .bird-bubble { text-align: left; }
+    .test-screen { position: relative; }
+    .test-screen.active { display: block; }
+    .test-panel {
+      width: 310px;
+      padding: 0;
+      position: absolute;
+      right: 22px;
+      bottom: 22px;
+      z-index: 8;
+      border: 0;
+      background: transparent;
+    }
+    .review-label { display: none; }
+    .test-actions { opacity: 1; }
+    .camera-title {
+      display: block;
+      top: 28px;
+      left: 28px;
+      right: auto;
+      width: 240px;
+      max-width: 240px;
+      padding: 14px 18px;
+      transform: none;
+      border: 3px solid #fffdf7;
+      border-radius: 24px;
+      color: #fff;
+      background: #19c8b9;
+      box-shadow: 0 6px 0 #118f85;
+      text-align: left;
+      text-shadow: none;
+      font-size: 19px;
+      line-height: 1.35;
+    }
+    .camera-ticket {
+      top: auto;
+      right: auto;
+      bottom: 28px;
+      left: 50%;
+      width: min(400px, calc(100% - 56px));
+      min-height: 145px;
+      transform: translateX(-50%);
+    }
+    .ticket-progress { display: flex; justify-content: center; gap: 9px; margin-bottom: 8px; }
+    .ticket-progress i { width: 10px; height: 10px; border: 2px solid #d4c4a8; border-radius: 50%; background: #fffdf7; }
+    .ticket-progress i.done { border-color: #19c8b9; background: #82d5bb; }
+    .ticket-progress i.active { border-color: #d0a82a; background: #ffcf4a; transform: scale(1.18); }
+    .ticket-task { padding-top: 8px; }
+    .ticket-task b { font-size: 19px; }
+    .test-guide {
+      max-width: 300px;
+      position: absolute;
+      left: 28px;
+      top: 140px;
+      z-index: 6;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      transform: none;
+    }
+    .test-guide .bird-icon { width: 52px; height: 52px; }
+    .test-guide .bird-bubble { max-width: 260px; background: rgba(255,253,247,.95); font-size: 14px; }
+    .pose-label, .camera-position, .camera-info { display: none; }
+    .assessment-intro { height: calc(100vh - 118px); display: none; place-items: center; overflow: hidden; }
+    .assessment-intro.active { display: grid; }
+    .assessment-intro-card {
+      width: min(980px, 100%);
+      padding: 46px;
+      border: 3px solid #82d5bb;
+      border-radius: 32px;
+      background:
+        radial-gradient(circle, rgba(130,213,187,.18) 1.5px, transparent 1.5px) 0 0/28px 28px,
+        #e8faf5;
+      box-shadow: 0 9px 0 rgba(66,149,130,.2);
+      text-align: center;
+    }
+    .assessment-intro-card h2 {
+      max-width: 820px;
+      margin: 0 auto 18px;
+      font-size: clamp(32px, 3.8vw, 50px);
+      line-height: 1.2;
+      letter-spacing: -.04em;
+      word-break: keep-all;
+      text-wrap: balance;
+    }
+    .assessment-intro-card .lead {
+      max-width: 760px;
+      margin: 0 auto;
+      font-size: 18px;
+      line-height: 1.75;
+      word-break: keep-all;
+      text-wrap: balance;
+    }
+    .assessment-intro-card .bird-guide { justify-content: center; }
+    .assessment-intro-card .bird-bubble {
+      max-width: 520px;
+      word-break: keep-all;
+      text-wrap: balance;
+    }
+    .assessment-intro-card .button-row { justify-content: flex-end; }
+    .unlock-layout {
+      min-height: calc(100vh - 180px);
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 34px;
+      align-items: center;
+    }
+    .unlock-burst { display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .unlock-medal {
+      width: 160px;
+      height: 160px;
+      margin: 22px auto 0;
+      display: grid;
+      place-items: center;
+      border: 10px solid #fff8d8;
+      border-radius: 50%;
+      color: #725d42;
+      background: #ffcf4a;
+      box-shadow: 0 12px 0 #d0a82a;
+      font-size: 62px;
+      font-weight: 900;
+      animation: pulse 2.2s infinite;
+    }
+    .result-console {
+      padding: 28px;
+      border: 3px solid #82d5bb;
+      border-radius: 30px;
+      background:
+        radial-gradient(circle, rgba(130,213,187,.18) 1.5px, transparent 1.5px) 0 0/28px 28px,
+        #e8faf5;
+      box-shadow: 0 8px 0 rgba(66,149,130,.18);
+    }
+    .unlock-burst h2 { max-width: 310px; margin: 0; order: -1; font-size: clamp(30px, 3vw, 42px); line-height: 1.18; }
+    .unlock-burst .lead { max-width: 280px; margin: 0 auto; }
+    .result-dialogue { display: grid; grid-template-columns: 70px 1fr; align-items: end; gap: 12px; margin-top: 22px; }
+    .result-dialogue .bird-icon { width: 70px; height: 70px; }
+    .result-speech {
+      min-height: 128px;
+      padding: 20px 22px;
+      position: relative;
+      border: 3px solid #d4c4a8;
+      border-radius: 24px 24px 24px 8px;
+      background: #fffdf7;
+      box-shadow: 0 5px 0 rgba(188,170,137,.28);
+    }
+    .result-speech b { display: block; color: #725d42; font-size: 22px; line-height: 1.48; }
+    .dialogue-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+    .dialogue-dots { display: flex; gap: 7px; margin-right: auto; }
+    .dialogue-dots i { width: 9px; height: 9px; border: 2px solid #d4c4a8; border-radius: 50%; background: #fff; }
+    .dialogue-dots i.active { border-color: #d0a82a; background: #ffcf4a; }
+    .ability-loot { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .loot-card {
+      min-height: 138px;
+      padding: 16px 18px;
+      border: 2px solid #d4c4a8;
+      border-radius: 20px;
+      color: #725d42;
+      background: #fffdf7;
+      box-shadow: 0 4px 0 rgba(188,170,137,.25);
+      text-align: left;
+    }
+    .loot-card:hover, .loot-card.active { border-color: #19c8b9; background: #f0fffb; transform: translateY(-3px); }
+    .loot-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 22px; }
+    .loot-card b { display: block; font-size: 24px; }
+    .ability-tag {
+      padding: 5px 8px;
+      border-radius: 99px;
+      color: #725d42;
+      background: #f8e7b8;
+      font-size: 10px;
+      font-style: normal;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .loot-spectrum { position: relative; display: block; height: 12px; border-radius: 99px; background: linear-gradient(90deg, #b9ebf5, #82d5bb 45%, #19c8b9 72%, #ffcf4a); }
+    .loot-spectrum::after {
+      content: "";
+      position: absolute;
+      left: var(--score);
+      top: 50%;
+      width: 22px;
+      height: 22px;
+      transform: translate(-50%, -50%);
+      border: 3px solid #fffdf7;
+      border-radius: 50%;
+      background: #ffcf4a;
+      box-shadow: 0 3px 0 #d0a82a;
+    }
+    .loot-card.dimmed { opacity: .32; transform: scale(.97); }
+    .loot-card.focused { border-color: #19c8b9; background: #f0fffb; transform: translateY(-4px) scale(1.015); box-shadow: 0 7px 0 #118f85; }
+    .goal-screen .choice.recommended.selected {
+      color: #725d42;
+      border-color: #e3ad13;
+      background: #fff0a8;
+      box-shadow: 0 5px 0 #d9a92f;
+    }
+    .goal-screen .choice.recommended.selected small { color: #806b4e; }
+    .goal-screen .choice.recommended::after { content: "推荐"; color: #fff; background: #168d7f; }
+    .contract-screen { height: calc(100vh - 118px); min-height: 560px; display: none; place-items: center; overflow: hidden; }
+    .contract-screen.active { display: grid; }
+    .contract-card {
+      width: min(980px, 100%);
+      max-height: calc(100vh - 142px);
+      padding: 20px 24px;
+      border: 3px solid #82d5bb;
+      border-radius: 32px;
+      background:
+        radial-gradient(circle, rgba(130,213,187,.18) 1.5px, transparent 1.5px) 0 0/28px 28px,
+        #e8faf5;
+      box-shadow: 0 9px 0 rgba(66,149,130,.2);
+      text-align: center;
+    }
+    .contract-card h2 { margin: 0 0 3px; font-size: clamp(28px, 3vw, 40px); }
+    .contract-card .lead { margin: 0 auto 12px; font-size: 14px; }
+    .contract-exchange { display: grid; grid-template-columns: .9fr 1.1fr; gap: 12px; text-align: left; }
+    .contract-side { padding: 14px; border: 2px solid #d4c4a8; border-radius: 21px; background: #fffdf7; box-shadow: 0 4px 0 rgba(188,170,137,.22); }
+    .contract-side.promise {
+      border-color: #82d5bb;
+      background:
+        radial-gradient(circle, rgba(130,213,187,.12) 1.5px, transparent 1.5px) 0 0/22px 22px,
+        linear-gradient(160deg, #e8faf5, #f0fffb);
+      box-shadow: 0 6px 0 rgba(66,149,130,.16);
+    }
+    .contract-kicker { display: block; margin-bottom: 9px; color: #168d7f; font-size: 13px; font-weight: 900; letter-spacing: .06em; }
+    .contract-options { display: grid; gap: 9px; text-align: left; }
+    .contract-block { padding: 10px 12px; border: 2px solid #e0d4bd; border-radius: 17px; background: #fff; }
+    .contract-block > b { display: block; margin-bottom: 8px; color: #725d42; font-size: 15px; }
+    .contract-picks { display: flex; gap: 8px; }
+    .contract-pick {
+      flex: 1;
+      min-height: 46px;
+      border: 2px solid #d4c4a8;
+      border-radius: 15px;
+      color: #725d42;
+      background: #fff;
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .contract-pick.selected { border-color: #19c8b9; color: #fff; background: #19c8b9; box-shadow: 0 4px 0 #118f85; }
+    .contract-line { margin: 10px 0 0; color: #725d42; font-size: 17px; font-weight: 900; line-height: 1.4; }
+    .commitment-meter { margin-top: 8px; padding: 9px 12px; border-radius: 14px; color: #725d42; background: #fff3ba; font-size: 11px; font-weight: 800; }
+    .commitment-meter:empty { display: none; }
+    .promise-list { display: grid; min-height: 204px; }
+    .promise-result {
+      min-height: 204px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 2px solid #82d5bb;
+      border-radius: 21px;
+      background: #fff;
+      animation: promise-in .32s ease both;
+    }
+    .promise-result strong {
+      display: block;
+      color: #725d42;
+      font-size: clamp(22px, 2.5vw, 28px);
+      line-height: 1.4;
+      letter-spacing: -.02em;
+    }
+    .promise-result small {
+      display: block;
+      margin-top: 12px;
+      color: #5a4e3a;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.55;
+    }
+    .promise-result .promise-icon {
+      width: 42px;
+      height: 42px;
+      margin-bottom: 10px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #82d5bb;
+      color: #fff;
+      font-size: 20px;
+    }
+    .promise-item {
+      display: block;
+      color: #725d42;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.7;
+    }
+    .promise-sentence {
+      display: block;
+      color: #725d42;
+      font-size: clamp(16px, 1.8vw, 20px);
+      font-weight: 800;
+      line-height: 1.6;
+    }
+    @keyframes promise-in { from { opacity: .35; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+    .contract-handshake { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 10px; }
+    .contract-handshake p { max-width: 430px; margin: 0; color: #725d42; font-size: 12px; font-weight: 800; line-height: 1.45; text-align: left; }
+    .contract-stamp {
+      width: 110px;
+      height: 110px;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      border: 5px dashed #d0a82a;
+      border-radius: 50%;
+      color: #725d42;
+      background: #ffcf4a;
+      box-shadow: 0 10px 0 #d0a82a;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      transform: rotate(-4deg);
+      transition: .2s ease;
+    }
+    .contract-stamp:hover { transform: rotate(-4deg) translateY(3px); box-shadow: 0 5px 0 #d0a82a; }
+    .contract-stamp:active { transform: rotate(-4deg) translateY(6px); box-shadow: 0 2px 0 #d0a82a; }
+    .contract-stamp.signed { color: #fff; border-style: solid; border-color: #118f85; background: #19c8b9; box-shadow: 0 8px 0 #118f85; transform: rotate(-4deg) scale(.94); }
+    .contract-stamp.signed:hover { transform: rotate(-4deg) scale(.94); box-shadow: 0 8px 0 #118f85; }
+    .contract-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .assessment-entry {
+      min-height: calc(100vh - 118px);
+      display: grid;
+      place-items: center;
+      padding: 28px 0;
+    }
+    .assessment-entry-card {
+      width: min(920px, 100%);
+      padding: 30px;
+      border: 3px solid #82d5bb;
+      border-radius: 30px;
+      background:
+        radial-gradient(circle, rgba(130,213,187,.2) 1.5px, transparent 1.5px) 0 0/28px 28px,
+        #e8faf5;
+      box-shadow: 0 8px 0 rgba(66,149,130,.18);
+    }
+    .prototype-label {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 99px;
+      color: #fff;
+      background: #168d7f;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+    .assessment-entry-card h2 { margin: 0 0 8px; font-size: clamp(30px, 4vw, 48px); }
+    .assessment-entry-card .lead { max-width: 680px; margin: 0; }
+    .score-entry-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 26px 0 18px; }
+    .score-entry {
+      padding: 18px;
+      border: 2px solid #d4c4a8;
+      border-radius: 20px;
+      background: #fffdf7;
+      box-shadow: 0 4px 0 rgba(188,170,137,.25);
+    }
+    .score-entry label { display: block; margin-bottom: 8px; color: #806f59; font-size: 13px; font-weight: 900; }
+    .score-entry input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      color: #725d42;
+      background: transparent;
+      font: 900 40px/1 "DM Sans", sans-serif;
+    }
+    .score-entry small { display: block; margin-top: 8px; color: #9a896f; font-size: 10px; }
+    .goal-screen.active { display: grid; place-items: center; min-height: calc(100vh - 118px); }
+    .goal-screen .question-wrap { text-align: center; width: 100%; }
+    .goal-screen .choice-grid { grid-template-columns: 1fr 1fr; text-align: left; }
+    .goal-screen .choice { text-align: left; }
+    .goal-screen .choice b { padding-right: 72px; font-size: 16px; }
+    .goal-screen .choice small { margin-top: 6px; line-height: 1.5; font-size: 13px; color: #8a7b66; }
+    .test-screen .camera { min-height: calc(100vh - 82px); }
+    .test-screen .test-panel { top: auto; bottom: 22px; }
+    .pain-layout.single { display: block; max-width: 860px; margin: 0 auto; }
+    .pain-layout.single .choice-grid { grid-template-columns: repeat(3, 1fr); }
+    .other-pain-field {
+      max-width: 560px;
+      margin: 16px auto 0;
+      padding: 16px 18px;
+      border: 2px solid #d4c4a8;
+      border-radius: 18px;
+      background: #fffdf7;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 0;
+      transition: max-height .3s ease, opacity .25s ease, padding .3s ease, margin .3s ease;
+    }
+    .other-pain-field.active { max-height: 120px; opacity: 1; padding: 16px 18px; margin-top: 16px; }
+    .other-pain-field label { display: block; margin-bottom: 8px; color: #806f59; font-size: 12px; font-weight: 800; }
+    .other-pain-field input { width: 100%; padding: 10px 0; border: 0; border-bottom: 2px solid #d4c4a8; outline: 0; color: #725d42; background: transparent; font-size: 16px; }
+    .map-screen { height: calc(100vh - 118px); padding: 18px 24px; overflow: hidden; position: relative; }
+    .map-screen.active { display: grid; grid-template-rows: auto 1fr auto; gap: 12px; }
+    .map-head { display: flex; align-items: center; gap: 14px; }
+    .map-head h2 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); }
+    .map-intro { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+    .map-intro .bird-guide { margin-bottom: 16px; }
+    .map-counter { font: 900 clamp(72px, 12vw, 140px)/1 "DM Sans"; color: #168d7f; letter-spacing: -.08em; opacity: 0; transition: opacity .3s; }
+    .map-counter.visible { opacity: 1; }
+    .map-counter small { display: block; font-size: 16px; font-weight: 700; color: #8a7b66; letter-spacing: 0; margin-top: 8px; }
+    .adventure-map {
+      position: relative;
+      min-height: 0;
+      height: 100%;
+      border: 3px solid #82d5bb;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 8% 30%, rgba(255,255,255,.7) 0 20px, transparent 21px),
+        radial-gradient(circle at 92% 70%, #ffcf4a 0 18px, transparent 19px),
+        linear-gradient(160deg, #d4f5e8 0%, #b9ebf5 40%, #a8dea8 100%);
+      box-shadow: 0 6px 0 rgba(66,149,130,.18);
+      overflow: hidden;
+    }
+    .map-track {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      height: 100%;
+      padding: 0 40px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      cursor: grab;
+    }
+    .map-track::-webkit-scrollbar { display: none; }
+    .map-track:active { cursor: grabbing; }
+    .map-path-segment {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .map-path-segment:nth-child(4n+1) { transform: translateY(-12px); }
+    .map-path-segment:nth-child(4n+2) { transform: translateY(8px); }
+    .map-path-segment:nth-child(4n+3) { transform: translateY(-6px); }
+    .map-path-segment:nth-child(4n+4) { transform: translateY(14px); }
+    .map-path-line {
+      width: clamp(50px, 8vw, 100px);
+      height: 5px;
+      background: repeating-linear-gradient(90deg, rgba(255,253,247,.8) 0 10px, transparent 10px 20px);
+      border-radius: 3px;
+    }
+    .station-node {
+      width: clamp(78px, 12vw, 105px);
+      height: clamp(78px, 12vw, 105px);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 4px solid #fffdf7;
+      border-radius: 38% 42% 44% 36% / 40% 36% 42% 38%;
+      background: var(--node-color, #ffcf4a);
+      box-shadow: 0 6px 0 rgba(0,0,0,.15), inset 0 -4px 0 rgba(0,0,0,.08);
+      font: 900 clamp(16px, 2.4vw, 22px) "DM Sans";
+      color: #fff;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .station-node small { font-size: 8px; font-weight: 700; margin-top: 2px; opacity: .9; letter-spacing: -.02em; white-space: nowrap; }
+    .station-node:hover { transform: translateY(-5px) rotate(-2deg) scale(1.06); box-shadow: 0 10px 0 rgba(0,0,0,.18); }
+    .station-node.active { border-color: #725d42; transform: scale(1.1) rotate(1deg); box-shadow: 0 6px 0 #725d42; }
+    .station-node.first { border-width: 5px; border-color: #fff; animation: pulse-node 1.8s ease infinite; }
+    .station-node:nth-child(odd) { border-radius: 42% 38% 36% 44% / 38% 42% 36% 40%; }
+    @keyframes pulse-node { 0%,100%{ box-shadow: 0 6px 0 rgba(0,0,0,.15), 0 0 0 0 rgba(25,200,185,.5); } 50%{ box-shadow: 0 6px 0 rgba(0,0,0,.15), 0 0 0 12px rgba(25,200,185,0); } }
+    .map-drag-hint {
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      transform: translateX(-50%);
+      color: rgba(114,93,66,.55);
+      font-size: 11px;
+      font-weight: 800;
+      pointer-events: none;
+      animation: hint-pulse 2.5s ease infinite;
+    }
+    @keyframes hint-pulse { 0%,100%{ opacity: .5; } 50%{ opacity: 1; } }
+    .map-deco { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .deco-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.45); animation: float 5s ease-in-out infinite; }
+    .deco-dot.lg { width: 16px; height: 16px; background: rgba(255,207,74,.3); }
+    .deco-dot:nth-child(even) { animation-delay: -2.5s; }
+    .deco-ring { position: absolute; width: 28px; height: 28px; border: 3px solid rgba(255,255,255,.25); border-radius: 50%; animation: float 6s ease-in-out infinite alternate; }
+    @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-6px); } }
+    .station-node.milestone { border-color: #ff9f43; background: linear-gradient(135deg, #ffcf4a, #ff9f43); font-size: clamp(20px, 3vw, 28px); }
+    .station-preview {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      width: min(480px, calc(100% - 28px));
+      padding: 16px 20px;
+      border: 3px solid #d4c4a8;
+      border-radius: 20px;
+      background: rgba(255,253,247,.97);
+      box-shadow: 0 6px 0 rgba(188,170,137,.3);
+      z-index: 5;
+      text-align: center;
+      animation: pop-up .2s ease;
+    }
+    @keyframes pop-up { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    .station-preview h3 { font-size: 16px; margin-bottom: 10px; color: #4a3f35; }
+    .preview-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; }
+    .preview-tab { flex: 1; padding: 8px 6px; border-radius: 12px; background: #f3ead5; text-align: center; }
+    .preview-tab .tab-label { display: block; font-size: 9px; font-weight: 700; color: #8a7b66; margin-bottom: 3px; }
+    .preview-tab .tab-value { display: block; font-size: 12px; font-weight: 800; color: #4a3f35; }
+    .move-preview { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+    .preview-move { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-radius: 10px; background: #f4ecd9; }
+    .preview-move .move-name { font-size: 11px; font-weight: 800; color: #4a3f35; }
+    .preview-move .move-detail { font-size: 10px; font-weight: 700; color: #8a7b66; }
+    .milestone-preview .milestone-desc { font-size: 12px; color: #725d42; line-height: 1.6; margin: 8px 0 0; }
+    .map-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .map-legend span { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #8a7b66; }
+    .map-legend i { width: 10px; height: 10px; border-radius: 50%; }
+    /* TV projection pass: every step stays inside the visible 16:9 canvas. */
+    .welcome-screen,
+    .onboarding-screen,
+    .assessment-intro,
+    .contract-screen,
+    .map-screen {
+      height: 100%;
+      min-height: 0;
+    }
+    .test-screen {
+      height: 100%;
+      min-height: 0;
+    }
+    .test-screen.active { display: block; }
+    .test-screen .camera {
+      height: 100%;
+      min-height: 0;
+    }
+    .camera-frame {
+      width: min(330px, 34vw);
+      height: min(470px, calc(100% - 96px));
+    }
+    .camera-ticket {
+      bottom: 18px;
+      min-height: 122px;
+      padding: 18px 22px;
+    }
+    .ticket-task b { font-size: 18px; }
+    .test-panel { right: 18px; bottom: 18px; }
+    .assessment-entry {
+      min-height: 0;
+      height: 100%;
+      padding: 0;
+    }
+    .unlock-layout {
+      min-height: 0;
+      height: 100%;
+      gap: 28px;
+    }
+    .result-console { padding: 22px; }
+    .loot-card { min-height: 116px; }
+    .result-speech { min-height: 110px; }
+    .result-speech b { font-size: 20px; line-height: 1.42; }
+    .contract-card {
+      max-height: none;
+      padding: 14px 22px;
+    }
+    .contract-card h2 { font-size: clamp(26px, 2.7vw, 36px); }
+    .contract-card .bird-subtitle { margin-bottom: 10px !important; }
+    .contract-side { padding: 12px; }
+    .contract-block { padding: 8px 10px; }
+    .contract-pick { min-height: 42px; }
+    .contract-line { margin-top: 8px; font-size: 16px; }
+    .promise-list,
+    .promise-result { min-height: 144px; }
+    .promise-result { padding: 16px; }
+    .promise-result strong { font-size: clamp(20px, 2.2vw, 26px); }
+    .promise-result small { margin-top: 8px; font-size: 13px; }
+    .contract-handshake { margin-top: 6px; }
+    .contract-stamp {
+      width: 90px;
+      height: 90px;
+      font-size: 13px;
+      box-shadow: 0 8px 0 #d0a82a;
+    }
+    .contract-actions { margin-top: 4px; }
+    .journey-dot {
+      width: 9px;
+      height: 9px;
+      border-width: 0;
+      background: rgba(114,93,66,.18);
+      box-shadow: none;
+      opacity: .55;
+    }
+    .journey-dot.done { background: #82d5bb; opacity: .7; }
+    .journey-dot.active {
+      width: 17px;
+      height: 17px;
+      border: 2px solid #d0a82a;
+      background: #ffcf4a;
+      opacity: 1;
+    }
+    .journey-dot.special {
+      width: 25px;
+      height: 25px;
+      border-width: 2px;
+      opacity: 1;
+    }
+    .welcome-screen .onboarding-wrap { max-width: 860px; }
+    .welcome-screen .hero-split { display: block; }
+    .welcome-screen .quest-card { display: none; }
+    .welcome-screen .welcome-copy { text-align: center; }
+    .welcome-screen .welcome-copy h1 { white-space: normal; }
+    .welcome-screen .welcome-copy .lead { margin: 0 auto; }
+    .welcome-screen .welcome-copy .bird-guide { justify-content: center; }
+    .welcome-screen .welcome-copy .button-row { justify-content: center; }
+    .profile-layout {
+      height: 100%;
+      display: grid;
+      grid-template-columns: minmax(320px, .86fr) minmax(420px, 1fr);
+      align-items: center;
+      gap: clamp(26px, 5vw, 70px);
+      padding: 0 clamp(36px, 6vw, 86px);
+    }
+    .profile-board {
+      display: grid;
+      gap: 18px;
+      justify-items: center;
+    }
+    .profile-board .scale-card {
+      width: min(360px, 100%);
+      min-height: 390px;
+      margin: 0;
+    }
+    .profile-panel {
+      min-height: 500px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: left;
+    }
+    .profile-panel .onboarding-head {
+      margin-bottom: 22px;
+      text-align: left;
+    }
+    .profile-panel .bird-subtitle {
+      justify-content: flex-start !important;
+      margin-left: 0 !important;
+      margin-right: 0;
+    }
+    .profile-panel .measurement-editor {
+      max-width: none !important;
+      margin: 0 0 18px !important;
+    }
+    .profile-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      text-align: left;
+    }
+    .profile-actions {
+      margin-top: 20px !important;
+      justify-content: flex-end;
+    }
+    .onboarding-screen[data-screen="experience"] .onboarding-wrap {
+      max-width: 1040px !important;
+    }
+    .onboarding-screen[data-screen="experience"] .onboarding-head {
+      margin-bottom: 18px;
+    }
+    .onboarding-screen[data-screen="experience"] .identity-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      gap: 10px;
+      max-width: none !important;
+      margin-top: 18px !important;
+    }
+    .onboarding-screen[data-screen="experience"] .identity-grid .choice {
+      min-height: 168px;
+      padding: 16px 12px;
+    }
+    .onboarding-screen[data-screen="experience"] .identity-grid .choice:last-child {
+      grid-column: auto !important;
+      max-width: none !important;
+      justify-self: stretch !important;
+    }
+    .onboarding-screen[data-screen="experience"] .identity-icon {
+      width: 58px;
+      height: 58px;
+      margin-bottom: 12px;
+      border-radius: 20px;
+    }
+    .onboarding-screen[data-screen="experience"] .identity-icon svg {
+      width: 42px;
+      height: 42px;
+    }
+    .onboarding-screen[data-screen="experience"] .onboarding-actions {
+      margin-top: 20px !important;
+    }
+    .goal-screen .choice-grid { gap: 10px; margin-top: 20px; }
+    .goal-screen .choice { min-height: 82px; padding: 13px 16px; }
+    .goal-screen .choice b { font-size: 15px; }
+    .goal-screen .choice small { font-size: 12px; line-height: 1.42; }
+    @media (max-width: 760px) {
+      .unlock-layout { grid-template-columns: 1fr; }
+      .ability-loot { grid-template-columns: 1fr 1fr; }
+      .map-track { padding: 0 20px; }
+      .station-node { width: 64px; height: 64px; font-size: 13px; border-width: 3px; }
+      .map-path-line { width: 36px; }
+      .station-preview { bottom: 8px; padding: 12px 14px; }
+    }
     @media (max-width: 900px) { .hero-split { grid-template-columns: 1fr; } .quest-card { min-height: 330px; } .mascot { bottom: 86px; transform: translateX(-50%) scale(.8); } }
     @media (max-width: 900px) {
       .measure-layout, .pain-layout { grid-template-columns: 1fr; }
@@ -568,10 +1379,13 @@
       .onboarding-screen { min-height: calc(100vh - 82px); padding-top: 26px; }
       .onboarding-head { text-align: left; }
       .onboarding-head .lead { margin: 0; }
-      .age-grid, .gender-grid { grid-template-columns: 1fr 1fr; }
+      .age-grid, .gender-grid, .measurement-editor { grid-template-columns: 1fr 1fr; }
       .identity-grid { grid-template-columns: 1fr; }
+      .score-entry-grid { grid-template-columns: 1fr 1fr; }
+      .contract-exchange { grid-template-columns: 1fr; }
       .identity-grid .choice { min-height: 112px; text-align: left; }
-      .identity-icon { display: inline-block; margin: 0 12px 0 0; font-size: 24px; vertical-align: middle; }
+      .identity-icon { display: inline-grid; width: 58px; height: 58px; margin: 0 12px 0 0; vertical-align: middle; }
+      .identity-icon svg { width: 42px; height: 42px; }
       .pain-layout .choice-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
@@ -581,138 +1395,261 @@
     <div class="app">
       <main>
         <header class="topbar">
-          <span class="topbar-title" id="topTitle">kiwii</span>
-          <div class="topbar-right"><div class="progress"><span id="progressBar"></span></div><span id="stepCopy">1 / 3</span></div>
+          <span class="topbar-title" id="topTitle">kiwii power</span>
+          <div class="topbar-right"><div class="progress"><span id="progressBar"></span><div class="journey-dots" id="journeyDots"></div></div><span id="stepCopy" style="min-width:42px;color:#725d42;font-size:13px;font-weight:900;text-align:right"></span></div>
         </header>
 
         <div class="content">
-          <section class="screen onboarding-screen active" data-screen="profile" data-stage="calibrate" data-progress="12">
+          <section class="screen welcome-screen active" data-screen="intro" data-stage="calibrate">
             <div class="onboarding-wrap">
-              <div class="onboarding-head">
-                <h2>站上板子，我们先认识一下你。</h2>
-                <p class="lead">保持自然站立，身高和体重会自动出现。</p>
+              <div class="hero-split">
+                <div class="welcome-copy">
+                  <h1>嗨，欢迎来到 <span class="hilite">Kiwii</span></h1>
+                  <p class="lead">接下来的 5 分钟，我会陪你认识身体，再找到适合你的训练方式</p>
+                  <div class="bird-guide">
+                    <svg class="bird-icon" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/><path d="M34 25c-4-11 2-18 11-19 2 8-1 15-11 19Z" fill="#82d5bb" stroke="#725d42" stroke-width="3"/><path d="M37 79 32 89m19-12-1 12" stroke="#725d42" stroke-width="3" stroke-linecap="round"/></svg>
+                    <div class="bird-bubble">跟着我就好，我们慢慢来</div>
+                  </div>
+                  <div class="button-row"><button class="btn lime primary" data-next>好呀，一起出发</button></div>
+                </div>
               </div>
-              <div class="measure-layout">
+            </div>
+          </section>
+
+          <section class="screen onboarding-screen" data-screen="profile" data-stage="calibrate">
+            <div class="profile-layout">
+              <div class="profile-board">
                 <div class="scale-card">
                   <div>
                     <div class="scale-platform"></div>
                     <span class="scan-line"></span>
-                    <div class="measure-results">
-                      <div class="measure-result"><small>身高</small><b>172 cm</b></div>
-                      <div class="measure-result"><small>体重</small><b>66 kg</b></div>
-                    </div>
                   </div>
                 </div>
-                <div class="profile-picker">
-                  <div class="picker-block">
-                    <span class="picker-label">你的年龄</span>
-                    <div class="age-grid" data-single>
-                      <button class="choice"><b>18–24</b></button><button class="choice selected"><b>25–34</b></button><button class="choice"><b>35–44</b></button>
+              </div>
+              <div class="profile-panel">
+                <div class="onboarding-head">
+                  <h2>站到 Kiwii 板子上</h2>
+                  <div class="bird-subtitle">
+                    <svg class="bird-icon small" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg>
+                    <div class="bird-bubble">站稳就好。等它亮一下，再确认信息</div>
+                  </div>
+                </div>
+                <div class="measurement-editor">
+                  <div class="field"><label>身高</label><input id="heightInput" type="number" value="172" inputmode="numeric"><span>cm</span><i class="auto-tag">可以修改</i></div>
+                  <div class="field"><label>体重</label><input id="weightInput" type="number" value="66" inputmode="numeric"><span>kg</span><i class="auto-tag">可以修改</i></div>
+                </div>
+                <div class="profile-meta-grid">
+                  <div>
+                    <span class="picker-label">年龄段</span>
+                    <div class="age-grid" data-single style="grid-template-columns:1fr 1fr 1fr">
+                      <button class="choice"><b>18–24</b></button><button class="choice"><b>25–34</b></button><button class="choice"><b>35–44</b></button>
                       <button class="choice"><b>45–54</b></button><button class="choice"><b>55–64</b></button><button class="choice"><b>65+</b></button>
                     </div>
                   </div>
-                  <div class="picker-block">
-                    <span class="picker-label">你的性别</span>
-                    <div class="gender-grid" data-single>
-                      <button class="choice"><b>女性</b></button><button class="choice selected"><b>男性</b></button><button class="choice"><b>不想回答</b></button>
+                  <div>
+                    <span class="picker-label">身体参考</span>
+                    <div class="gender-grid" data-single style="grid-template-columns:1fr 1fr 1fr">
+                      <button class="choice"><b>女性</b></button><button class="choice"><b>男性</b></button><button class="choice"><b>不选</b></button>
                     </div>
+                    <p class="note" style="margin-top:8px">动作示范会跟着更贴近你</p>
                   </div>
-                  <div class="onboarding-actions"><button class="btn primary" data-next>下一步</button></div>
+                </div>
+                <div class="onboarding-actions profile-actions"><button class="btn secondary" data-back>回去看看</button><button class="btn primary" data-next>没问题，下一步</button></div>
+              </div>
+            </div>
+          </section>
+
+
+          <section class="screen onboarding-screen" data-screen="experience" data-stage="calibrate">
+            <div class="onboarding-wrap" style="max-width:620px;margin:0 auto;text-align:center">
+              <div class="onboarding-head">
+                <h2>选一个最近的运动状态</h2>
+                <div class="bird-subtitle" style="justify-content:center;margin-left:0">
+                  <svg class="bird-icon small" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg>
+                  <div class="bird-bubble">我会根据你的情况调好适合的初始阻力</div>
                 </div>
               </div>
+              <div class="identity-grid" data-single style="grid-template-columns:1fr 1fr;max-width:520px;margin:26px auto 0">
+                <button class="choice"><span class="identity-icon"><svg viewBox="0 0 64 64"><path d="M32 52V29" stroke="#725d42" stroke-width="4" stroke-linecap="round"/><path d="M31 30C13 29 11 14 12 9c13 0 21 7 19 21Z" fill="#82d5bb" stroke="#725d42" stroke-width="3"/><path d="M33 33c17-2 21-14 20-20-12-1-20 6-20 20Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/></svg></span><b>刚开始</b><small>最近想动起来</small></button>
+                <button class="choice"><span class="identity-icon"><svg viewBox="0 0 64 64"><path d="M13 43c8-19 30-22 40-5" fill="none" stroke="#725d42" stroke-width="4" stroke-linecap="round"/><path d="M18 42h30l-4 10H22Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="M16 20c8-7 22-7 30 0" fill="none" stroke="#82d5bb" stroke-width="4" stroke-linecap="round"/></svg></span><b>停了一阵</b><small>以前运动过，最近断了</small></button>
+                <button class="choice"><span class="identity-icon"><svg viewBox="0 0 64 64"><path d="m32 8 20 22-20 22L12 30Z" fill="#889df0" stroke="#725d42" stroke-width="3"/><path d="M32 52c4 4-1 7 4 10" fill="none" stroke="#725d42" stroke-width="3" stroke-linecap="round"/><path d="m17 26 15 4 15-4M32 9v43" stroke="#fff" stroke-width="2"/></svg></span><b>偶尔动动</b><small>不规律，想起来会练</small></button>
+                <button class="choice"><span class="identity-icon"><svg viewBox="0 0 64 64"><path d="M13 49h38L47 25H17Z" fill="#e59266" stroke="#725d42" stroke-width="3"/><path d="M22 25c0-8 4-13 10-13s10 5 10 13" fill="none" stroke="#725d42" stroke-width="4"/><path d="M24 37h16" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg></span><b>每周都练</b><small>大多数周会运动几次</small></button>
+                <button class="choice" style="grid-column:1/-1;max-width:250px;justify-self:center"><span class="identity-icon"><svg viewBox="0 0 64 64"><path d="m32 7 7 15 17 2-12 12 3 17-15-8-15 8 3-17L8 24l17-2Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><circle cx="32" cy="32" r="7" fill="#fff4c7"/></svg></span><b>老手了</b><small>长期练，熟悉各种动作</small></button>
+              </div>
+              <div class="onboarding-actions" style="margin-top:28px"><button class="btn secondary" data-back>上一步</button><button class="btn primary" data-next>选好了</button></div>
             </div>
           </section>
 
-          <section class="screen onboarding-screen" data-screen="experience" data-stage="calibrate" data-progress="24">
+          <section class="screen onboarding-screen" data-screen="pain" data-stage="calibrate">
             <div class="onboarding-wrap">
               <div class="onboarding-head">
-                <h2>哪一句最像现在的你？</h2>
-                <p class="lead">这会决定体测第一关从多轻开始。</p>
+                <h2>身体有哪里需要多照顾一点</h2>
+                <div class="bird-subtitle">
+                  <svg class="bird-icon small" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg>
+                  <div class="bird-bubble">选了的地方我会额外照顾，减轻压力</div>
+                </div>
               </div>
-              <div class="identity-grid" data-single>
-                <button class="choice"><span class="identity-icon">○</span><b>第一次认真练</b><small>动作和装备都想慢慢熟悉</small></button>
-                <button class="choice"><span class="identity-icon">↻</span><b>好久没动了</b><small>身体记得一点，但需要找回感觉</small></button>
-                <button class="choice selected"><span class="identity-icon">△</span><b>偶尔会练练</b><small>有一点基础，也想有一点挑战</small></button>
-                <button class="choice"><span class="identity-icon">◇</span><b>每周都会练</b><small>熟悉常见动作和训练节奏</small></button>
-                <button class="choice"><span class="identity-icon">★</span><b>训练是日常</b><small>可以直接从明显的阻力开始</small></button>
-              </div>
-              <div class="onboarding-actions"><button class="btn secondary" data-back>上一步</button><button class="btn primary" data-next>就是这个</button></div>
-            </div>
-          </section>
-
-          <section class="screen onboarding-screen" data-screen="pain" data-stage="calibrate" data-progress="36">
-            <div class="onboarding-wrap">
-              <div class="onboarding-head">
-                <h2>今天哪里需要轻一点？</h2>
-                <p class="lead">可以多选。Kiwii 会自动换成更舒服的动作。</p>
-              </div>
-              <div class="pain-layout">
+              <div class="pain-layout single">
                 <div>
                   <div class="choice-grid" data-multi data-pain-zones>
                     <button class="choice"><b>颈部</b></button><button class="choice"><b>肩</b></button><button class="choice"><b>肘 / 手腕</b></button>
                     <button class="choice"><b>腰背</b></button><button class="choice"><b>髋</b></button><button class="choice"><b>膝</b></button>
                     <button class="choice"><b>踝</b></button><button class="choice"><b>其他</b></button><button class="choice selected"><b>没有，都还不错</b></button>
                   </div>
-                  <div class="onboarding-actions"><button class="btn secondary" data-back>上一步</button><button class="btn lime primary" data-next>开始体测</button></div>
-                </div>
-                <div class="body-map">
-                  <div class="body-map-head">身体地图</div>
-                  <div class="silhouette" id="bodySilhouette"><span class="head"></span><span class="body"></span><span class="arm-l"></span><span class="arm-r"></span><span class="leg-l"></span><span class="leg-r"></span></div>
-                  <div class="map-callout" id="protectionCallout">都还不错，可以正常开始。</div>
+                  <div class="other-pain-field" id="otherPainField">
+                    <label for="otherPainInput">请告诉我需要注意的位置或情况</label>
+                    <input id="otherPainInput" type="text" placeholder="例如：左脚底、右侧肋骨">
+                  </div>
+                  <div class="onboarding-actions"><button class="btn secondary" data-back>上一站</button><button class="btn lime primary" data-next>继续</button></div>
                 </div>
               </div>
             </div>
           </section>
 
-          <section class="screen test-screen" data-screen="test" data-stage="assess" data-progress="66">
+          <section class="screen assessment-intro" data-screen="assessment-intro" data-stage="assess">
+            <div class="assessment-intro-card">
+              <h2>开始前，我们一起做个简单的体测</h2>
+              <p class="lead">跟着做就好，做完我就知道怎么帮你安排训练了</p>
+              <div class="bird-guide">
+                <svg class="bird-icon" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/><path d="M34 25c-4-11 2-18 11-19 2 8-1 15-11 19Z" fill="#82d5bb" stroke="#725d42" stroke-width="3"/></svg>
+                <div class="bird-bubble">一共 7 个简单动作，跟着做就行</div>
+              </div>
+              <div class="button-row"><button class="btn secondary" data-back>返回</button><button class="btn lime primary" data-next>准备好了</button></div>
+            </div>
+          </section>
+
+          <section class="screen test-screen" data-screen="test" data-stage="assess">
             <div class="camera">
-              <div class="camera-info"><span>KIWII / LIVE</span><span>跟着你动</span></div>
-              <div class="camera-title" id="cameraTitle"><small>关卡 1</small>举 T-bar 深蹲</div>
-              <div class="camera-position" id="cameraPosition">正面面对屏幕</div>
+              <div class="camera-title" id="cameraTitle">先做一次舒服的下蹲</div>
+              <div class="test-guide">
+                <svg class="bird-icon small" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg>
+                <div class="bird-bubble" id="testPurpose">我们先看活动度，从下蹲开始</div>
+              </div>
               <div class="camera-frame" id="cameraFrame" data-pose="front"><div class="silhouette"><span class="head"></span><span class="body"></span><span class="arm-l"></span><span class="arm-r"></span><span class="leg-l"></span><span class="leg-r"></span></div></div>
-              <div class="pose-label" id="poseLabel"><b>举 T-bar 深蹲</b>双手握住 T-bar<br>举过头顶</div>
+              <div class="task-ticket camera-ticket">
+                <div class="ticket-progress" id="ticketProgress"></div>
+                <div class="ticket-task"><b id="ticketInstruction">面向屏幕站好</b></div>
+              </div>
             </div>
             <aside class="test-panel">
-              <div class="guide-card">
-                <b>怎么玩</b>
-                <ol id="guideList">
-                  <li>双手握住 T-bar 两端，举到头顶上方。</li>
-                  <li>先正面面对屏幕，双脚与肩同宽站立。</li>
-                  <li>缓慢下蹲到你能做到的位置，再站起。</li>
-                  <li>听到提示后，侧面对屏幕再完成一次。</li>
-                </ol>
-              </div>
-              <div class="vbt-box" id="vbtBox">
-                <div class="vbt-head"><span>这一轮手感</span><b id="vbtLoad">12 kg</b></div>
-                <div class="vbt-rounds" id="vbtRounds"></div>
-              </div>
-              <div class="test-nav" id="testNav"></div>
+              <div class="review-label">LOCAL REVIEW CONTROLS</div>
               <div class="test-actions">
                 <button class="btn secondary" id="testBack">上一个</button>
-                <button class="btn lime primary" id="testNext">开始这一关</button>
+                <button class="btn lime primary" id="testNext">下一个</button>
               </div>
             </aside>
           </section>
 
-          <section class="screen" data-screen="results" data-stage="profile" data-progress="78">
-            <div class="result-layout">
-              <div>
-                <div class="eyebrow">Stage clear!</div>
-                <h2>准备好了。<br>开始今天的训练。</h2>
-                <p class="lead">Kiwii 已经选好适合你现在状态的第一关。</p>
-                <div class="button-row"><button class="btn secondary" id="resultsBack">再测一次</button><button class="btn lime primary" id="startTraining">开始训练</button></div>
+          <section class="screen" data-screen="assessment-entry" data-stage="profile">
+            <div class="assessment-entry">
+              <div class="assessment-entry-card">
+                <span class="prototype-label">DEMO MODE · 正式版由硬件自动生成，这里手动输入体验完整流程</span>
+                <h2>输入这次的体测成绩</h2>
+                <p class="lead">调整数字后，后面的能力卡、目标推荐和训练路线都会跟着变</p>
+                <div class="score-entry-grid">
+                  <div class="score-entry"><label for="mobilityScore">活动度</label><input id="mobilityScore" type="number" min="20" max="95" value="74"><small>肩、髋和动作空间</small></div>
+                  <div class="score-entry"><label for="stabilityScore">稳定度</label><input id="stabilityScore" type="number" min="20" max="95" value="68"><small>平衡与身体控制</small></div>
+                  <div class="score-entry"><label for="strengthScore">力量</label><input id="strengthScore" type="number" min="20" max="95" value="81"><small>负重与快速发力</small></div>
+                  <div class="score-entry"><label for="cardioScore">心肺</label><input id="cardioScore" type="number" min="20" max="95" value="76"><small>连续运动的续航</small></div>
+                </div>
+                <div class="button-row" style="justify-content:flex-end"><button class="btn secondary" data-back>回看体测</button><button class="btn lime primary" data-next>生成我的能力卡</button></div>
               </div>
-              <div class="score-card">
-                <div class="eyebrow" style="color:var(--mint)">今天第一关</div>
-                <div class="score">1<small>小关</small></div>
-                <div class="insight">全身启动 · 稳定优先 · 难度刚刚好</div>
-                <div class="personality">
-                  <div class="personality-card"><small>装备</small><b>T-Bar</b></div>
-                  <div class="personality-card"><small>节奏</small><b>冒险模式</b></div>
-                  <div class="personality-card"><small>目标</small><b>站得更稳</b></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="results" data-stage="profile">
+            <div class="unlock-layout">
+              <div class="unlock-burst">
+                <h2><span class="hilite">你的身体角色卡</span><br>已解锁</h2>
+                <div class="unlock-medal"><svg viewBox="0 0 96 96" width="80" height="80" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg></div>
+              </div>
+              <div class="result-console">
+                <div class="ability-loot">
+                  <button class="loot-card" data-ability="mobility"><span class="loot-card-head"><b>动作自由度</b><i class="ability-tag">稳稳在线</i></span><span class="loot-spectrum" style="--score:74%"></span></button>
+                  <button class="loot-card" data-ability="stability"><span class="loot-card-head"><b>身体稳定度</b><i class="ability-tag">潜力满满</i></span><span class="loot-spectrum" style="--score:68%"></span></button>
+                  <button class="loot-card" data-ability="strength"><span class="loot-card-head"><b>力量表现</b><i class="ability-tag">超会发挥</i></span><span class="loot-spectrum" style="--score:81%"></span></button>
+                  <button class="loot-card" data-ability="cardio"><span class="loot-card-head"><b>体能续航</b><i class="ability-tag">稳稳在线</i></span><span class="loot-spectrum" style="--score:76%"></span></button>
+                </div>
+                <div class="result-dialogue">
+                  <svg class="bird-icon" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg>
+                  <div>
+                    <div class="result-speech">
+                      <b id="resultDialogueText">你的四项能力挺均衡</b>
+                    </div>
+                    <div class="dialogue-controls">
+                      <span class="dialogue-dots" id="resultDialogueDots"><i class="active"></i><i></i><i></i><i></i></span>
+                      <button class="btn lime" id="resultDialogueNext">继续听</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          </section>
+
+          <section class="screen goal-screen" data-screen="goal" data-stage="route">
+            <div class="question-wrap">
+              <h2 id="goalHeadline">你最想先达到哪些目标</h2>
+              <div class="bird-subtitle" style="justify-content:center;margin-left:0">
+                <svg class="bird-icon small" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg>
+                <div class="bird-bubble" id="goalGuide">帮你挑了 3 个最合适的，不喜欢就换</div>
+              </div>
+              <div class="choice-grid" id="goalChoices" data-multi data-max="3"></div>
+              <p class="note" id="goalMaxHint" style="margin-top:12px;text-align:center"></p>
+              <div class="button-row" style="justify-content:center"><button class="btn secondary" data-back>返回</button><button class="btn lime primary" data-next>就这些</button></div>
+            </div>
+          </section>
+
+          <section class="screen contract-screen" data-screen="contract" data-stage="route">
+            <div class="contract-card">
+              <h2 id="contractTitle" style="text-align:center;margin-bottom:4px">一起把这些变成现实</h2>
+              <div class="bird-subtitle" style="justify-content:center;margin-bottom:18px">
+                <svg class="bird-icon small" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg>
+                <div class="bird-bubble" id="contractBirdText">挑一个你能坚持的节奏就行</div>
+              </div>
+              <div class="contract-exchange">
+                <div class="contract-side promise">
+                  <div class="promise-list" id="promiseList"></div>
+                </div>
+                <div class="contract-side">
+                  <span class="contract-kicker">你愿意投入的节奏</span>
+                  <div class="contract-options">
+                    <div class="contract-block">
+                      <b>一周练几次</b>
+                      <div class="contract-picks" data-contract="days">
+                        <button class="contract-pick selected">2 次</button><button class="contract-pick">3 次</button><button class="contract-pick">4 次</button>
+                      </div>
+                    </div>
+                    <div class="contract-block">
+                      <b>每次留多久</b>
+                      <div class="contract-picks" data-contract="minutes">
+                        <button class="contract-pick selected">15 分钟</button><button class="contract-pick">20 分钟</button><button class="contract-pick">30 分钟</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="contract-line" id="contractLine">每周 2 次，每次 15 分钟</div>
+                  <div class="commitment-meter" id="commitmentMeter"></div>
+                </div>
+              </div>
+              <div class="contract-handshake">
+                <button class="contract-stamp" id="contractStamp">按下约定</button>
+              </div>
+              <div class="contract-actions"><button class="btn secondary" data-back>调整方向</button><button class="btn lime primary" id="contractNext" data-next disabled>看看我的训练计划</button></div>
+            </div>
+          </section>
+
+          <section class="screen map-screen" data-screen="final" data-stage="route">
+            <div class="map-head">
+              <h2>你的 40 站冒险地图</h2>
+            </div>
+            <div class="map-intro" id="mapIntro">
+              <div class="bird-guide">
+                <svg class="bird-icon small" viewBox="0 0 96 96" aria-hidden="true"><path d="M22 58c0-23 16-39 38-39 15 0 26 8 26 22 0 22-23 39-49 39-11 0-15-9-15-22Z" fill="#f7cd67" stroke="#725d42" stroke-width="3"/><path d="M31 56c8-10 18-13 29-8-4 15-14 23-29 22-5-4-5-9 0-14Z" fill="#f8a6b2" stroke="#725d42" stroke-width="3"/><path d="m82 42 12 6-13 6" fill="#e59266" stroke="#725d42" stroke-width="3" stroke-linejoin="round"/><circle cx="66" cy="35" r="4" fill="#725d42"/></svg>
+                <div class="bird-bubble" id="mapBirdText">已经根据你的体测结果定制好了专属计划，点一站看看里面有什么</div>
+              </div>
+              <div class="map-counter" id="mapCounter"><span id="mapCounterNum">1</span><small>站冒险等着你</small></div>
+            </div>
+            <div class="adventure-map" id="adventureMap" style="display:none"></div>
+            <div class="map-legend" id="mapLegend" style="display:none"></div>
           </section>
         </div>
       </main>
@@ -723,9 +1660,9 @@
     const screens = [...document.querySelectorAll(".screen")];
     const bar = document.getElementById("progressBar");
     const topTitle = document.getElementById("topTitle");
-    const stepCopy = document.getElementById("stepCopy");
     let current = 0;
     let testAction = 0;
+    let cueIndex = 0;
     let vbtRound = 0;
     const painZones = {
       "颈部": { left: 63, top: 42, label: "颈部" },
@@ -739,116 +1676,181 @@
     };
     const testActions = [
       {
-        assessment: 1, category: "灵活性", title: "举 T-bar 深蹲", position: "正面面对屏幕", poseStyle: "front",
-        pose: "正面深蹲", poseNote: "T-bar 举过头顶",
-        guide: ["双手握住 T-bar 两端，举到头顶上方。", "正面面对屏幕，双脚与肩同宽站立。", "缓慢下蹲到你能做到的位置，再站起。"]
+        assessment: 1, category: "灵活性", title: "先做一次舒服的下蹲", poseStyle: "front",
+        purpose: "我们先看活动度，从下蹲开始",
+        guide: ["先面向屏幕站好", "把横杆举到头顶", "慢慢蹲到舒服的位置，再站起来"]
       },
       {
-        assessment: 1, category: "灵活性", title: "举 T-bar 深蹲", position: "侧面面对屏幕", poseStyle: "side",
-        pose: "侧面深蹲", poseNote: "T-bar 举过头顶",
-        guide: ["保持双手举起 T-bar。", "转身，让身体侧面对屏幕。", "缓慢下蹲到你能做到的位置，再站起。"]
+        assessment: 1, category: "灵活性", title: "转到侧面，再来一次", poseStyle: "side",
+        purpose: "同一个动作，换到侧面让我再看一次",
+        guide: ["转到侧面，让我们继续", "横杆保持在头顶", "再慢慢蹲下，然后站起来"]
       },
       {
-        assessment: 2, category: "灵活性", title: "双手背后交扣", position: "背面对屏幕", poseStyle: "back",
-        pose: "右手在上", poseNote: "一上一下<br>慢慢靠近",
-        guide: ["背面对屏幕，自然站立。", "右手举过头顶，弯曲手肘，让右手沿背部向下伸。", "左手放到腰后，沿背部向上伸。", "两只手尽量靠近，不必真的扣住。保持 2 秒。"]
+        assessment: 2, category: "灵活性", title: "试试让双手在背后靠近", poseStyle: "back",
+        purpose: "我们继续看活动度，这次看看两只手在背后能靠多近",
+        guide: ["背对屏幕站好", "右手从上方伸向背后", "左手从下方伸向背后", "两只手尽量靠近，我会看中间还差多远"]
       },
       {
-        assessment: 2, category: "灵活性", title: "双手背后交扣", position: "背面对屏幕", poseStyle: "back",
-        pose: "左手在上", poseNote: "一上一下<br>慢慢靠近",
-        guide: ["保持背面对屏幕，自然站立。", "左手举过头顶，弯曲手肘，让左手沿背部向下伸。", "右手放到腰后，沿背部向上伸。", "两只手尽量靠近，不必真的扣住。保持 2 秒。"]
+        assessment: 2, category: "灵活性", title: "换一边，再试一次", poseStyle: "back",
+        purpose: "同一个动作，换一边看看左右有没有差别",
+        guide: ["保持背对屏幕", "这次左手从上方伸向背后", "右手从下方伸向背后", "两只手尽量靠近，我会看中间还差多远"]
       },
       {
-        assessment: 3, category: "灵活性", title: "直腿抬高", position: "身体侧面对屏幕", poseStyle: "floor",
-        pose: "左腿抬高", poseNote: "膝盖伸直<br>腰背贴稳",
-        guide: ["在垫面上仰卧，身体侧面对屏幕。", "右腿保持贴稳垫面。", "左腿膝盖不要弯，缓慢向上抬到最高位置。"]
+        assessment: 3, category: "灵活性", title: "躺好后，慢慢抬起左腿", poseStyle: "floor",
+        purpose: "这是最后一个活动度动作，我们看看腿能抬到哪里",
+        guide: ["侧身躺到垫上", "右腿自然放在垫面", "左腿伸直，慢慢抬到舒服的位置"]
       },
       {
-        assessment: 3, category: "灵活性", title: "直腿抬高", position: "身体侧面对屏幕", poseStyle: "floor",
-        pose: "右腿抬高", poseNote: "膝盖伸直<br>腰背贴稳",
-        guide: ["保持仰卧姿势。", "左腿保持贴稳垫面。", "右腿膝盖不要弯，缓慢向上抬到最高位置。"]
+        assessment: 3, category: "灵活性", title: "很好，换右腿继续", poseStyle: "floor",
+        purpose: "同一个动作，换右腿再做一次",
+        guide: ["保持侧身躺好", "换左腿自然放在垫面", "右腿伸直，慢慢抬到舒服的位置"]
       },
       {
-        assessment: 4, category: "稳定性", title: "T-bar 高抬腿", position: "正面面对屏幕", poseStyle: "balance-left",
-        pose: "左腿高抬", poseNote: "T-bar 过顶<br>髋、膝约 90°",
-        guide: ["正面面对屏幕，双手握住 T-bar 举过头顶。", "弯曲左膝，像高抬腿一样把左侧大腿抬高。", "大腿接近与地面平行，髋和膝盖都保持约 90°。", "支撑腿站稳，保持 2 秒。"]
+        assessment: 4, category: "稳定性", title: "抬起左腿，保持站稳", poseStyle: "balance-left",
+        purpose: "活动度完成了，接下来看看稳定度，先从单腿站立开始",
+        guide: ["面向屏幕站好", "把横杆举到头顶", "抬起左腿，让髋和膝盖都弯到约 90 度", "保持 15 秒，晃一下也没关系"]
       },
       {
-        assessment: 4, category: "稳定性", title: "T-bar 高抬腿", position: "正面面对屏幕", poseStyle: "balance-right",
-        pose: "右腿高抬", poseNote: "T-bar 过顶<br>髋、膝约 90°",
-        guide: ["保持双手举起 T-bar，正面面对屏幕。", "弯曲右膝，像高抬腿一样把右侧大腿抬高。", "大腿接近与地面平行，髋和膝盖都保持约 90°。", "支撑腿站稳，保持 2 秒。"]
+        assessment: 4, category: "稳定性", title: "换右腿，继续保持", poseStyle: "balance-right",
+        purpose: "同一个动作，换右腿再站一次",
+        guide: ["保持面向屏幕", "横杆继续举在头顶", "换右腿抬起，髋和膝盖都弯到约 90 度", "保持 15 秒，按自己的节奏来"]
       },
       {
-        assessment: 5, category: "稳定性", title: "平板支撑摸肩", position: "侧面对屏幕", poseStyle: "plank",
-        pose: "左手摸肩", poseNote: "保持 15 秒<br>骨盆稳定",
-        guide: ["进入平板支撑位置，侧面对屏幕。", "从头到脚保持一条直线，不要塌腰。", "抬起左手轻触右肩，保持 15 秒。"]
+        assessment: 5, category: "稳定性", title: "撑稳后，左手轻碰右肩", poseStyle: "plank",
+        purpose: "再做一个稳定度动作，看看摸肩时身体能不能保持不晃",
+        guide: ["面向屏幕撑好平板", "左手轻碰右肩", "保持 5 秒"]
       },
       {
-        assessment: 5, category: "稳定性", title: "平板支撑摸肩", position: "侧面对屏幕", poseStyle: "plank",
-        pose: "右手摸肩", poseNote: "保持 15 秒<br>骨盆稳定",
-        guide: ["保持平板支撑位置。", "从头到脚保持一条直线，不要塌腰。", "抬起右手轻触左肩，保持 15 秒。"]
+        assessment: 5, category: "稳定性", title: "保持住，换右手", poseStyle: "plank",
+        purpose: "同一个动作，换右手继续",
+        guide: ["继续面向屏幕撑好平板", "换右手轻碰左肩", "保持 5 秒"]
       },
       {
-        assessment: 6, category: "力量", title: "T-bar 阻力深蹲", position: "正面面对屏幕", poseStyle: "resisted-squat", vbt: true,
-        pose: "T-bar 阻力深蹲", poseNote: "双手握紧 T-bar<br>向上尽量快",
-        guide: ["正面面对屏幕，双脚与肩同宽站立。", "双手握住 T-bar，保持身体稳定。", "缓慢下蹲，再用你觉得有力的速度站起。", "完成后稍等一下，Kiwii 会帮你换到更合适的手感。"]
+        assessment: 6, category: "力量", title: "带着阻力做一次深蹲", poseStyle: "resisted-squat", vbt: true,
+        purpose: "稳定度完成了，接下来看看力量，我会根据起身速度调整重量",
+        guide: ["面向屏幕站好", "握稳横杆，慢慢蹲下", "听到提示后，尽可能快地站起来"]
       },
       {
-        assessment: 7, category: "心肺", title: "1 分钟开合跳", position: "正面面对屏幕", poseStyle: "jump",
-        pose: "开合跳", poseNote: "1 分钟<br>保持节奏",
-        guide: ["双脚并拢，双手放在身体两侧。", "跳开时，双脚打开，双手从两侧举过头顶。", "跳回时，手脚同时收回。", "跟随倒计时完成 1 分钟。"]
+        assessment: 7, category: "心肺", title: "最后，跟着自己的节奏跳起来", poseStyle: "jump",
+        purpose: "最后看看心肺，做一分钟开合跳就完成了",
+        guide: ["面向屏幕站好", "跳开时双手举高", "跳回时手脚收拢", "跟着自己的节奏完成 1 分钟"]
       }
     ];
     const experienceLoads = {
-      "第一次认真练": 8,
-      "好久没动了": 10,
-      "偶尔会练练": 12,
-      "每周都会练": 16,
-      "训练是日常": 20
+      "刚开始": 8,
+      "停了一阵": 12,
+      "偶尔动动": 16,
+      "每周都练": 22,
+      "老手了": 28
     };
+    const abilityNames = { mobility: "动作自由度", stability: "身体稳定度", strength: "力量表现", cardio: "体能续航" };
+    let resultDialogue = [];
+    let abilityDialogue = {};
+    let resultDialogueIndex = 0;
+    const journeyTotal = 16;
+
+    function journeyStep(screen) {
+      const fixedSteps = { intro: 1, profile: 2, experience: 3, pain: 4, "assessment-intro": 5, "assessment-entry": 12, results: 13, goal: 14, contract: 15, final: 16 };
+      return screen.dataset.screen === "test" ? 4 + testActions[testAction].assessment : fixedSteps[screen.dataset.screen];
+    }
+
+    function renderJourneyDots() {
+      document.getElementById("journeyDots").innerHTML = Array.from({ length: journeyTotal }, (_, index) => {
+        const step = index + 1;
+        const special = step === 5 ? "⚑" : step === 13 ? "★" : "";
+        const label = step === 5 ? "体测开始" : step === 13 ? "结果揭晓" : `第 ${step} 步`;
+        return `<button class="journey-dot${special ? " special" : ""}" data-journey-step="${step}" aria-label="${label}" title="${label}">${special}</button>`;
+      }).join("");
+    }
+
+    function jumpToJourneyStep(step) {
+      if (step >= 5 && step <= 11) {
+        const assessment = step - 4;
+        const actionIndex = testActions.findIndex(action => action.assessment === assessment);
+        testAction = Math.max(0, actionIndex);
+        cueIndex = 0;
+        vbtRound = 0;
+        render(screens.findIndex(screen => screen.dataset.screen === "test"));
+        return;
+      }
+      const screenByStep = {
+        1: "intro", 2: "profile", 3: "experience", 4: "pain", 5: "assessment-intro",
+        12: "assessment-entry", 13: "results", 14: "goal", 15: "contract", 16: "final"
+      };
+      const screenIndex = screens.findIndex(screen => screen.dataset.screen === screenByStep[step]);
+      if (screenIndex >= 0) render(screenIndex);
+    }
+
+    function updateJourneyProgress() {
+      const screen = screens[current];
+      const step = journeyStep(screen);
+      bar.style.width = `${step / journeyTotal * 100}%`;
+      document.getElementById("stepCopy").textContent = `${step} / ${journeyTotal}`;
+      document.querySelectorAll("[data-journey-step]").forEach(dot => {
+        const dotStep = Number(dot.dataset.journeyStep);
+        dot.classList.toggle("done", dotStep < step);
+        dot.classList.toggle("active", dotStep === step);
+      });
+    }
 
     function render(index) {
       current = Math.max(0, Math.min(index, screens.length - 1));
       screens.forEach((screen, i) => screen.classList.toggle("active", i === current));
       const screen = screens[current];
-      const onboardingStep = { profile: "1 / 3", experience: "2 / 3", pain: "3 / 3" };
-      topTitle.textContent = "kiwii";
-      stepCopy.textContent = onboardingStep[screen.dataset.screen] || (screen.dataset.stage === "assess" ? "体测" : screen.dataset.stage === "profile" ? "完成" : "开练");
-      bar.style.width = `${screen.dataset.progress}%`;
+      topTitle.textContent = "kiwii power";
       if (screen.dataset.screen === "test") renderTestAction();
       if (screen.dataset.screen === "pain") renderProtection();
+      if (screen.dataset.screen === "results") {
+        buildPersonalizedResults();
+        resultDialogueIndex = 0;
+        renderResultDialogue(resultDialogue[0], 0);
+        document.querySelectorAll("[data-ability]").forEach(card => card.classList.remove("active"));
+      }
+      if (screen.dataset.screen === "goal") renderPersonalizedGoals();
+      if (screen.dataset.screen === "contract") renderContract();
+      if (screen.dataset.screen === "final") renderFinalSummary();
+      updateJourneyProgress();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function selectedPainZones() {
       const painScreen = document.querySelector('[data-screen="pain"]');
-      return [...painScreen.querySelectorAll("[data-pain-zones] .choice.selected b")].map(item => item.textContent).filter(item => !item.includes("没有") && !item.includes("状态"));
+      return [...painScreen.querySelectorAll("[data-pain-zones] .choice.selected b")].map(item => {
+        if (item.textContent === "其他") {
+          const detail = document.getElementById("otherPainInput").value.trim();
+          return detail ? `其他：${detail}` : "其他";
+        }
+        return item.textContent;
+      }).filter(item => !item.includes("没有") && !item.includes("状态"));
     }
 
     function renderProtection() {
       const selected = selectedPainZones();
       const silhouette = document.getElementById("bodySilhouette");
-      silhouette.querySelectorAll(".pain-zone").forEach(zone => zone.remove());
-      selected.forEach(name => {
-        const zone = painZones[name];
-        if (!zone) return;
-        const marker = document.createElement("i");
-        marker.className = "pain-zone";
-        marker.dataset.label = zone.label;
-        marker.style.left = `${zone.left}px`;
-        marker.style.top = `${zone.top}px`;
-        silhouette.appendChild(marker);
-      });
-      const summary = selected.length ? `${selected.join("、")} 会温柔一点` : "今天没有特别不舒服的地方";
+      if (silhouette) {
+        silhouette.querySelectorAll(".pain-zone").forEach(zone => zone.remove());
+        selected.forEach(name => {
+          const zone = painZones[name];
+          if (!zone) return;
+          const marker = document.createElement("i");
+          marker.className = "pain-zone";
+          marker.dataset.label = zone.label;
+          marker.style.left = `${zone.left}px`;
+          marker.style.top = `${zone.top}px`;
+          silhouette.appendChild(marker);
+        });
+      }
+      const summary = selected.length ? `${selected.join("、")} 会多照顾一点` : "今天没有特别不舒服的地方";
       const protectionSummary = document.getElementById("protectionSummary");
       if (protectionSummary) protectionSummary.innerHTML = `<i>✓</i> ${summary}`;
-      document.getElementById("protectionCallout").textContent = selected.length ? `记住啦：${selected.join("、")} 会温柔一点。` : "状态不错。途中如果感觉不对，随时停下来歇一歇。";
+      const protectionCallout = document.getElementById("protectionCallout");
+      if (protectionCallout) protectionCallout.textContent = selected.length ? `会为 ${selected.join("、")} 调整动作和阻力` : "没有需要特别避开的地方";
       const finalProtection = document.getElementById("finalProtection");
       if (finalProtection) finalProtection.textContent = selected.length ? `${selected.join("、")}会温柔一点` : "今天可以自在开练";
     }
 
     function initialVbtLoad() {
-      const experience = document.querySelector('[data-screen="experience"] .choice.selected b')?.textContent || "偶尔会练练";
+      const experience = document.querySelector('[data-screen="experience"] .choice.selected b')?.textContent || "偶尔动动";
       return experienceLoads[experience] || 12;
     }
 
@@ -861,15 +1863,495 @@
       ];
     }
 
-    function programmingProfile() {
-      const goalMap = {
-        "穿衣服更利落有型": "增肌塑形",
-        "变轻盈，也留住力量": "减脂瘦身",
-        "力气变大一点": "提升力量",
-        "跑跳玩耍更有电": "运动表现",
-        "找回满格日常体力": "恢复日常体能",
-        "坐站都更松快舒服": "体态与舒适度"
+    function clampScore(value) {
+      return Math.max(20, Math.min(95, Number(value) || 50));
+    }
+
+    function assessmentScores() {
+      return {
+        mobility: clampScore(document.getElementById("mobilityScore").value),
+        stability: clampScore(document.getElementById("stabilityScore").value),
+        strength: clampScore(document.getElementById("strengthScore").value),
+        cardio: clampScore(document.getElementById("cardioScore").value)
       };
+    }
+
+    function selectedProfileText(screenName) {
+      return document.querySelector(`[data-screen="${screenName}"] .choice.selected b`)?.textContent || "";
+    }
+
+    function scoreState(score) {
+      if (score < 56) return "build";
+      if (score < 76) return "grow";
+      return "keep";
+    }
+
+    function joinChineseList(items) {
+      if (items.length <= 1) return items[0] || "";
+      return `${items.slice(0, -1).join("、")}和${items.at(-1)}`;
+    }
+
+    function userContext() {
+      const age = selectedProfileText("profile") || "25–34";
+      const experience = selectedProfileText("experience") || "偶尔动动";
+      const weight = Number(document.getElementById("weightInput")?.value) || 66;
+      const height = Number(document.getElementById("heightInput")?.value) || 172;
+      const gender = document.querySelector('[data-screen="profile"] .gender-grid .choice.selected b')?.textContent || "不选";
+      const isOlder = age.includes("55") || age.includes("65");
+      const isMid = age.includes("35") || age.includes("45");
+      const isYoung = age.includes("18") || age.includes("25");
+      const isMale = gender === "男性";
+      const isFemale = gender === "女性";
+      const isHeavy = weight > (height - 100) * 1.1 + 10;
+      const isLight = weight < (height - 100) * 0.85;
+      const isNew = experience === "刚开始" || experience === "停了一阵";
+      const isRegular = experience === "每周都练" || experience === "老手了";
+      return { age, experience, weight, height, gender, isOlder, isMid, isYoung, isMale, isFemale, isHeavy, isLight, isNew, isRegular };
+    }
+
+    function abilityCardCopy(key, score, strongestKey, weakestKey) {
+      const ctx = userContext();
+      const isStrongest = key === strongestKey;
+      const isWeakest = key === weakestKey;
+
+      if (key === "mobility") {
+        if (score >= 85) return { text: ctx.isRegular ? "长期练出来的松快，转身弯腰都是流畅的" : "天生就松，蹲下站起弯腰转身都不费劲" };
+        if (score >= 76) return { text: ctx.isOlder ? "身体保持得很好，动作空间比同龄人宽裕" : "活动范围不错，日常动作都很顺畅" };
+        if (score >= 65) {
+          if (ctx.isNew) return { text: "刚开始练的时候最容易看到变化，蹲得更深、够得更远都会很快" };
+          if (ctx.isOlder) return { text: "有些动作范围缩了一点，但练开很快，两三周就能感觉不一样" };
+          return { text: "日常活动没问题，蹲深一点或举高一点还能更舒展" };
+        }
+        if (ctx.isHeavy) return { text: "体重会让关节紧一些，慢慢打开后，弯腰下蹲都会松很多" };
+        if (ctx.isOlder) return { text: "关节灵活度随年龄会收紧，但练起来进步很快，先从肩和髋开始" };
+        if (ctx.isNew) return { text: "身体还没被打开过，这正好是最容易看到变化的地方" };
+        return { text: "身体还在等着被打开，练几次之后弯腰蹲下都会顺很多" };
+      }
+
+      if (key === "stability") {
+        if (score >= 85) return { text: ctx.isRegular ? "训练积累出来的稳定性，单脚动作都很从容" : "身体控制力很强，站得稳就能把力量用到位" };
+        if (score >= 76) return { text: ctx.isOlder ? "同龄人里算很稳的了，走不平路单脚穿鞋都不慌" : "平衡感不错，日常动作都控制得住" };
+        if (score >= 65) {
+          if (ctx.isNew) return { text: "平衡还在建立中，这块练几次就会有明显提升" };
+          if (ctx.isOlder) return { text: "走楼梯、不平路偶尔要注意，练稳之后会更安心" };
+          return { text: "基本够用，单脚站或快速变方向时还能更稳" };
+        }
+        if (ctx.isHeavy) return { text: "重心高一些，稳定性练上来之后走路姿态会明显不一样" };
+        if (ctx.isOlder) return { text: "稳定性是安全感的来源，练好之后走路爬楼都会更自信" };
+        return { text: "这块是基础中的基础，稳了以后力量才能真正用出来" };
+      }
+
+      if (key === "strength") {
+        if (score >= 85) return { text: ctx.isRegular ? "长期练出来的力量底子，搬什么都不用想" : "力量很在线，日常推拉搬抬都轻松" };
+        if (score >= 76) return { text: ctx.isOlder ? "力量保持得不错，同龄人里算有底子的" : "搬东西上楼梯都不费劲，够用而且有余量" };
+        if (score >= 65) {
+          if (ctx.isNew) return { text: "有一些基础力量，系统训练之后会提升得很快" };
+          if (ctx.isLight) return { text: "体重轻的好处是关节负担小，力量往上走空间很大" };
+          if (ctx.isOlder) return { text: "日常搬抬还行，再多一点储备，生活质量会明显不同" };
+          return { text: "日常搬抬没问题，再往上走一点会更轻松" };
+        }
+        if (ctx.isHeavy) return { text: "体重大其实说明肌肉底子不差，系统练会很快出效果" };
+        if (ctx.isOlder) return { text: "力量在慢慢流失，但找回来比你想象的快，每周两次就够" };
+        if (ctx.isNew) return { text: "还没开始积累力量，好消息是新手进步最快" };
+        return { text: "提重东西、上楼梯还要适应，但力量是最容易看到变化的" };
+      }
+
+      if (key === "cardio") {
+        if (score >= 85) return { text: ctx.isRegular ? "有氧底子很好，连续动也能控制节奏" : "体能储备充足，走路爬楼连续运动都不容易累" };
+        if (score >= 76) return { text: ctx.isOlder ? "精力比同龄人好不少，出门走一天也不怕" : "耐力够用，跑步打球都能跟上节奏" };
+        if (score >= 65) {
+          if (ctx.isNew) return { text: "心肺是最容易拉起来的，坚持两周就能感觉到不一样" };
+          if (ctx.isHeavy) return { text: "体重大心肺负担会重一些，但训练起来进步非常明显" };
+          if (ctx.isOlder) return { text: "日常节奏够用了，再拉长一点续航，会更轻松自在" };
+          return { text: "日常节奏不错，再多一点就能动得更久" };
+        }
+        if (ctx.isOlder) return { text: "心肺是见效最快的方向，练几周走路爬楼都会松快很多" };
+        if (ctx.isHeavy) return { text: "体重让心肺负担大一些，练起来进步反而最快" };
+        return { text: "连续运动的耐力还有空间，这里是最容易看到变化的能力" };
+      }
+
+      return { text: "" };
+    }
+
+    function buildPersonalizedResults() {
+      const scores = assessmentScores();
+      const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      const [strongestKey, strongestScore] = ranked[0];
+      const [weakestKey, weakestScore] = ranked.at(-1);
+      const average = Math.round(Object.values(scores).reduce((sum, score) => sum + score, 0) / 4);
+      const spread = strongestScore - weakestScore;
+      const experience = selectedProfileText("experience") || "偶尔动动";
+      const age = selectedProfileText("profile") || "25–34";
+      const strongKeys = Object.entries(scores)
+        .filter(([, score]) => score >= 76 || (score >= 72 && strongestScore - score <= 5))
+        .map(([key]) => key);
+      if (!strongKeys.length) strongKeys.push(strongestKey);
+      const strongNames = strongKeys.map(key => abilityNames[key]);
+      const weakName = abilityNames[weakestKey];
+
+      const ctx = userContext();
+
+      const overallFeel = {
+        mobility: ctx.isYoung ? "深蹲到底、过顶伸展这些动作对你来说都很轻松" : ctx.isOlder ? "弯腰、转身、够东西都蛮轻松的" : "身体的活动范围很好，动作能做到位",
+        stability: ctx.isYoung ? "单腿发力、变向这些需要控制的动作做得很稳" : ctx.isOlder ? "站着做事、走不平路都挺稳的" : "核心和平衡控制力不错，动作很稳",
+        strength: ctx.isYoung ? "发力很扎实，推拉蹲这些动作都能上重量" : ctx.isOlder ? "日常搬东西、提重物都很顺手" : "力量输出不错，负重动作做得很有控制",
+        cardio: ctx.isYoung ? "心肺很能扛，高强度连续做几组也不怎么掉" : ctx.isOlder ? "走路爬楼、连续动一段都不费劲" : "耐力不错，连续运动能保持节奏不散"
+      };
+      const growthFeel = {
+        mobility: ctx.isYoung ? "柔韧性练起来动作质量会上一个台阶" : ctx.isOlder ? "关节活动范围还能打开不少" : ctx.isNew ? "身体还没完全打开，空间很大" : "活动范围还可以再舒展",
+        stability: ctx.isYoung ? "核心稳定性再上去，所有动作都会更有力" : ctx.isOlder ? "稳定性练上来会更安心" : ctx.isNew ? "平衡感练几次就会有感觉" : "平衡和控制力还有空间",
+        strength: ctx.isYoung && ctx.isMale ? "力量涨起来后体型变化也最明显" : ctx.isYoung ? "力量是其他能力的基础，涨了什么都会变好" : ctx.isOlder ? "力量找回来比你想的快" : ctx.isNew ? "新手增长最快，几周就不一样" : ctx.isHeavy ? "体重大说明潜力大" : "力量再往上走一点，身体控制力会更好",
+        cardio: ctx.isYoung ? "心肺一拉起来，运动表现和恢复速度都会跳一档" : ctx.isOlder ? "心肺拉一拉，日常精力会好很多" : ctx.isHeavy ? "体重减一点+心肺上来，整个人会轻快很多" : "耐力拉长一点，后半程就不费劲了"
+      };
+
+      let overall;
+      if (ctx.isYoung && ctx.isRegular && average >= 75) overall = "不错啊，练的人一看就不一样。你的底子很好，接下来重点是突破而不是补短板";
+      else if (ctx.isYoung && ctx.isNew && average >= 65) overall = "底子比你自己想的好，第一次测这个水平说明天赋在线。接下来上手会很快";
+      else if (ctx.isYoung && ctx.isNew) overall = "测完了！现在知道你身体的起点了。新手增长期是最爽的阶段，每周都能感觉到变化";
+      else if (ctx.isYoung && average >= 70) overall = "身体条件不错，四项都有底子。接下来就是看你想往哪个方向爆发了";
+      else if (ctx.isYoung) overall = "OK 测完了！身体特点很清楚——强的地方保持，有空间的地方刚好是出效果最快的方向";
+      else if (ctx.isOlder && average >= 70) overall = "嘿，做得很好！能看得出来你一直有在照顾自己的身体，四个方面底子都蛮扎实的";
+      else if (ctx.isOlder && average >= 55) overall = "辛苦你了，这几个动作做下来我对你的身体已经有比较清楚的了解了";
+      else if (ctx.isRegular && average >= 75) overall = "不错哦，长期训练的积累在这些动作里看得很明显，每一项都有底子在";
+      else if (ctx.isRegular) overall = "能感觉到你是有运动习惯的人，身体的反应速度和控制力都不错";
+      else if (experience === "停了一阵" && average >= 60) overall = "嘿，虽然停了一阵，但身体的记忆还在。刚才几个动作你做得比想象中顺";
+      else if (experience === "停了一阵") overall = "停了一阵也没关系，身体记得之前练过的东西，重新动起来会比第一次快很多";
+      else if (ctx.isNew && average >= 65) overall = "第一次测就有这个状态，底子比你自己想象的好。接下来的进步空间会很大";
+      else if (ctx.isNew) overall = "做完了！每个人的身体起点不一样，重要的是现在知道了从哪里开始";
+      else if (spread <= 9) overall = "嘿，你的四项能力很均衡，没有明显的短板，这其实是很好的训练起点";
+      else overall = "做完了！你的身体特点很清晰——有些方面底子很好，有些地方一练就能看到变化";
+
+      let strengthText;
+      if (strongKeys.length > 1) {
+        strengthText = `你比较强的是${joinChineseList(strongNames)}——具体来说就是${overallFeel[strongestKey]}，这些是你的优势，继续保持就好`;
+      } else {
+        strengthText = `其中${strongNames[0]}是你最亮眼的部分，${overallFeel[strongestKey]}。这种感觉说明这块的底子很扎实`;
+      }
+
+      let weakText;
+      if (ctx.isNew) {
+        weakText = `相比之下，${weakName}还在起步阶段——不过这恰好是新手进步最快的方向，${growthFeel[weakestKey]}`;
+      } else if (ctx.isOlder) {
+        weakText = `${weakName}是目前相对可以再提升的方向。好消息是这块练起来回馈很快，${growthFeel[weakestKey]}`;
+      } else {
+        weakText = `${weakName}目前是四项里空间最大的——意思是接下来这里最容易看到变化。${growthFeel[weakestKey]}`;
+      }
+
+      let planText;
+      if (ctx.isYoung && ctx.isMale) planText = "接下来的训练会把力量和体能一起拉。不偏科，但会在你最容易出效果的方向多加量。几周后你自己就能感觉到变化";
+      else if (ctx.isYoung && ctx.isFemale) planText = "接下来会根据你的情况搭配训练重点，力量和柔韧一起来。前几周变化最快，特别是体态和线条";
+      else if (ctx.isOlder) planText = "接下来我给你安排的训练会每个方面都顾到，但会在有空间的地方多花一点时间。节奏完全跟着你来，不赶";
+      else if (ctx.isNew) planText = "接下来会从基础动作开始，让身体先适应阻力板的节奏。前几周进步最明显，你会很有感觉";
+      else if (ctx.isHeavy) planText = "接下来的训练会兼顾让身体更轻快和更有力——两个方向一起走，几周就能感觉到整个人不一样";
+      else planText = "接下来我会根据这些结果帮你安排重点，但不偏科。四个方面都练到，几周就能感觉身体在变";
+
+      resultDialogue = [
+        { text: overall, focus: [] },
+        { text: strengthText, focus: strongKeys },
+        { text: weakText, focus: [weakestKey] },
+        { text: planText, focus: [] }
+      ];
+      abilityDialogue = {};
+      function abilityTag(key, score) {
+        if (key === "mobility") {
+          if (score >= 85) return "柔软度王者";
+          if (score >= 76) return "活动度超赞";
+          if (score >= 65) return "还能更舒展";
+          if (score >= 50) return "慢慢松开中";
+          return "等待解封";
+        }
+        if (key === "stability") {
+          if (score >= 85) return "稳如泰山";
+          if (score >= 76) return "平衡感在线";
+          if (score >= 65) return "越来越稳";
+          if (score >= 50) return "稳定修炼中";
+          return "摇摇晃晃也可爱";
+        }
+        if (key === "strength") {
+          if (score >= 85) return "大力士就是你";
+          if (score >= 76) return "力量充足";
+          if (score >= 65) return "力气在涨";
+          if (score >= 50) return "力量觉醒中";
+          return "蓄力准备中";
+        }
+        if (key === "cardio") {
+          if (score >= 85) return "精力充沛王者";
+          if (score >= 76) return "续航能力强";
+          if (score >= 65) return "耐力在线";
+          if (score >= 50) return "体能充电中";
+          return "电量待补充";
+        }
+        return "";
+      }
+      Object.entries(scores).forEach(([key, score]) => {
+        abilityDialogue[key] = abilityCardCopy(key, score, strongestKey, weakestKey);
+        const spectrum = document.querySelector(`[data-ability="${key}"] .loot-spectrum`);
+        spectrum.style.setProperty("--score", `${score}%`);
+        const tag = document.querySelector(`[data-ability="${key}"] .ability-tag`);
+        tag.textContent = abilityTag(key, score);
+      });
+    }
+
+
+    function renderPersonalizedGoals() {
+      const scores = assessmentScores();
+      const age = selectedProfileText("profile") || "25–34";
+      const experience = selectedProfileText("experience") || "偶尔动动";
+      const isOlder = age.includes("55") || age.includes("65");
+      const pain = selectedPainZones();
+      const hasPain = pain.length > 0 && !pain.some(p => p.includes("没有"));
+      const average = Math.round(Object.values(scores).reduce((s, v) => s + v, 0) / 4);
+      const movement = Math.round((scores.mobility + scores.stability) / 2);
+      const shapeScore = Math.round((scores.strength + scores.mobility) / 2);
+      const sportScore = Math.round((scores.stability + scores.cardio) / 2);
+
+      function goalForDim(key, currentScore) {
+        const ctx = userContext();
+        const high = currentScore >= 76;
+        const mid = currentScore >= 65;
+
+        if (key === "shape") {
+          if (high) {
+            if (ctx.isYoung && ctx.isMale) return { title: "身材继续进化", detail: "肩宽腰窄的比例越来越明显" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "线条继续雕刻", detail: "腰臀比更好看，穿什么都有型" };
+            if (ctx.isRegular) return { title: "保住练出来的线条", detail: "肌肉量和紧实度不退步" };
+            if (ctx.isOlder) return { title: "穿衣服一直有精神", detail: "走出去比同龄人挺拔利落" };
+            return { title: "身材维持在线", detail: "现在的状态继续保持，不走样" };
+          }
+          if (mid) {
+            if (ctx.isYoung && ctx.isMale) return { title: "把肩练宽", detail: "T恤撑起来，正面看过去有框架" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "练出马甲线", detail: "腰腹收紧，露出来好看" };
+            if (ctx.isHeavy) return { title: "身体更紧实", detail: "体脂慢慢下来，但力量不掉" };
+            if (ctx.isOlder) return { title: "站姿更挺拔", detail: "背不弯，肩不塌，走路有精神" };
+            return { title: "穿衣服更有型", detail: "肩线平了，背挺了，整个人精神不一样" };
+          }
+          if (ctx.isYoung && ctx.isMale) return { title: "从瘦变壮", detail: "把骨架填满，穿衣服不再空荡" };
+          if (ctx.isYoung && ctx.isFemale) return { title: "练出身体曲线", detail: "臀腿有形状，整体比例更好" };
+          if (ctx.isNew) return { title: "开始有身体线条", detail: "练几周就能看到肩和背的变化" };
+          if (ctx.isHeavy) return { title: "轮廓变清晰", detail: "不用特别瘦，紧实了就好看" };
+          if (ctx.isOlder) return { title: "站着坐着都挺直", detail: "背不驼、肩不塌，自然就显年轻" };
+          return { title: "从松散到有型", detail: "几周训练后照镜子就能看到变化" };
+        }
+
+        if (key === "lean") {
+          if (high) {
+            if (ctx.isYoung && ctx.isMale) return { title: "体脂稳住不反弹", detail: "腹肌线条保持可见" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "保持清爽体态", detail: "不用刻意节食也能维持现在的状态" };
+            if (ctx.isOlder) return { title: "体重精力都稳住", detail: "不用担心慢慢变重，维持就是赢" };
+            return { title: "体脂率稳住不反弹", detail: "保持现在的清爽感，不让体脂悄悄回来" };
+          }
+          if (mid) {
+            if (ctx.isYoung && ctx.isMale) return { title: "刷出腹肌轮廓", detail: "体脂再降几个点，线条就出来了" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "瘦下来但不掉肌肉", detail: "体脂降的同时身体还是有力量的" };
+            if (ctx.isHeavy) return { title: "减 3-5kg 脂肪", detail: "关节负担减轻，运动起来也更灵活" };
+            if (ctx.isOlder) return { title: "体重再轻几斤", detail: "膝盖和腰会舒服很多，走路也不费劲" };
+            return { title: "体脂降一个台阶", detail: "靠训练把代谢拉起来，不用饿着" };
+          }
+          if (ctx.isYoung && ctx.isMale) return { title: "先把肚子减下去", detail: "训练+饮食配合，腰围会先动" };
+          if (ctx.isYoung && ctx.isFemale) return { title: "体重开始往下走", detail: "规律训练后代谢上来，不用刻意节食" };
+          if (ctx.isHeavy) return { title: "先减掉 5kg 左右", detail: "身体轻了之后动起来完全不一样" };
+          if (ctx.isNew) return { title: "体脂开始往下走", detail: "新手开始训练后身体变化特别快" };
+          if (ctx.isOlder) return { title: "轻几斤精神好很多", detail: "体重下来之后走路逛街都更自在" };
+          return { title: "让身体变清爽", detail: "体脂往下走之后精力和状态都会不同" };
+        }
+
+        if (key === "strength") {
+          if (high) {
+            if (ctx.isYoung && ctx.isMale) return { title: "力量继续涨", detail: "深蹲硬拉的数字还能往上走" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "力量保持在线", detail: "该有的力气不掉，日常轻松应对" };
+            if (ctx.isRegular) return { title: "力量不退步", detail: "维持现在的水平，日常继续轻松" };
+            if (ctx.isOlder) return { title: "力气一直够用", detail: "提重物上楼梯都不犯怵" };
+            return { title: "力气随时够用", detail: "搬抬推拉都不用省着来" };
+          }
+          if (mid) {
+            if (ctx.isYoung && ctx.isMale) return { title: "上大重量", detail: "深蹲推举每周都在进步" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "变成有力量的人", detail: "搬东西不用叫人帮忙" };
+            if (ctx.isOlder) return { title: "提东西上楼更省力", detail: "买菜拿快递不用歇" };
+            if (ctx.isLight) return { title: "力气再多一点", detail: "体重轻关节负担小，力量上得快" };
+            return { title: "搬重东西更轻松", detail: "大袋购物、搬箱子不用省着来" };
+          }
+          if (ctx.isYoung && ctx.isMale) return { title: "解锁真正的力量", detail: "从零开始，新手涨力气最快" };
+          if (ctx.isYoung && ctx.isFemale) return { title: "练出实用的力气", detail: "不是变壮，是该有力的时候有力" };
+          if (ctx.isOlder) return { title: "日常动作不吃力", detail: "起身、提东西、上楼都稳稳的" };
+          if (ctx.isNew) return { title: "从零开始攒力量", detail: "新手增长最快，几周就有感觉" };
+          if (ctx.isHeavy) return { title: "把体重变成优势", detail: "体重大力量潜力也大，练了就出数" };
+          return { title: "日常力气更足", detail: "搬家拎重东西不用找人帮忙" };
+        }
+
+        if (key === "sport") {
+          if (high) {
+            if (ctx.isYoung) return { title: "运动表现再上一档", detail: "打球跑步从能跟上变成能赢" };
+            if (ctx.isRegular) return { title: "运动后半程不掉", detail: "到最后一局还有余力" };
+            if (ctx.isOlder) return { title: "运动时更稳更持久", detail: "不容易岔气，节奏一直在" };
+            return { title: "后半程也跟得上", detail: "连续动也能保持状态不塌" };
+          }
+          if (mid) {
+            if (ctx.isYoung && ctx.isMale) return { title: "打全场不下场", detail: "跑动能力和爆发力都跟得上" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "运动时更有爆发力", detail: "跑步游泳后半段不掉速" };
+            if (ctx.isOlder) return { title: "出门走得更远", detail: "逛街散步多走一段也不想停" };
+            return { title: "运动时间拉长", detail: "连续动 30 分钟以上不掉状态" };
+          }
+          if (ctx.isYoung && ctx.isMale) return { title: "体能拉满", detail: "打球跑步从跟不上变成带节奏" };
+          if (ctx.isYoung && ctx.isFemale) return { title: "运动不再气喘", detail: "跑步跳操能跟完全程" };
+          if (ctx.isOlder) return { title: "走远也不累", detail: "和朋友出门不再是最先歇的那个" };
+          if (ctx.isNew) return { title: "能动更久", detail: "从十分钟慢慢拉长，进步最快的阶段" };
+          return { title: "续航能力更强", detail: "连续运动的时间拉长，后半程不掉" };
+        }
+
+        if (key === "energy") {
+          if (high) {
+            if (ctx.isYoung) return { title: "精力一直在线", detail: "白天高效晚上还有余力做自己的事" };
+            if (ctx.isOlder) return { title: "全天精力稳定", detail: "不再下午就犯困，状态一整天都好" };
+            return { title: "一整天精力稳稳的", detail: "忙到晚上还有余量" };
+          }
+          if (mid) {
+            if (ctx.isYoung && ctx.isMale) return { title: "精力从早到晚不断", detail: "上班+健身+社交一天排满也不垮" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "下班还有精力社交", detail: "不再回家就只想瘫着" };
+            if (ctx.isOlder) return { title: "下午不再犯困", detail: "不用靠咖啡撑到下班" };
+            return { title: "晚上还有余量", detail: "到家还想得起来做自己的事" };
+          }
+          if (ctx.isYoung && ctx.isMale) return { title: "精力翻倍", detail: "训练后整个人的电池容量会变大" };
+          if (ctx.isYoung && ctx.isFemale) return { title: "每天多出几小时精力", detail: "不再动不动就累，想做的事都能做" };
+          if (ctx.isOlder) return { title: "白天精神好很多", detail: "不那么容易疲，出门也有劲" };
+          if (ctx.isHeavy) return { title: "精力完全不同", detail: "心肺上来之后整个人像换了电池" };
+          return { title: "忙完还有电", detail: "日常不再透支，留点精力给自己" };
+        }
+
+        if (key === "comfort") {
+          if (high) {
+            if (ctx.isYoung) return { title: "身体随时能动", detail: "想运动就运动，不用先热半天" };
+            if (ctx.isOlder) return { title: "身体一直松快", detail: "弯腰下蹲转身都自在" };
+            return { title: "身体活动自如", detail: hasPain ? "照顾好就不容易反复" : "怎么动都舒服" };
+          }
+          if (mid) {
+            if (hasPain) return { title: `${pain[0]}附近更舒服`, detail: "活动时不再先想着它" };
+            if (ctx.isYoung && ctx.isMale) return { title: "身体不再紧绑绑", detail: "深蹲到底、弯腰摸地都顺畅" };
+            if (ctx.isYoung && ctx.isFemale) return { title: "柔韧度更好", detail: "瑜伽动作做得更深，拉伸更舒服" };
+            if (ctx.isOlder) return { title: "起身走路更顺", detail: "早上起来身体不僵，站起来就能走" };
+            return { title: "久坐后身体不僵", detail: "坐一下午站起来，腰背不紧不硬" };
+          }
+          if (hasPain) return { title: `让${pain[0]}不再是负担`, detail: "练对了之后它会越来越安静" };
+          if (ctx.isYoung && ctx.isMale) return { title: "活动范围打开", detail: "肩能转开、髋能蹲深，动作质量更好" };
+          if (ctx.isYoung && ctx.isFemale) return { title: "身体变柔软", detail: "不再硬邦邦，弯腰劈叉都更容易" };
+          if (ctx.isOlder) return { title: "身体不再僵", detail: "起床、转身、弯腰都顺顺的" };
+          return { title: "全身松开", detail: "久坐之后站起来不用先伸展半天" };
+        }
+
+        return { title: "", detail: "" };
+      }
+
+      const dims = [
+        { key: "shape", score: shapeScore },
+        { key: "lean", score: average },
+        { key: "strength", score: scores.strength },
+        { key: "sport", score: sportScore },
+        { key: "energy", score: scores.cardio },
+        { key: "comfort", score: movement }
+      ];
+
+      const goals = dims.map(d => ({ key: d.key, score: d.score, ...goalForDim(d.key, d.score) }));
+
+      const ranked = [...goals].sort((a, b) => a.score - b.score);
+      const recommended = new Set(ranked.slice(0, 3).map(g => g.key));
+
+      const recGoals = ranked.slice(0, 3);
+      const recNames = recGoals.map(g => g.title);
+      const dimNameMap = { shape: "体态", lean: "轻盈度", strength: "力量", sport: "耐力", energy: "精力", comfort: "舒适度" };
+      const recDimNames = recGoals.map(g => dimNameMap[g.key]);
+
+      const ctx = userContext();
+      document.getElementById("goalHeadline").textContent = "一起搭你的训练方向";
+
+      const lowestScore = recGoals[0].score;
+      const allHigh = lowestScore >= 76;
+
+      let guideText;
+      if (allHigh) {
+        if (ctx.isYoung && ctx.isMale) guideText = `你底子很好，挑几个继续拉高上限的方向。帮你选了三个，不爽就换`;
+        else if (ctx.isYoung && ctx.isFemale) guideText = `各项都不错，选几个你最想继续突破的方向。帮你先选了，可以自己调`;
+        else if (ctx.isOlder) guideText = `各项都很稳，选几个最想保持的方向，训练会帮你稳住。已经帮你挑好了，不满意换`;
+        else guideText = `你的底子很好，现在就是选个方向继续深入。帮你选了三个，可以自己调`;
+      } else if (ctx.isYoung && ctx.isMale) {
+        guideText = `根据你的测试，${recDimNames[0]}和${recDimNames[1]}是最容易出效果的方向，加上${recDimNames[2]}会更全面。帮你先选了，不爽就换`;
+      } else if (ctx.isYoung && ctx.isFemale) {
+        guideText = `看了你的结果，${recDimNames[0]}和${recDimNames[1]}是最容易看到变化的方向，搭一个${recDimNames[2]}更均衡。先帮你选了，可以自己调`;
+      } else if (ctx.isNew) {
+        guideText = `根据你的体测结果，${recDimNames[0]}和${recDimNames[1]}是最容易看到进步的方向，${recDimNames[2]}也值得一起练。我先帮你选了这三个，不合适就换`;
+      } else if (ctx.isOlder) {
+        guideText = `结合你的身体状况，${recDimNames[0]}和${recDimNames[1]}是现在最值得投入的，${recDimNames[2]}也能帮到日常生活。已经帮你选好了，不满意随便换`;
+      } else {
+        guideText = `看了你的结果，${recDimNames[0]}和${recDimNames[1]}是目前最容易出变化的方向，再搭一个${recDimNames[2]}会比较均衡。帮你选了这三个，可以自己调`;
+      }
+      document.getElementById("goalGuide").textContent = guideText;
+
+      document.getElementById("goalChoices").innerHTML = goals.map(goal => {
+        const isRec = recommended.has(goal.key);
+        return `<button class="choice${isRec ? " selected recommended" : ""}" data-goal="${goal.key}"><b>${goal.title}</b><small>${goal.detail}</small></button>`;
+      }).join("");
+    }
+
+    function contractSelection(group) {
+      return document.querySelector(`[data-contract="${group}"] .contract-pick.selected`)?.textContent || "";
+    }
+
+    function selectedGoalPromises() {
+      let selectedCards = [...document.querySelectorAll('[data-screen="goal"] .choice.selected')];
+      if (!selectedCards.length) {
+        renderPersonalizedGoals();
+        selectedCards = [...document.querySelectorAll('[data-screen="goal"] .choice.selected')];
+      }
+      return selectedCards.slice(0, 3).map(card => ({
+        key: card.dataset.goal,
+        title: card.querySelector("b")?.textContent || "",
+        detail: card.querySelector("small")?.textContent || ""
+      }));
+    }
+
+    function renderContract() {
+      const days = contractSelection("days") || "2 次";
+      const minutes = contractSelection("minutes") || "15 分钟";
+      const daysNumber = Number.parseInt(days, 10) || 2;
+      const minutesNumber = Number.parseInt(minutes, 10) || 15;
+      const timeline = daysNumber >= 3 ? "3–4 周" : "4–6 周";
+
+      if (!document.querySelectorAll('[data-screen="goal"] .choice').length) {
+        renderPersonalizedGoals();
+      }
+      const selectedGoals = [...document.querySelectorAll('[data-screen="goal"] .choice.selected')];
+      const goalTexts = selectedGoals.map(card => card.querySelector("b")?.textContent || "").filter(Boolean);
+
+      document.getElementById("contractLine").textContent = `每周 ${days}，每次 ${minutes}`;
+      document.getElementById("commitmentMeter").textContent = "";
+
+      const goalsJoined = goalTexts.join("、");
+      const hasMaintenanceGoals = goalTexts.some(t => /维持|稳住|保持|不退步|不反弹|够用|在线/.test(t));
+      const promiseFrame = hasMaintenanceGoals
+        ? `坚持 ${timeline}，你会感受到：${goalsJoined}`
+        : `坚持下来 ${timeline}，你就会看到：${goalsJoined}`;
+      document.getElementById("promiseList").innerHTML = `
+        <div class="promise-result">
+          <span class="promise-icon">✦</span>
+          <span class="promise-sentence">${promiseFrame}</span>
+        </div>
+      `;
+
+      const goalJoin = goalTexts.length >= 2 ? `${goalTexts[0]}和${goalTexts[1]}` : goalTexts[0] || "你选的方向";
+      let birdText;
+      if (daysNumber >= 4) birdText = `每周 4 次很有决心！按这个节奏，${goalJoin}的变化会来得很快`;
+      else if (daysNumber >= 3) birdText = `每周 3 次是很好的节奏，${goalJoin}几周就能有感觉`;
+      else birdText = `每周 2 次刚好能坚持住，${goalJoin}会慢慢出现变化，比猛练几天停一周强很多`;
+      document.getElementById("contractBirdText").textContent = birdText;
+    }
+
+    function resetContractSignature() {
+      const stamp = document.getElementById("contractStamp");
+      stamp.classList.remove("signed");
+      stamp.textContent = "按下约定";
+      document.getElementById("contractNext").disabled = true;
+    }
+
+    function programmingProfile() {
+      const goalMap = { shape: "增肌塑形", lean: "减脂保肌", strength: "提升力量", sport: "运动表现", energy: "恢复日常体能", comfort: "体态与舒适度" };
       const protectionMap = {
         "肩": "肩部",
         "腰背": "腰背",
@@ -877,8 +2359,8 @@
         "膝": "膝部",
         "踝": "踝部"
       };
-      const goals = [...document.querySelectorAll('[data-screen="goal"] .choice.selected b')]
-        .map(item => goalMap[item.textContent])
+      const goals = [...document.querySelectorAll('[data-screen="goal"] .choice.selected')]
+        .map(item => goalMap[item.dataset.goal])
         .filter(Boolean);
       const protection = selectedPainZones().map(item => protectionMap[item]).filter(Boolean);
       const rounds = getVbtRounds();
@@ -886,8 +2368,312 @@
       return {
         squatLoad: Number.parseFloat(rounds.at(-1).load),
         goals: goals.length ? goals : ["体态与舒适度"],
-        focus: protection.length ? protection : ["没有特殊保护"]
+        focus: protection.length ? protection : ["没有特殊保护"],
+        assessment: assessmentScores(),
+        age: selectedProfileText("profile"),
+        bodyReference: document.querySelector('[data-screen="profile"] .gender-grid .choice.selected b')?.textContent || "不选",
+        experience: selectedProfileText("experience"),
+        cadence: {
+          days: contractSelection("days"),
+          minutes: contractSelection("minutes")
+        }
       };
+    }
+
+    const kiwiiExercises = [
+      ["Single Handle","B站姿单腿硬拉","lower","anchor"],["T-Bar","俯身划船","upper","pull"],["Single Handle","俯身单臂臂屈伸","upper","accessory"],["Single Handle","俯身直臂下压","upper","pull"],["T-Bar","二头弯举","upper","accessory"],["Single Handle","鸟狗式单臂划船","core","stability"],["T-Bar","芭蕾交叉蹲","lower","stability"],["T-Bar","硬拉","lower","anchor"],["T-Bar","早安式挺身","lower","mobility"],["T-Bar","坐姿半卷动","core","control"],["Single Handle","半跪姿拔剑","core","mobility"],["T-Bar","跪起托盘推举","core","control"],["Single Handle","割草机","core","rotation"],["Single Handle","低位伐木","core","rotation"],["Single Handle","弓步蹲","lower","anchor"],["Single Handle","弓步单臂划船","full","pull"],["T-Bar","过顶推举","upper","push"],["T-Bar","俯卧推举","upper","push"],["T-Bar","俯卧下拉","upper","pull"],["Single Handle","平板支撑单臂划船","core","stability"],["Single Handle","坐姿卷腹","core","control"],["T-Bar","坐姿划船","upper","pull"],["Single Handle","坐姿单臂旋转划船","core","rotation"],["Single Handle","侧弓步蹲","lower","mobility"],["Single Handle","单臂二头弯举","upper","accessory"],["Single Handle","单臂上斜推胸","upper","push"],["Single Handle","单臂侧平举","upper","accessory"],["Single Handle","单臂侧置深蹲","lower","stability"],["Single Handle","单臂反向飞鸟","upper","pull"],["Single Handle","单臂肩推","upper","push"],["T-Bar","深蹲","lower","anchor"],["Single Handle","提箱硬拉","lower","anchor"],["T-Bar","相扑深蹲","lower","anchor"],["Single Handle","上勾拳推举","upper","power"],["T-Bar","硬拉接高拉","full","power"],["T-Bar","直立划船","upper","pull"]
+    ].map(([hardware,cn,region,role])=>({hardware,cn,region,role}));
+
+    const kiwiiRouteTypes = [
+      {id:"lowerStrength",name:"根基田",color:"#6fba2c",focus:"臀腿力量",roles:["anchor","mobility","anchor","stability"]},
+      {id:"lowerStability",name:"独木桥",color:"#8ac68a",focus:"单腿稳定",roles:["stability","anchor","mobility","control"]},
+      {id:"upperPull",name:"渔获湾",color:"#82d5bb",focus:"背部拉力",roles:["pull","pull","accessory","control"]},
+      {id:"upperPush",name:"石磨坡",color:"#889df0",focus:"胸肩推力",roles:["push","push","accessory","mobility"]},
+      {id:"coreControl",name:"谷仓",color:"#fc736d",focus:"躯干稳定",roles:["control","stability","control","mobility"]},
+      {id:"coreRotation",name:"风车岭",color:"#e59266",focus:"转身传力",roles:["rotation","control","stability","rotation"]},
+      {id:"fullStrength",name:"丰收集",color:"#57cdbd",focus:"全身配合",roles:["anchor","power","pull","control"]},
+      {id:"metabolic",name:"麦浪道",color:"#f7cd67",focus:"耐力节奏",roles:["power","anchor","power","control"]},
+      {id:"mobility",name:"温室",color:"#b77dee",focus:"活动舒展",roles:["mobility","control","mobility"]},
+      {id:"recovery",name:"树荫亭",color:"#d4c9b4",focus:"轻松恢复",roles:["control","mobility","stability"]}
+    ];
+
+    const advancedMoves = [
+      ["Single Handle","招财猫推举","upper","mobility"],["T-Bar","硬拉接划船","full","pull"],["Single Handle","双臂过顶臂屈伸","upper","accessory"],["T-Bar","从地推举","full","power"],["Single Handle","弓步蹲推举","full","power"],["Single Handle","弓步躯干旋转","core","rotation"],["T-Bar","过顶深蹲","full","mobility"],["Single Handle","单臂硬拉接高拉","full","power"],["Single Handle","单臂硬拉接推举","full","power"],["Single Handle","单腿划船接提膝","full","stability"],["T-Bar","深蹲连肩推","full","power"],["Single Handle","深蹲摆举","full","power"]
+    ].map(([hardware,cn,region,role])=>({hardware,cn,region,role,advanced:true}));
+
+    function adventureWeights() {
+      const profile = programmingProfile();
+      const w = {lowerStrength:4,lowerStability:4,upperPull:4,upperPush:4,coreControl:4,coreRotation:3,fullStrength:5,metabolic:4,mobility:3,recovery:3};
+      profile.goals.forEach(g => {
+        if (g === "体态与舒适度") { w.coreControl += 4; w.mobility += 4; w.upperPull += 2; }
+        if (g === "提升力量") { w.lowerStrength += 5; w.upperPush += 3; w.upperPull += 3; w.fullStrength += 2; }
+        if (g === "增肌塑形") { w.lowerStrength += 3; w.upperPush += 4; w.upperPull += 4; }
+        if (g === "减脂瘦身" || g === "减脂保肌") { w.metabolic += 7; w.fullStrength += 4; w.lowerStrength += 2; }
+        if (g === "运动表现") { w.lowerStability += 4; w.fullStrength += 5; w.coreRotation += 3; w.metabolic += 2; }
+        if (g === "恢复日常体能") { w.recovery += 6; w.mobility += 3; w.coreControl += 3; }
+      });
+      const focus = profile.focus || [];
+      focus.forEach(f => {
+        if (f === "肩部") { w.upperPush = Math.max(1, w.upperPush - 3); w.recovery += 3; w.mobility += 2; }
+        if (f === "腰背") { w.lowerStrength = Math.max(1, w.lowerStrength - 2); w.fullStrength = Math.max(1, w.fullStrength - 2); w.recovery += 4; w.coreControl += 2; }
+        if (f === "髋部") { w.lowerStability = Math.max(1, w.lowerStability - 2); w.mobility += 3; w.recovery += 3; }
+        if (f === "膝部") { w.lowerStrength = Math.max(1, w.lowerStrength - 2); w.lowerStability = Math.max(1, w.lowerStability - 2); w.recovery += 4; }
+        if (f === "踝部") { w.lowerStability = Math.max(1, w.lowerStability - 2); w.mobility += 3; w.recovery += 2; }
+      });
+      return w;
+    }
+
+    function adventureAllocate() {
+      const w = adventureWeights();
+      const total = Object.values(w).reduce((a, b) => a + b, 0);
+      const slots = 39;
+      const rows = kiwiiRouteTypes.map(t => ({ ...t, count: Math.floor(w[t.id] / total * slots), fraction: w[t.id] / total * slots % 1 }));
+      let left = slots - rows.reduce((sum, x) => sum + x.count, 0);
+      rows.sort((a, b) => b.fraction - a.fraction).slice(0, left).forEach(x => x.count++);
+      return kiwiiRouteTypes.map(t => rows.find(x => x.id === t.id));
+    }
+
+    function adventureZone(type) { return type.id.startsWith("lower") ? "lower" : type.id.startsWith("upper") ? "upper" : type.id.startsWith("core") ? "core" : type.id; }
+
+    function adventureOrderRoute(queue) {
+      const remaining = [...queue], ordered = [];
+      while (remaining.length) {
+        const prev = ordered.at(-1), prev2 = ordered.at(-2);
+        const pool = remaining.some(x => !prev || x.id !== prev.id)
+          ? remaining.map((c, i) => ({ c, i })).filter(x => !prev || x.c.id !== prev.id)
+          : remaining.map((c, i) => ({ c, i }));
+        let bestIdx = pool[0].i, bestScore = -999;
+        pool.forEach(({ c, i }) => {
+          let score = remaining.filter(x => x.id === c.id).length * 2;
+          if (!prev2 || c.id !== prev2.id) score += 3;
+          if (prev && adventureZone(c) === adventureZone(prev)) score -= 5;
+          if (["mobility", "recovery"].includes(c.id)) score += ordered.length % 6 === 5 ? 5 : 0;
+          if (prev && ["metabolic", "fullStrength"].includes(prev.id) && ["mobility", "recovery", "coreControl"].includes(c.id)) score += 4;
+          if (prev && ["metabolic", "fullStrength"].includes(prev.id) && ["metabolic", "fullStrength"].includes(c.id)) score -= 5;
+          if (score > bestScore) { bestScore = score; bestIdx = i; }
+        });
+        ordered.push(remaining.splice(bestIdx, 1)[0]);
+      }
+      return ordered;
+    }
+
+    function adventureProtected(move) {
+      const profile = programmingProfile();
+      const focus = profile.focus || [];
+      if (focus.includes("膝部") && /蹲|弓步|跪起/.test(move.cn)) return true;
+      if (focus.includes("肩部") && (move.role === "push" || /过顶|肩推|推举|侧平举|飞鸟/.test(move.cn))) return true;
+      if (focus.includes("腰背") && /硬拉|挺身|俯身|卷腹|卷动/.test(move.cn)) return true;
+      if (focus.includes("髋部") && /蹲|弓步|硬拉|挺身|提膝/.test(move.cn)) return true;
+      if (focus.includes("踝部") && /蹲|弓步|单腿/.test(move.cn)) return true;
+      return false;
+    }
+
+    function adventureIsUnilateral(move) { return move.hardware === "Single Handle" && /单臂|单腿|单侧|提箱|割草机|拔剑|伐木|弓步|侧弓步|上勾拳/.test(move.cn); }
+
+    function adventureStressTags(move) {
+      const tags = [];
+      if (/硬拉|俯身|挺身/.test(move.cn)) tags.push("lumbar");
+      if (/过顶|肩推|推举|直立划船|侧平举/.test(move.cn)) tags.push("shoulder");
+      if (/单腿|弓步|侧弓步|B站姿/.test(move.cn)) tags.push("balance");
+      if (/伐木|旋转|割草机|拔剑|上勾拳/.test(move.cn)) tags.push("rotation");
+      if (/俯卧/.test(move.cn)) tags.push("floor");
+      if (move.role === "power") tags.push("power");
+      return tags;
+    }
+
+    function adventurePostureHeight(move) {
+      if (/俯卧/.test(move.cn)) return 0;
+      if (/跪|半跪|鸟狗/.test(move.cn)) return 1;
+      if (/坐姿|坐/.test(move.cn)) return 2;
+      if (/俯身|硬拉|挺身|划船/.test(move.cn) && !/坐姿/.test(move.cn)) return 3;
+      if (/弓步|侧弓步|芭蕾|B站姿/.test(move.cn)) return 4;
+      return 5;
+    }
+
+    function adventureClashes(prev, next) {
+      if (!prev) return false;
+      const a = adventureStressTags(prev), b = adventureStressTags(next);
+      if (["lumbar", "shoulder", "balance"].some(t => a.includes(t) && b.includes(t))) return true;
+      if (a.includes("lumbar") && b.includes("rotation")) return true;
+      if (a.includes("floor") && b.includes("power")) return true;
+      if (prev.unilateral && adventureIsUnilateral(next)) return true;
+      return false;
+    }
+
+    function adventureMovementLoad(move, slot) {
+      const profile = programmingProfile();
+      const best = profile.squatLoad || 20;
+      const ratio = { anchor: .5, power: .38, pull: .32, push: .28, stability: .24, control: .2, mobility: .16, rotation: .18, accessory: .16 }[move.role] || .22;
+      const protectFactor = (profile.focus || []).length > 0 ? .88 : 1;
+      const orderFactor = [1, 1, .9, .85, .85][slot] || .85;
+      const raw = best * ratio * (move.hardware === "Single Handle" ? .58 : 1) * protectFactor * orderFactor;
+      return Math.max(move.hardware === "T-Bar" ? 4 : 2, Math.round(raw / (move.hardware === "T-Bar" ? 2 : 1)) * (move.hardware === "T-Bar" ? 2 : 1));
+    }
+
+    function adventureFitSequence(moves, targetMin) {
+      let rounds = 2;
+      const estMin = () => { const work = moves.reduce((s, m) => s + m.reps * (m.unilateral ? 2 : 1) * 10, 0); return Math.ceil((work * rounds + Math.max(0, moves.length - 1) * 18 * rounds + (rounds > 1 ? 35 : 0)) / 60); };
+      let minutes = estMin();
+      while (minutes > targetMin && moves.some(m => m.reps > 6)) { moves.sort((a, b) => b.reps * (b.unilateral ? 2 : 1) - a.reps * (a.unilateral ? 2 : 1))[0].reps -= 2; minutes = estMin(); }
+      while (minutes > targetMin && moves.length > 3) { moves.pop(); minutes = estMin(); }
+      if (minutes > targetMin) { rounds = 1; minutes = estMin(); }
+      while (minutes < 5 && moves.some(m => m.reps < 12)) { moves.find(m => m.reps < 12).reps += 2; minutes = estMin(); }
+      return { moves, rounds, minutes };
+    }
+
+    function buildAdventureSession(i, type) {
+      const hardware = i % 2 === 0 ? "T-Bar" : "Single Handle";
+      const isPostAssessment = i >= 20;
+      const exercisePool = isPostAssessment ? [...kiwiiExercises, ...advancedMoves] : kiwiiExercises.filter(e => !advancedMoves.some(a => a.cn === e.cn));
+      const safe = exercisePool.filter(e => e.hardware === hardware && !adventureProtected(e));
+      const available = safe.length >= 4 ? safe : exercisePool.filter(e => e.hardware === hardware);
+      const count = 3 + (i % 3);
+      const progression = Math.min(i / 39, 1);
+      const loadMultiplier = 1 + progression * 0.35;
+      const goalReps = (programmingProfile().goals || []).some(g => /减脂/.test(g)) ? 2 : 0;
+      const used = [];
+      const moves = [];
+      for (let n = 0; n < count; n++) {
+        let candidates = available.filter(e => e.role === type.roles[n % type.roles.length] && !used.includes(e.cn));
+        if (!candidates.length) candidates = available.filter(e => !used.includes(e.cn));
+        if (!candidates.length) break;
+        const safePool = candidates.filter(e => !adventureClashes(moves.at(-1), e));
+        const pick = safePool.length ? safePool : candidates;
+        const move = pick[(i + n * 3) % pick.length];
+        used.push(move.cn);
+        const unilateral = adventureIsUnilateral(move);
+        const reps = Math.min(12, Math.round(6 + progression * 4) + ((n * 2) % 3) + goalReps);
+        const load = Math.round(adventureMovementLoad(move, n) * loadMultiplier);
+        moves.push({ ...move, load, reps, unilateral });
+      }
+      moves.sort((a, b) => adventurePostureHeight(a) - adventurePostureHeight(b));
+      const targetMin = Math.round(6 + progression * 2);
+      const fitted = adventureFitSequence(moves, targetMin);
+      return { id: i + 1, type, hardware, moves: fitted.moves, rounds: fitted.rounds, focus: type.focus, minutes: fitted.minutes, isPostAssessment };
+    }
+
+    let adventureSessions = [];
+    let activeStation = null;
+
+    function generateAdventure() {
+      const alloc = adventureAllocate();
+      const queue = [];
+      alloc.forEach(a => { for (let i = 0; i < a.count; i++) queue.push(a); });
+      const ordered = adventureOrderRoute(queue);
+      let trainIdx = 0;
+      adventureSessions = Array.from({ length: 40 }, (_, i) => {
+        if (i === 19) return { id: 20, isMilestone: true, type: { name: "丰收体测日", color: "#ff9f43", focus: "看看你的庄稼长了多少" }, moves: [], hardware: "", minutes: 15 };
+        const session = buildAdventureSession(trainIdx, ordered[trainIdx]);
+        session.id = i + 1;
+        trainIdx++;
+        return session;
+      });
+    }
+
+    function renderAdventureMap() {
+      const map = document.getElementById("adventureMap");
+      const segments = adventureSessions.map((s, i) => {
+        const isFirst = i === 0;
+        const isMilestone = s.isMilestone;
+        const line = i > 0 ? `<div class="map-path-line"></div>` : "";
+        const cls = `station-node${isFirst ? " first" : ""}${isMilestone ? " milestone" : ""}`;
+        const label = isMilestone ? "★" : s.id;
+        const sub = isMilestone ? "体测" : s.type.name;
+        return `<div class="map-path-segment">${line}<button class="${cls}" data-station="${i}" style="--node-color:${s.type.color}" title="${s.type.name}">${label}<small>${sub}</small></button></div>`;
+      }).join("");
+      const decorations = `<div class="map-deco"><span class="deco-dot" style="left:6%;top:20%"></span><span class="deco-dot lg" style="left:22%;top:74%"></span><span class="deco-dot" style="left:42%;top:12%"></span><span class="deco-dot lg" style="left:58%;top:80%"></span><span class="deco-dot" style="left:76%;top:18%"></span><span class="deco-dot lg" style="left:90%;top:66%"></span><span class="deco-ring" style="left:15%;top:50%"></span><span class="deco-ring" style="left:68%;top:38%"></span></div>`;
+      map.innerHTML = `<span class="map-drag-hint">← 拖动探索 →</span><div class="map-track" id="mapTrack">${segments}</div>${decorations}`;
+      map.style.display = "";
+
+      const track = document.getElementById("mapTrack");
+      let isDragging = false, startX = 0, scrollLeft = 0;
+      track.addEventListener("mousedown", e => { isDragging = true; startX = e.pageX - track.offsetLeft; scrollLeft = track.scrollLeft; });
+      track.addEventListener("mouseleave", () => { isDragging = false; });
+      track.addEventListener("mouseup", () => { isDragging = false; });
+      track.addEventListener("mousemove", e => { if (!isDragging) return; e.preventDefault(); track.scrollLeft = scrollLeft - (e.pageX - track.offsetLeft - startX); });
+      track.addEventListener("touchstart", e => { startX = e.touches[0].pageX; scrollLeft = track.scrollLeft; }, { passive: true });
+      track.addEventListener("touchmove", e => { track.scrollLeft = scrollLeft - (e.touches[0].pageX - startX); }, { passive: true });
+
+      const legend = document.getElementById("mapLegend");
+      const usedTypes = [...new Set(adventureSessions.filter(s => !s.isMilestone).map(s => s.type.id))];
+      legend.innerHTML = usedTypes.map(id => {
+        const t = kiwiiRouteTypes.find(x => x.id === id);
+        return `<span><i style="background:${t.color}"></i>${t.name}</span>`;
+      }).join("");
+      legend.style.display = "";
+    }
+
+    function showStationPreview(index) {
+      const s = adventureSessions[index];
+      if (!s) return;
+      if (activeStation === index) {
+        const existing = document.querySelector(".station-preview");
+        if (existing) existing.remove();
+        activeStation = null;
+        document.querySelectorAll(".station-node").forEach(n => n.classList.remove("active"));
+        return;
+      }
+      activeStation = index;
+      document.querySelectorAll(".station-node").forEach((n, i) => n.classList.toggle("active", i === index));
+      const existing = document.querySelector(".station-preview");
+      if (existing) existing.remove();
+
+      if (s.isMilestone) {
+        const html = `<div class="station-preview milestone-preview">
+          <h3>第 ${s.id} 站 · ${s.type.name}</h3>
+          <p class="milestone-desc">半程丰收检验！重新测一次，看看这 20 站下来你的庄稼长了多少。通过后解锁高阶复合动作。</p>
+        </div>`;
+        document.querySelector(".map-screen[data-screen='final']").insertAdjacentHTML("beforeend", html);
+        return;
+      }
+
+      const movesHtml = s.moves.map(m => `<div class="preview-move"><span class="move-name">${m.cn}</span><span class="move-detail">${m.load}kg · ${m.reps}次${m.unilateral ? " · 换边" : ""}</span></div>`).join("");
+      const html = `<div class="station-preview">
+        <h3>第 ${s.id} 站 · ${s.type.name}</h3>
+        <div class="preview-tabs">
+          <div class="preview-tab"><span class="tab-label">训练部位</span><span class="tab-value">${s.focus}</span></div>
+          <div class="preview-tab"><span class="tab-label">配件</span><span class="tab-value">${s.hardware}</span></div>
+          <div class="preview-tab"><span class="tab-label">时长</span><span class="tab-value">~${s.minutes}min · ${s.rounds}轮</span></div>
+        </div>
+        <div class="move-preview">${movesHtml}</div>
+      </div>`;
+      document.querySelector(".map-screen[data-screen='final']").insertAdjacentHTML("beforeend", html);
+    }
+
+    function runMapIntro() {
+      const counter = document.getElementById("mapCounter");
+      const numEl = document.getElementById("mapCounterNum");
+      const intro = document.getElementById("mapIntro");
+      counter.classList.add("visible");
+      let count = 1;
+      const interval = setInterval(() => {
+        count += Math.ceil(count / 8);
+        if (count >= 40) {
+          count = 40;
+          clearInterval(interval);
+          numEl.textContent = "40";
+          setTimeout(() => {
+            intro.style.display = "none";
+            renderAdventureMap();
+          }, 800);
+        }
+        numEl.textContent = count;
+      }, 60);
+    }
+
+    function renderFinalSummary() {
+      renderProtection();
+      generateAdventure();
+      const intro = document.getElementById("mapIntro");
+      const map = document.getElementById("adventureMap");
+      const legend = document.getElementById("mapLegend");
+      intro.style.display = "";
+      map.style.display = "none";
+      legend.style.display = "none";
+      const existing = document.querySelector(".station-preview");
+      if (existing) existing.remove();
+      activeStation = null;
+      runMapIntro();
     }
 
     function openProgrammingResult() {
@@ -895,38 +2681,138 @@
       window.location.href = "kiwii-programming-demo.html?from=assessment";
     }
 
-    function renderTestAction() {
-      const action = testActions[testAction];
-      const number = String(testAction + 1).padStart(2, "0");
-      document.getElementById("cameraPosition").textContent = action.position;
-      document.getElementById("cameraTitle").innerHTML = `<small>关卡 ${action.assessment}</small>${action.title}`;
-      document.getElementById("cameraFrame").dataset.pose = action.poseStyle;
-      document.getElementById("poseLabel").innerHTML = `<b>${action.pose}</b>${action.poseNote}`;
-      document.getElementById("guideList").innerHTML = action.guide.map(item => `<li>${item}</li>`).join("");
-      document.getElementById("testNav").innerHTML = Array.from({ length: 7 }, (_, index) => {
-        const assessment = index + 1;
-        return `<button type="button" data-test-assessment="${assessment}" aria-label="跳转到动作 ${assessment}" class="${assessment < action.assessment ? "done" : assessment === action.assessment ? "active" : ""}"></button>`;
-      }).join("");
-      document.getElementById("testBack").textContent = testAction === 0 ? "返回准备页" : "上一个";
-      document.getElementById("vbtBox").classList.toggle("active", Boolean(action.vbt));
-      if (action.vbt) renderVbt();
-      else document.getElementById("testNext").textContent = testAction === testActions.length - 1 ? "看今日状态" : "下一关";
+    function renderResultDialogue(entry, dialogueIndex = null) {
+      document.getElementById("resultDialogueText").textContent = entry.text;
+      document.querySelectorAll("#resultDialogueDots i").forEach((dot, index) => dot.classList.toggle("active", dialogueIndex === index));
+      const nextButton = document.getElementById("resultDialogueNext");
+      nextButton.textContent = dialogueIndex === resultDialogue.length - 1 ? "一起定制训练计划" : "继续";
+      nextButton.classList.toggle("primary", dialogueIndex === resultDialogue.length - 1);
+      const focus = entry.focus || [];
+      document.querySelectorAll("[data-ability]").forEach(card => {
+        const isFocused = focus.includes(card.dataset.ability);
+        card.classList.toggle("focused", isFocused);
+        card.classList.toggle("dimmed", focus.length > 0 && !isFocused);
+      });
     }
 
-    function renderVbt() {
-      const vbtRounds = getVbtRounds();
-      const round = vbtRounds[Math.min(vbtRound, vbtRounds.length - 1)];
-      document.getElementById("vbtLoad").textContent = round.load;
-      document.getElementById("vbtRounds").innerHTML = vbtRounds.slice(0, vbtRound).map((item, index) => `<div class="vbt-round"><b>第 ${index + 1} 次</b><span>${item.load} · ${item.speed}</span><em>${item.result}</em></div>`).join("");
-      document.getElementById("testNext").textContent = vbtRound < vbtRounds.length ? `完成第 ${vbtRound + 1} 次` : "下一关";
+    function categoryProgress(action) {
+      const categoryActions = testActions.filter(a => a.category === action.category);
+      const indexInCategory = categoryActions.indexOf(action) + 1;
+      return `${action.category} ${indexInCategory}/${categoryActions.length}`;
+    }
+
+    function renderTestAction() {
+      const action = testActions[testAction];
+      document.getElementById("cameraTitle").innerHTML = `<small style="display:block;font-size:11px;font-weight:800;color:#168d7f;margin-bottom:4px">${categoryProgress(action)}</small>${action.title}`;
+      document.getElementById("cameraFrame").dataset.pose = action.poseStyle;
+      document.getElementById("testBack").textContent = testAction === 0 && cueIndex === 0 ? "返回" : "上一个";
+      document.getElementById("testNext").textContent = "下一个";
+      renderTicket();
+      updateJourneyProgress();
+    }
+
+    function conversationalPurpose(action) {
+      const previousAction = testActions[testAction - 1];
+      const startsNewAction = cueIndex === 0 && previousAction && previousAction.assessment !== action.assessment;
+      return startsNewAction ? `下一个动作｜${action.purpose}` : action.purpose;
+    }
+
+    function renderTicket() {
+      const action = testActions[testAction];
+      const isLoadRound = action.vbt && cueIndex === action.guide.length - 1;
+      const ticketTotal = isLoadRound ? getVbtRounds().length : action.guide.length;
+      const ticketCurrent = isLoadRound ? vbtRound + 1 : cueIndex + 1;
+      document.getElementById("ticketProgress").innerHTML = Array.from({ length: ticketTotal }, (_, index) => {
+        const state = index + 1 < ticketCurrent ? "done" : index + 1 === ticketCurrent ? "active" : "";
+        return `<i class="${state}"></i>`;
+      }).join("");
+      if (isLoadRound) {
+        const rounds = getVbtRounds();
+        const round = rounds[Math.min(vbtRound, rounds.length - 1)];
+        const previous = vbtRound > 0 ? `上一轮速度 ${rounds[vbtRound - 1].speed}，` : "";
+        document.getElementById("testPurpose").textContent = `${previous}这轮阻力是 ${round.load}，还是尽可能快地站起来`;
+        document.getElementById("ticketInstruction").textContent = "蹲下后，尽可能快地站起来";
+      } else {
+        document.getElementById("testPurpose").textContent = conversationalPurpose(action);
+        document.getElementById("ticketInstruction").textContent = action.guide[cueIndex];
+      }
+    }
+
+    function advanceAssessmentCue() {
+      const action = testActions[testAction];
+      if (cueIndex < action.guide.length - 1) {
+        cueIndex += 1;
+        renderTestAction();
+        return;
+      }
+      if (action.vbt) {
+        if (vbtRound < getVbtRounds().length - 1) {
+          vbtRound += 1;
+          renderTicket();
+          return;
+        }
+      }
+      if (testAction < testActions.length - 1) {
+        testAction += 1;
+        cueIndex = 0;
+        vbtRound = 0;
+        renderTestAction();
+      } else {
+        render(current + 1);
+      }
+    }
+
+    window.kiwiiAssessmentRecognized = advanceAssessmentCue;
+
+    function rewindAssessmentCue() {
+      if (vbtRound > 0) {
+        vbtRound -= 1;
+        renderTestAction();
+        return;
+      }
+      if (cueIndex > 0) {
+        cueIndex -= 1;
+        renderTestAction();
+        return;
+      }
+      if (testAction > 0) {
+        testAction -= 1;
+        cueIndex = testActions[testAction].guide.length - 1;
+        vbtRound = 0;
+        renderTestAction();
+      } else {
+        render(current - 1);
+      }
     }
 
     document.addEventListener("click", (event) => {
+      const journeyDot = event.target.closest("[data-journey-step]");
+      if (journeyDot) {
+        jumpToJourneyStep(Number(journeyDot.dataset.journeyStep));
+        return;
+      }
+      const contractPick = event.target.closest(".contract-pick");
+      if (contractPick) {
+        const group = contractPick.parentElement;
+        [...group.children].forEach(item => item.classList.toggle("selected", item === contractPick));
+        resetContractSignature();
+        renderContract();
+      }
+      if (event.target.closest("#contractStamp")) {
+        const stamp = document.getElementById("contractStamp");
+        stamp.classList.add("signed");
+        stamp.textContent = "约定生效";
+        document.getElementById("contractNext").disabled = false;
+      }
       const choice = event.target.closest(".choice");
       if (choice) {
         const group = choice.parentElement;
         if (group.hasAttribute("data-single")) [...group.children].forEach(item => item.classList.remove("selected"));
-        if (group.dataset.max && !choice.classList.contains("selected") && group.querySelectorAll(".selected").length >= Number(group.dataset.max)) return;
+        if (group.dataset.max && !choice.classList.contains("selected") && group.querySelectorAll(".selected").length >= Number(group.dataset.max)) {
+          const hint = document.getElementById("goalMaxHint");
+          if (hint) hint.textContent = "最多选 3 个哦，取消一个再换";
+          return;
+        }
         const choiceText = choice.querySelector("b")?.textContent || "";
         if (group.hasAttribute("data-multi") && (choiceText.includes("没有") || choiceText.includes("状态"))) [...group.children].forEach(item => item.classList.remove("selected"));
         if (group.hasAttribute("data-multi") && !choiceText.includes("没有") && !choiceText.includes("状态")) [...group.children].forEach(item => {
@@ -934,51 +2820,39 @@
         });
         choice.classList.toggle("selected");
         if (choice.closest('[data-screen="experience"]')) vbtRound = 0;
-        if (choice.closest('[data-screen="pain"]')) renderProtection();
+        if (choice.closest('[data-screen="pain"]')) {
+          const otherChoice = [...document.querySelectorAll("[data-pain-zones] .choice")].find(item => item.querySelector("b")?.textContent === "其他");
+          document.getElementById("otherPainField").classList.toggle("active", Boolean(otherChoice?.classList.contains("selected")));
+          renderProtection();
+        }
       }
       if (event.target.closest("[data-next]")) render(current + 1);
       if (event.target.closest("[data-back]")) render(current - 1);
-      const assessmentJump = event.target.closest("[data-test-assessment]");
-      if (assessmentJump) {
-        const assessment = Number(assessmentJump.dataset.testAssessment);
-        testAction = testActions.findIndex(action => action.assessment === assessment);
-        renderTestAction();
-      }
-      if (event.target.closest("#testNext")) {
-        if (testActions[testAction].vbt && vbtRound < getVbtRounds().length) {
-          vbtRound += 1;
-          renderVbt();
-          return;
-        }
-        if (testAction < testActions.length - 1) {
-          testAction += 1;
-          renderTestAction();
-        } else render(current + 1);
-      }
-      if (event.target.closest("#testBack")) {
-        if (testAction > 0) {
-          testAction -= 1;
-          renderTestAction();
-        } else render(current - 1);
-      }
+      if (event.target.closest("#testNext")) advanceAssessmentCue();
+      if (event.target.closest("#testBack")) rewindAssessmentCue();
       if (event.target.closest("#resultsBack")) {
-        testAction = testActions.length - 1;
         render(current - 1);
       }
-      if (event.target.closest("#startTraining")) openProgrammingResult();
-      if (event.target.closest("#restart")) {
-        testAction = 0;
-        vbtRound = 0;
-        render(0);
+      if (event.target.closest("#resultDialogueNext")) {
+        if (resultDialogueIndex === resultDialogue.length - 1) {
+          render(current + 1);
+          return;
+        }
+        resultDialogueIndex += 1;
+        renderResultDialogue(resultDialogue[resultDialogueIndex], resultDialogueIndex);
+        document.querySelectorAll("[data-ability]").forEach(card => card.classList.remove("active"));
       }
-      if (event.target.closest("#highfive")) {
-        const button = document.getElementById("highfive");
-        button.textContent = "击掌成功";
-        button.classList.add("done");
-        document.getElementById("signature").textContent = "击掌成功 · 开始训练";
-        window.setTimeout(openProgrammingResult, 450);
+      const abilityCard = event.target.closest("[data-ability]");
+      if (abilityCard) {
+        document.querySelectorAll("[data-ability]").forEach(card => card.classList.toggle("active", card === abilityCard));
+        renderResultDialogue(abilityDialogue[abilityCard.dataset.ability]);
       }
+      const stationNode = event.target.closest("[data-station]");
+      if (stationNode) showStationPreview(Number(stationNode.dataset.station));
+      if (event.target.closest("#startAdventure")) openProgrammingResult();
     });
+    document.getElementById("otherPainInput").addEventListener("input", renderProtection);
+    renderJourneyDots();
     render(0);
   </script>
 </body>
